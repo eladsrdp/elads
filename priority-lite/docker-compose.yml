@@ -1,0 +1,26 @@
+services:
+  priority-lite:
+    build: .
+    image: priority-lite:latest
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    volumes:
+      - priority-data:/app/server/data
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      DATABASE_PATH: /app/server/data/priority-lite.db
+      SESSION_SECRET: ${SESSION_SECRET}
+      EMAIL_MODE: ${EMAIL_MODE:-resend}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      OTP_FROM_EMAIL: ${OTP_FROM_EMAIL:-Priority Lite <onboarding@resend.dev>}
+      PRIORITY_MODE: ${PRIORITY_MODE:-real}
+      PRIORITY_BASE_URL: ${PRIORITY_BASE_URL}
+      PRIORITY_TABULA_INI: ${PRIORITY_TABULA_INI:-tabula.ini}
+      PRIORITY_COMPANY: ${PRIORITY_COMPANY}
+      PRIORITY_USER: ${PRIORITY_USER}
+      PRIORITY_PASSWORD: ${PRIORITY_PASSWORD}
+
+volumes:
+  priority-data:
