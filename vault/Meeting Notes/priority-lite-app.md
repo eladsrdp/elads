@@ -4,10 +4,12 @@
 אפליקציית web ‏(PWA, עברית RTL) בתיקייה `priority-lite/` שעוטפת את Priority ERP בממשק מהיר: טיימר, דיווחי שעות ידניים, סיכומים (יום/שבוע/חודש לפי פרויקט→משימה), וחיפוש משימות. ארכיטקטורה: monorepo ‏(npm workspaces) עם `shared/` (טיפוסים), `server/` (Hono + better-sqlite3, אימות OTP במייל לפי whitelist טלפונים, JWT cookie ל-7 ימים, adapter מבודד מול Priority OData עם mock לפיתוח), ו-`client/` (React 19 + Vite 8 + Tailwind v4 + Dexie). דיווחים נשמרים כטיוטות מקומיות ונשלחים לפריוריטי רק אחרי אישור המשתמש (תוצאה פר-פריט, שגיאות עם retry). שכבת actions עם zod schemas מוכנה לחיבור צ'אט-LLM בשלב 3. סטטוס: M0–M5 בנויים ומאומתים מול mock ‏(32 בדיקות + E2E בדפדפן); מיילים אמיתיים דרך Resend פעילים; **קריאה אמיתית מפריוריטי אומתה בפרודקשן** (PAT + Basic auth, ‏getTimeEntries דרך scripts/report.ts); נותר אימות כתיבה, מעבר PRIORITY_MODE=real ופריסה (M7).
 
 ## Open Questions
-- **מעבר ל-PRIORITY_MODE=real** — קריאה כבר אומתה בפרודקשן (report.ts, ‏16 דיווחים נמשכו); נותר לאמת **כתיבה** (smoke.ts write — רק בחברת טסט!) ולהחליף מצב באפליקציה
-- אייקוני PWA הם SVG בלבד — כדאי PNG ‏192/512 להתקנה מלאה באנדרואיד (אפשר דרך יובל)
-- אין dedupe מול Priority בכשל רשת אחרי שליחה חלקית — לבדוק ב-M6 (סיכון דיווח כפול)
-- זיהוי עובד בפריוריטי הוא לפי **שם עובד** (לא מספר) — של אלעד: `elads`
+- **פריסה ל-Vercel**: עדיין דורש ידנית: (1) יצירת פרויקט Supabase + הרצת supabase-schema.sql, (2) הגדרת env vars ב-Vercel, (3) seed עובדים מחדש מול Supabase.
+- **מעבר ל-PRIORITY_MODE=real באפליקציה** — קריאה אומתה (report.ts); נותר אימות כתיבה (smoke.ts write — רק בחברת טסט!) ומעבר סופי
+- **Resend domain** — אימות dpri.com עדיין תלוי; בינתיים מיילים רק לכתובת הרשמה
+- אין dedupe מול Priority בכשל רשת אחרי שליחה חלקית — סיכון דיווח כפול
+- אייקוני PWA הם SVG בלבד — כדאי PNG ‏192/512 (יובל)
+- **רשימת פרויקטים בבחירה** — infrastructure קיים (searchTasks), חסרה UI picker בטופס הדיווח
 
 ## Session Log
 
@@ -34,3 +36,15 @@
 - **Decisions:** זו האימות הראשון של צד הקריאה של M6 בפרודקשן — ה-PAT ב-.env עובד עם Basic auth, המיפוי ב-mapping.ts נכון (כל השדות חזרו מאוכלסים). ה-Overview עודכן בהתאם.
 - **Notes / Caveats:** צד הכתיבה (createTimeEntry) עדיין לא נבדק מול אמת — לבדוק עם `smoke.ts write` רק בחברת טסט. הדוח רץ דרך Bash (פלט עברית ב-PowerShell 5.1 משתבש בקידוד).
 - **Related:** [[repo-github-migration]], [[priority-automations-article]]
+
+### 2026-06-10 — מיגרציה מ-SQLite ל-Supabase + הכנה ל-Vercel [shipped]
+- **What was done:** הוחלפה השכבת DB מ-better-sqlite3 ל-Supabase ‏(PostgreSQL over HTTP): כל פעולות ה-DB הפכו async; נוצר `supabase-schema.sql` ‏(employees + otp_codes, ‏RLS disabled); עודכנו `env.ts` ‏(SUPABASE_URL + SUPABASE_SERVICE_KEY), `db.ts`, `otp.ts`, `auth.ts`, `index.ts`, `seed-whitelist.ts`. נוצרו `api/index.ts` ‏(serverless entry ל-Vercel דרך `@hono/node-server/toNodeHandler`) ו-`vercel.json` עם rewrites. Docker files נשארו ב-repo אך הפריסה עברה ל-Vercel.
+- **Decisions:** SQLite אינה מתאימה ל-Vercel ‏(serverless, ‏no persistent FS). Supabase נבחרה כי היא מנוהלת, ‏free tier, ופשוטה לשילוב. שימוש ב-service_role key (עוקף RLS) — מקובל כי השרת מאמת משתמשים בעצמו. OTP attempts increment: שינוי מ-atomic SQL ל-read-then-write (race condition נדיר, סיכון מקובל).
+- **Notes / Caveats:** עדיין נדרש ידנית: יצירת Supabase project + הרצת schema + seed עובדים מחדש + Vercel env vars. Dockerfile נשאר ב-repo.
+- **Related:** [[repo-github-migration]], [[env-config]]
+
+### 2026-06-11 — הוספת שדות billable / ordName / ordLine לדיווחי שעות [shipped]
+- **What was done:** הוספו 3 שדות חדשים לאורך כל ה-stack: `FLAG` (billable=Y), `ORDNAME` ‏(מספר הזמנה), `OLINE` ‏(שורת הזמנה). שדות מופו ב-`mapping.ts`, נוספו ל-`NewTimeEntry` ב-`adapter.ts`, ל-`createTimeEntry` ב-`odata.ts`, לסכמת zod ב-`actions/index.ts` (כולל העברה ל-adapter), ל-sync payload ב-`useEntries.ts`, ולטיפוסים ב-`shared/types.ts` ו-`client/types.ts`. UI: דגל billable תמיד גלוי ‏(toggle ירוק), סקשן "פרטים נוספים" מתקפל עם שדות ORDNAME + OLINE ב-`ManualEntryModal.tsx`.
+- **Decisions:** ordName/ordLine בסקשן מתקפל כי נדרשים רק לחלק מהלקוחות (פיק אנד פאק, שחר תשלובות). billable גלוי תמיד כי רלוונטי לכלל הלקוחות. שני שדות ORDNAME+OLINE מספיקים לשני הלקוחות — שניהם השתמשו באותו pattern (ORDNAME=SO24000058 + OLINE).
+- **Notes / Caveats:** כתיבה לפריוריטי עדיין לא נבדקה עם השדות החדשים — יש לאמת מול חברת טסט.
+- **Related:** [[repo-github-migration]]
