@@ -14,7 +14,7 @@ import { isProd } from '../env'
 
 const HEBREW_ERRORS: Record<string, string> = {
   invalid_phone: 'מספר טלפון לא תקין',
-  not_registered: 'המספר אינו רשום במערכת — פנה למנהל',
+  not_registered: 'לא זיהינו אותך כעובד RDP — אם טעית במספר, נסה שוב',
   rate_limited: 'יותר מדי בקשות קוד — נסה שוב בעוד כמה דקות',
   no_code: 'לא נשלח קוד למספר הזה — בקש קוד חדש',
   expired: 'הקוד פג תוקף — בקש קוד חדש',
