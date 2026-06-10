@@ -1,0 +1,74 @@
+# File Docs — priority-lite — Index
+
+תיעוד פר-קובץ של אפליקציית priority-lite.
+
+## Topics
+- [[pl-readme]] — מסמך הפתיחה: מהות האפליקציה, מבנה ה-monorepo והוראות הרצה
+- [[pl-package-json]] — שורש ה-monorepo: ‏workspaces וסקריפטים מרכזיים
+- [[pl-package-lock-json]] — קובץ הנעילה של npm לכל התלויות
+- [[pl-gitignore]] — החרגות git: ‏node_modules, data, ‏.env ו-whitelist.json
+- [[pl-shared-package-json]] — חבילת @priority-lite/shared שמייצאת את הטיפוסים
+- [[pl-shared-types]] — חוזה הטיפוסים המשותף בין שרת לקליינט
+- [[pl-server-package-json]] — תלויות וסקריפטים של השרת (Hono, better-sqlite3, jose, zod)
+- [[pl-server-tsconfig]] — קונפיגורציית TypeScript של השרת
+- [[pl-server-env-example]] — תבנית משתני הסביבה של השרת (שמות בלבד)
+- [[pl-server-priority-metadata-xml]] — ה-$metadata של ה-OData של פריוריטי (קובץ עזר לעיון)
+- [[pl-server-whitelist-example]] — דוגמת פורמט whitelist עם נתונים פיקטיביים
+- [[pl-server-whitelist]] — ה-whitelist האמיתי (PII, מוחרג מ-git)
+- [[pl-server-scripts-discover]] — סקריפט גילוי $metadata ורשומות לדוגמה מפריוריטי
+- [[pl-server-scripts-smoke]] — בדיקת עשן ידנית מול פריוריטי אמיתי
+- [[pl-server-index]] — נקודת הכניסה: הרכבת תלויות אמיתיות והרמת השרת
+- [[pl-server-app]] — הרכבת אפליקציית ה-Hono ורישום המסלולים
+- [[pl-server-context]] — ממשק AppContext להזרקת תלויות
+- [[pl-server-env]] — טעינה ואימות משתני סביבה עם zod
+- [[pl-server-actions]] — שכבת הפעולות: סכמות zod ו-handlers לכל פעולה
+- [[pl-server-auth-otp]] — לוגיקת OTP: נרמול טלפון, rate limit, ‏hash ותפוגה
+- [[pl-server-auth-session]] — session כ-JWT חתום ב-cookie
+- [[pl-server-auth-middleware]] — middleware שדורש session תקף
+- [[pl-server-db]] — SQLite: טבלאות employees ו-otp_codes
+- [[pl-server-db-seed-whitelist]] — CLI לטעינת whitelist עובדים
+- [[pl-server-email-sender]] — שליחת מייל OTP: ‏console או Resend
+- [[pl-server-priority-adapter]] — ממשק PriorityAdapter — התפר המרכזי לפריוריטי
+- [[pl-server-priority-mapping]] — מיפוי שמות הישויות והשדות של פריוריטי
+- [[pl-server-priority-mock]] — adapter מדומה לפיתוח ובדיקות
+- [[pl-server-priority-odata]] — ה-adapter האמיתי מול Priority OData
+- [[pl-server-routes-auth]] — מסלולי אימות: OTP, ‏session, יציאה
+- [[pl-server-routes-tasks]] — מסלולי משימות: חיפוש, מסך בן, יצירה
+- [[pl-server-routes-time-entries]] — מסלולי דיווחי שעות: סנכרון וקריאה
+- [[pl-server-test-actions]] — בדיקות שכבת הפעולות מול ה-mock
+- [[pl-server-test-otp]] — בדיקות לוגיקת ה-OTP
+- [[pl-client-package-json]] — תלויות וסקריפטים של הקליינט (React 19, Vite, Dexie)
+- [[pl-client-index-html]] — דף ה-HTML היחיד של ה-SPA ‏(עברית RTL)
+- [[pl-client-tsconfig]] — solution file שמפנה לשני פרויקטי tsconfig
+- [[pl-client-tsconfig-app]] — הגדרות TypeScript לקוד האפליקציה
+- [[pl-client-tsconfig-node]] — הגדרות TypeScript ל-vite.config.ts
+- [[pl-client-vite-config]] — Vite: ‏React, ‏Tailwind ו-proxy ל-API
+- [[pl-client-public-icon]] — אייקון האפליקציה (SVG שעון)
+- [[pl-client-public-manifest]] — ה-Web App Manifest של ה-PWA
+- [[pl-client-public-sw]] — service worker: ‏cache ל-shell, רשת בלבד ל-API
+- [[pl-client-main]] — נקודת הכניסה של React ורישום ה-SW
+- [[pl-client-app]] — רכיב השורש: שער התחברות וניווט בין מסכים
+- [[pl-client-index-css]] — CSS גלובלי: ‏Tailwind, ערכה כהה ו-ltr-nums
+- [[pl-client-types]] — טיפוסי הקליינט ומודל הטיוטות LocalTimeEntry
+- [[pl-client-db]] — IndexedDB ‏(Dexie): טיוטות ומטמון משימות
+- [[pl-client-lib-api]] — עטיפת fetch עם שגיאות בעברית ואירוע 401
+- [[pl-client-lib-date]] — עוזרי תאריך ושבוע עבודה ישראלי
+- [[pl-client-lib-date-test]] — בדיקות עוזרי התאריך
+- [[pl-client-lib-duration]] — פורמט ופענוח קלט משך גמיש
+- [[pl-client-lib-duration-test]] — בדיקות עוזרי המשך
+- [[pl-client-state-use-auth]] — הקשר ההתחברות והניתוק האוטומטי ב-401
+- [[pl-client-state-use-entries]] — שאילתות טיוטות וזרימת הסנכרון לפריוריטי
+- [[pl-client-state-use-summary]] — חישוב סיכומי שעות לפי טווח
+- [[pl-client-state-use-timer]] — טיימר עמיד ב-localStorage עם store משותף
+- [[pl-client-screens-login]] — מסך כניסה: טלפון ← OTP ‏← session
+- [[pl-client-screens-today]] — מסך "היום": טיימר, סה"כ ודיווחים
+- [[pl-client-screens-entries]] — מסך "דיווחים": אישור ושליחה לפריוריטי
+- [[pl-client-screens-summary]] — מסך "סיכום": היום/שבוע/חודש לפי פרויקט
+- [[pl-client-screens-settings]] — מסך "הגדרות": משתמש, מצב מערכת, יציאה
+- [[pl-client-components-bottom-nav]] — ניווט תחתון עם badge טיוטות
+- [[pl-client-components-entry-row]] — שורת דיווח עם chip סטטוס ופעולות
+- [[pl-client-components-forms]] — רכיבי טופס בסיסיים מעוצבים
+- [[pl-client-components-modal]] — דיאלוג מודאלי גנרי מותאם נייד
+- [[pl-client-components-manual-entry-modal]] — מודאל דיווח ידני / עריכת טיוטה
+- [[pl-client-components-task-picker]] — בורר משימות עם חיפוש חי ונפילה למטמון
+- [[pl-client-components-timer-card]] — כרטיס הטיימר במסך "היום"

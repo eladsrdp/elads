@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "Write-Output '{\"hookSpecificOutput\":{\"hookEventName\":\"UserPromptSubmit\",\"additionalContext\":\"[VAULT WORKFLOW] At the start of this session, invoke the obsidian-vault-workflow skill via the Skill tool BEFORE responding to any task that touches files or makes decisions. Read vault/Meeting Notes/_index.md to orient yourself, then locate and read the relevant topic file. Report what context you loaded before proceeding.\"}}'",
+            "shell": "powershell",
+            "statusMessage": "Loading vault workflow context..."
+          }
+        ]
+      }
+    ]
+  }
+}

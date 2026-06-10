@@ -1,0 +1,226 @@
+{
+  "main": {
+    "id": "068674424ca0a97d",
+    "type": "split",
+    "children": [
+      {
+        "id": "4561e28dd4e2de8b",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "8997adf023947df9",
+            "type": "leaf",
+            "state": {
+              "type": "graph",
+              "state": {},
+              "icon": "lucide-git-fork",
+              "title": "תצוגת גרף"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "2c303ccc0b1adf36",
+    "type": "split",
+    "children": [
+      {
+        "id": "bfbdb22ce07a86b8",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "03070fe3640efb2c",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "סייר קבצים"
+            }
+          },
+          {
+            "id": "3627935b8a5cb2cd",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "לחפש"
+            }
+          },
+          {
+            "id": "88683940c8d68dde",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "סימניות"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "d0f69d560f14fe94",
+    "type": "split",
+    "children": [
+      {
+        "id": "9a96df63f91f9b52",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "1d64991ff8a95a34",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "קישורים נכנסים"
+            }
+          },
+          {
+            "id": "33094ebf2cc74b2d",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "קישורים יוצאים"
+            }
+          },
+          {
+            "id": "1318eb8ba66757eb",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "תגים"
+            }
+          },
+          {
+            "id": "e0c924a5f0670bec",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "כל המאפיינים"
+            }
+          },
+          {
+            "id": "d20d977df13350a6",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "מתווה"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:פתח את המחליף המהיר": false,
+      "graph:פתח תצוגת גרף": false,
+      "canvas:צור קנבס חדש": false,
+      "daily-notes:פתח את ההערה של היום": false,
+      "templates:הכנס תבנית": false,
+      "command-palette:פתח את לוח הפקודות": false,
+      "bases:צור בסיס חדש": false
+    }
+  },
+  "active": "8997adf023947df9",
+  "lastOpenFiles": [
+    "cashflow-pulse/src/screens/Ledger.tsx",
+    "yuval/outputs/2026-06-02-priority-ai-agents-infographic.txt",
+    "cashflow-pulse/src/components/ImportDialog.tsx",
+    "cashflow-pulse/node_modules/zod/v4-mini/package.json",
+    "cashflow-pulse/node_modules/zod/v4-mini/index.d.ts",
+    "cashflow-pulse/node_modules/zod/v4-mini/index.cjs",
+    "cashflow-pulse/node_modules/zod/v4-mini/index.d.cts",
+    "cashflow-pulse/node_modules/zod/v4-mini/index.js",
+    "cashflow-pulse/node_modules/zod/v4-mini",
+    "cashflow-pulse/node_modules/zod/mini/index.d.ts",
+    "cashflow-pulse/node_modules/zod/mini/index.js",
+    "cashflow-pulse/node_modules/data-urls/README.md",
+    "cashflow-pulse/node_modules/xml-name-validator/README.md",
+    "cashflow-pulse/node_modules/symbol-tree/README.md",
+    "cashflow-pulse/node_modules/jsdom/README.md",
+    "cashflow-pulse/node_modules/jiti/README.md",
+    "cashflow-pulse/node_modules/magic-string/README.md",
+    "cashflow-pulse/node_modules/@testing-library/jest-dom/node_modules/dom-accessibility-api/README.md",
+    "cashflow-pulse/node_modules/aria-query/README.md",
+    "cashflow-pulse/node_modules/aria-query/CHANGELOG.md",
+    "cashflow-pulse/node_modules/redent/readme.md",
+    "cashflow-pulse/node_modules/@testing-library/jest-dom/README.md",
+    "cashflow-pulse/node_modules/pretty-format/node_modules/react-is/README.md",
+    "cashflow-pulse/node_modules/pretty-format/README.md",
+    "cashflow-pulse/node_modules/enhanced-resolve/README.md",
+    "cashflow-pulse/node_modules/vitest/README.md",
+    "cashflow-pulse/node_modules/vitest/LICENSE.md",
+    "cashflow-pulse/node_modules/tailwindcss/README.md",
+    "cashflow-pulse/node_modules/html-encoding-sniffer/README.md",
+    "cashflow-pulse/node_modules/@tailwindcss/oxide-win32-x64-msvc/README.md",
+    "cashflow-pulse/node_modules/lz-string/README.md",
+    "cashflow-pulse/node_modules/@babel/runtime/README.md",
+    "cashflow-pulse/node_modules/css-tree/README.md",
+    "cashflow-pulse/node_modules/@adobe/css-tools/docs/AST.md",
+    "cashflow-pulse/node_modules/@adobe/css-tools/docs/EXAMPLES.md",
+    "cashflow-pulse/node_modules/@adobe/css-tools/docs/CHANGELOG.md",
+    "cashflow-pulse/node_modules/dexie/testmuai-logo.svg",
+    "cashflow-pulse/node_modules/dexie/testmuai-logo-white.svg",
+    "yuval/outputs/2026-06-02-priority-erp-interface.png",
+    "cashflow-pulse/src/assets/react.svg",
+    "cashflow-pulse/src/assets/vite.svg",
+    "cashflow-pulse/src/assets/hero.png",
+    "cashflow-pulse/public/icons.svg",
+    "cashflow-pulse/public/favicon.svg"
+  ]
+}

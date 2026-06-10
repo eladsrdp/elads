@@ -1,0 +1,9 @@
+Futuristic ERP interface flat design digital illustration. Dark navy background with neon blue and purple glowing highlights. Dashboard UI panels with Hebrew text labels and data widgets. Open chat bubble on the right with Hebrew natural language input being typed. No human figures, only the interface. Glowing borders, minimalist icons, ambient light halos. Near-future feel not science fiction. Modern flat design with illuminated UI elements. Wide landscape composition.
+
+---
+Model: gpt-image-2
+Size: 1024x1024
+Quality: medium
+Output format: png
+Date: 2026-06-02
+Article: AI Agents in Priority ERP

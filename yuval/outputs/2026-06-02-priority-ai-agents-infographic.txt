@@ -1,0 +1,12 @@
+Clean modern infographic on a light gray background (#F5F5F7). The layout shows three ERP module cards arranged in a horizontal row (right to left: Finance, Sales, Supply Chain), each connected by a curved arrow pointing toward a central AI Agent icon in the middle of the composition.
+
+Each card is a white rounded rectangle with a dark navy blue (#1A2B5E) icon at the top and a short Hebrew label below:
+- Right card: coin/ledger icon, label "פיננסים"
+- Center-right card: handshake/contract icon, label "מכירות"
+- Left card: truck/warehouse icon, label "שרשרת אספקה"
+
+In the center of the image: a friendly, minimal robot head icon in dark navy blue with a subtle glow, representing an AI Agent, labeled "סוכן AI" below it in Hebrew.
+
+Curved arrows in dark navy blue connect each ERP card to the central AI Agent icon, suggesting data flow.
+
+Color palette: dark navy blue (#1A2B5E), white (#FFFFFF), light gray (#F5F5F7), medium gray (#9E9E9E) for secondary text. No gradients. Flat design. Corporate minimalist style. Clean sans-serif typography. 1024x1024 square format. No photographic elements.
