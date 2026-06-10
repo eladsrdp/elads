@@ -4,8 +4,7 @@
 אפליקציית web ‏(PWA, עברית RTL) בתיקייה `priority-lite/` שעוטפת את Priority ERP בממשק מהיר: טיימר, דיווחי שעות ידניים, סיכומים (יום/שבוע/חודש לפי פרויקט→משימה), וחיפוש משימות. ארכיטקטורה: monorepo ‏(npm workspaces) עם `shared/` (טיפוסים), `server/` (Hono + better-sqlite3, אימות OTP במייל לפי whitelist טלפונים, JWT cookie ל-7 ימים, adapter מבודד מול Priority OData עם mock לפיתוח), ו-`client/` (React 19 + Vite 8 + Tailwind v4 + Dexie). דיווחים נשמרים כטיוטות מקומיות ונשלחים לפריוריטי רק אחרי אישור המשתמש (תוצאה פר-פריט, שגיאות עם retry). שכבת actions עם zod schemas מוכנה לחיבור צ'אט-LLM בשלב 3. סטטוס: M0–M5 בנויים ומאומתים מול mock ‏(32 בדיקות + E2E בדפדפן); נותר חיווט אמיתי (M6) ופריסה (M7).
 
 ## Open Questions
-- **Credentials** ל-API ‏(PRIORITY_USER/PASSWORD) + אישור שיטת auth (Basic/PAT) — חוסם M6
-- **RESEND_API_KEY** למיילים אמיתיים — כרגע EMAIL_MODE=console (הקוד מודפס לטרמינל השרת)
+- **מעבר ל-PRIORITY_MODE=real** — ‏PAT כבר קיים ב-.env המקומי (לא ב-git); נותר להחליף מצב, להריץ smoke ולוודא קריאה/כתיבה אמיתית מול פריוריטי (M6)
 - אייקוני PWA הם SVG בלבד — כדאי PNG ‏192/512 להתקנה מלאה באנדרואיד (אפשר דרך יובל)
 - אין dedupe מול Priority בכשל רשת אחרי שליחה חלקית — לבדוק ב-M6 (סיכון דיווח כפול)
 - זיהוי עובד בפריוריטי הוא לפי **שם עובד** (לא מספר) — של אלעד: `elads`
@@ -23,3 +22,9 @@
 - **Decisions:** עודכנו Open Questions — הוסרו שאלות הישויות/שדות: `mapping.ts` כבר מולא בפועל (משימות = `ZRDP_DOCUMENTS_p`, דיווחים = `ZRDP_TRANSORDER_q` עם USERLOGIN/CURDATE/DOCNO/TQUANT/PDES/TRANS; מופה מ-$metadata ב-2026-06-10). נוספו גם scripts/discover.ts ו-smoke.ts ו-lib/api — עבודה לקראת M6 שלא תועדה בסשן קודם.
 - **Notes / Caveats:** הפרויקט הועלה לראשונה ל-git כחלק מהגירה ל-repo החדש — ראו [[repo-github-migration]]. עדיין חסר: credentials ל-API ‏(חוסם M6 סופית) ו-RESEND_API_KEY.
 - **Related:** [[repo-github-migration]], [[project-overview]]
+
+### 2026-06-10 — בדיקת משתמש ראשונה + חיבור Resend למיילים אמיתיים [shipped]
+- **What was done:** המשתמש בדק את האפליקציה בדפדפן. תקלה ראשונה ("לא נכנס") — שרת ה-dev נפל בין סשנים; אחרי הרמה מחדש אומת מסלול ההתחברות E2E ‏(request-otp → קוד בלוג → verify-otp → 200 + session). המשתמש סיפק RESEND_API_KEY; הוגדר ב-.env ‏(EMAIL_MODE=resend), השרת אותחל, ונשלח מייל OTP אמיתי ל-elads@rdpri.com בהצלחה.
+- **Decisions:** המפתח נשמר רק ב-`priority-lite/server/.env` (מוחרג מ-git); הומלץ למשתמש לסובב את המפתח כי עבר בצ'אט. התגלה גם ש-PAT לפריוריטי כבר קיים ב-.env — עודכנה השאלה הפתוחה: החסם ל-M6 הוא רק מעבר ל-PRIORITY_MODE=real ואימות.
+- **Notes / Caveats:** ‏Resend ללא דומיין מאומת שולח רק לכתובת ההרשמה מ-onboarding@resend.dev — אם מוסיפים עובדים נוספים ל-whitelist יידרש אימות דומיין rdpri.com. ‏node --watch לא טוען מחדש .env — שינוי env מחייב restart מלא.
+- **Related:** [[repo-github-migration]], [[env-config]]
