@@ -1,4 +1,4 @@
-# File Docs — priority-lite — Index
+﻿# File Docs — priority-lite — Index
 
 תיעוד פר-קובץ של אפליקציית priority-lite.
 
@@ -17,6 +17,7 @@
 - [[pl-server-whitelist]] — ה-whitelist האמיתי (PII, מוחרג מ-git)
 - [[pl-server-scripts-discover]] — סקריפט גילוי $metadata ורשומות לדוגמה מפריוריטי
 - [[pl-server-scripts-smoke]] — בדיקת עשן ידנית מול פריוריטי אמיתי
+- [[pl-server-scripts-report]] — דוח שעות CLI מפריוריטי אמיתי (קריאה בלבד, 7 ימים אחרונים או טווח)
 - [[pl-server-index]] — נקודת הכניסה: הרכבת תלויות אמיתיות והרמת השרת
 - [[pl-server-app]] — הרכבת אפליקציית ה-Hono ורישום המסלולים
 - [[pl-server-context]] — ממשק AppContext להזרקת תלויות
