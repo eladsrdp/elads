@@ -1,8 +1,8 @@
-// שאילתות ופעולות על דיווחים מקומיים, כולל זרימת הסנכרון לפריוריטי.
+// שאילתות ופעולות על דיווחים מקומיים, כולל זרימת הסנכרון וייבוא מפריוריטי.
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db/db'
 import { api } from '../lib/api'
-import type { LocalTimeEntry, SyncItemResult } from '../types'
+import type { LocalTimeEntry, RemoteTimeEntry, SyncItemResult } from '../types'
 
 /** טיוטות + שגיאות — מה שממתין לשליחה. */
 export function usePendingEntries(): LocalTimeEntry[] | undefined {
@@ -38,6 +38,38 @@ export async function updateDraft(id: string, changes: Partial<LocalTimeEntry>):
 
 export async function deleteEntry(id: string): Promise<void> {
   await db.timeEntries.delete(id)
+}
+
+export interface ImportSummary {
+  added: number
+  skipped: number
+}
+
+/** מושך דיווחים קיימים מפריוריטי ושומר אותם מקומית כ-synced. מדלג על כפילויות לפי priorityRef. */
+export async function importFromPriority(from: string, to: string): Promise<ImportSummary> {
+  const remote = await api<RemoteTimeEntry[]>(`/api/time-entries?from=${from}&to=${to}`)
+
+  const allLocal = await db.timeEntries.toArray()
+  const existingRefs = new Set(allLocal.map((e) => e.priorityRef).filter((r): r is string => !!r))
+
+  const toAdd: LocalTimeEntry[] = remote
+    .filter((e) => !existingRefs.has(e.priorityRef))
+    .map((e) => ({
+      id: crypto.randomUUID(),
+      status: 'synced' as const,
+      date: e.date,
+      taskId: e.taskId,
+      taskName: e.taskName,
+      projectName: e.projectName ?? '',
+      durationMin: e.durationMin,
+      note: e.note,
+      source: 'manual' as const,
+      priorityRef: e.priorityRef,
+      createdAt: Date.now(),
+    }))
+
+  if (toAdd.length > 0) await db.timeEntries.bulkAdd(toAdd)
+  return { added: toAdd.length, skipped: remote.length - toAdd.length }
 }
 
 export interface SyncSummary {
