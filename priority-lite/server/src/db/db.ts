@@ -1,32 +1,10 @@
-// SQLite — whitelist עובדים + קודי OTP. better-sqlite3: סינכרוני ומהיר, בלי שרת DB.
-import Database from 'better-sqlite3'
-import { mkdirSync } from 'node:fs'
-import { dirname } from 'node:path'
+// Supabase client — replaces better-sqlite3. All functions are async.
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
-export type DB = Database.Database
+export type DB = SupabaseClient
 
-export function createDb(path: string): DB {
-  if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true })
-  const db = new Database(path)
-  db.pragma('journal_mode = WAL')
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS employees (
-      phone            TEXT PRIMARY KEY,
-      email            TEXT NOT NULL,
-      priority_emp_id  TEXT NOT NULL,
-      name             TEXT NOT NULL,
-      active           INTEGER NOT NULL DEFAULT 1
-    );
-    CREATE TABLE IF NOT EXISTS otp_codes (
-      phone          TEXT PRIMARY KEY,
-      code_hash      TEXT NOT NULL,
-      expires_at     INTEGER NOT NULL,
-      attempts       INTEGER NOT NULL DEFAULT 0,
-      sent_count     INTEGER NOT NULL DEFAULT 1,
-      window_start   INTEGER NOT NULL
-    );
-  `)
-  return db
+export function createDb(url: string, serviceKey: string): DB {
+  return createClient(url, serviceKey, { auth: { persistSession: false } })
 }
 
 export interface EmployeeRow {
@@ -34,24 +12,29 @@ export interface EmployeeRow {
   email: string
   priority_emp_id: string
   name: string
-  active: number
+  active: boolean
 }
 
-export function findEmployee(db: DB, phone: string): EmployeeRow | undefined {
-  return db
-    .prepare('SELECT * FROM employees WHERE phone = ? AND active = 1')
-    .get(phone) as EmployeeRow | undefined
+export async function findEmployee(db: DB, phone: string): Promise<EmployeeRow | undefined> {
+  const { data } = await db
+    .from('employees')
+    .select('*')
+    .eq('phone', phone)
+    .eq('active', true)
+    .maybeSingle()
+  return data ?? undefined
 }
 
-export function upsertEmployee(
+export async function upsertEmployee(
   db: DB,
   e: { phone: string; email: string; priorityEmpId: string; name: string; active?: boolean },
-): void {
-  db.prepare(
-    `INSERT INTO employees (phone, email, priority_emp_id, name, active)
-     VALUES (?, ?, ?, ?, ?)
-     ON CONFLICT(phone) DO UPDATE SET
-       email = excluded.email, priority_emp_id = excluded.priority_emp_id,
-       name = excluded.name, active = excluded.active`,
-  ).run(e.phone, e.email, e.priorityEmpId, e.name, e.active === false ? 0 : 1)
+): Promise<void> {
+  const { error } = await db.from('employees').upsert({
+    phone: e.phone,
+    email: e.email,
+    priority_emp_id: e.priorityEmpId,
+    name: e.name,
+    active: e.active !== false,
+  })
+  if (error) throw new Error(`upsertEmployee failed: ${error.message}`)
 }

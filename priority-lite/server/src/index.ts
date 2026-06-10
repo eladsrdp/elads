@@ -9,7 +9,7 @@ import { env, isProd } from './env'
 import { createMockAdapter } from './priority/mock'
 import { createODataAdapter } from './priority/odata'
 
-const db = createDb(env.DATABASE_PATH)
+const db = createDb(env.SUPABASE_URL, env.SUPABASE_SERVICE_KEY)
 
 const adapter =
   env.PRIORITY_MODE === 'real'

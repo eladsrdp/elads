@@ -20,7 +20,7 @@ const file = process.argv[2] ?? './whitelist.json'
 const raw = JSON.parse(readFileSync(file, 'utf8'))
 const rows = z.array(rowSchema).parse(raw)
 
-const db = createDb(env.DATABASE_PATH)
+const db = createDb(env.SUPABASE_URL, env.SUPABASE_SERVICE_KEY)
 let count = 0
 for (const row of rows) {
   const phone = normalizePhone(row.phone)
@@ -28,8 +28,8 @@ for (const row of rows) {
     console.error(`⚠️ דילוג: טלפון לא תקין "${row.phone}" (${row.name})`)
     continue
   }
-  upsertEmployee(db, { ...row, phone })
+  await upsertEmployee(db, { ...row, phone })
   count++
   console.log(`✓ ${row.name} — ${phone} → עובד ${row.priorityEmpId}`)
 }
-console.log(`\nנטענו ${count} עובדים אל ${env.DATABASE_PATH}`)
+console.log(`\nנטענו ${count} עובדים ל-Supabase`)

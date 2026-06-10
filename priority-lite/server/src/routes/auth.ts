@@ -33,7 +33,7 @@ export function createAuthRoutes(ctx: AppContext) {
   app.post('/request-otp', async (c) => {
     const body = await c.req.json().catch(() => ({}))
     const phone = typeof body.phone === 'string' ? body.phone : ''
-    const result = requestOtp(ctx.db, phone)
+    const result = await requestOtp(ctx.db, phone)
     if (!result.ok) {
       return c.json({ error: HEBREW_ERRORS[result.error] }, result.error === 'rate_limited' ? 429 : 400)
     }
@@ -46,7 +46,7 @@ export function createAuthRoutes(ctx: AppContext) {
     const body = await c.req.json().catch(() => ({}))
     const phone = typeof body.phone === 'string' ? body.phone : ''
     const code = typeof body.code === 'string' ? body.code : ''
-    const result = verifyOtp(ctx.db, phone, code)
+    const result = await verifyOtp(ctx.db, phone, code)
     if (!result.ok) return c.json({ error: HEBREW_ERRORS[result.error] }, 400)
 
     const me: Me = {
