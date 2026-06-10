@@ -4,8 +4,7 @@
 ה-repo של הפרויקט עבר מ-`elad-stack/the_five_agents` ל-repo הרשמי של הפרויקט: `https://github.com/eladsrdp/elads` (origin). נקבעו שני נהלי עבודה קבועים שמתועדים ב-CLAUDE.md: ‏(1) הפעלת הסקיל `obsidian-vault-workflow` בכל סשן ובכל פקודה (ה-hook ב-`.claude/settings.json` הוגדר לירות בכל prompt), ‏(2) קומיט + push אוטומטיים ל-origin בסיום כל משימה, אחרי סריקת סודות/PII. בנוסף נוצרה מערכת תיעוד פר-קובץ ב-`vault/File Docs/` (כ-160 קבצי MD בארבעה אזורים: pl-/cf-/cc-/ws-).
 
 ## Open Questions
-- ה-repo נוצר כ-public; המשתמש בחר להפוך אותו ל-private לפני הדחיפה (יש בו PII: טלפון/אימייל ב-vault, תמונות פנים ב-yuval/outputs, וכתובת שרת פריוריטי ב-.env.example) — לוודא שהוא אכן private
-- הדחיפה מבוצעת עם credentials של המשתמש המקומי (elad-stack) אל repo בבעלות eladsrdp — אם אין הרשאת write תידרש הוספת collaborator או PAT
+- none
 
 ## Session Log
 
