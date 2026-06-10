@@ -106,6 +106,9 @@ export async function syncEntries(ids: string[]): Promise<SyncSummary> {
           startTime: e.startTime,
           endTime: e.endTime,
           note: e.note || undefined,
+          ordName: e.ordName || undefined,
+          ordLine: e.ordLine,
+          billable: e.billable,
         })),
       },
     })

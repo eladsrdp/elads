@@ -34,6 +34,9 @@ export const priorityMapping = {
     endTime: 'ETIME',
     note: 'PDES',
     ref: 'TRANS',
+    ordName: 'ORDNAME',  // מספר הזמנה — נדרש בחלק מהלקוחות (פיק, שחר וכו')
+    ordLine: 'OLINE',    // שורת ההזמנה
+    billable: 'FLAG',    // לחיוב: "Y" = כן, null = לא
   },
   /** TQUANT הוא שעות עשרוניות (1.75 = שעה ושלושת-רבעי) */
   hoursAsDecimal: true,

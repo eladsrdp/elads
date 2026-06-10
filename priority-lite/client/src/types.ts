@@ -23,6 +23,9 @@ export interface LocalTimeEntry {
   startTime?: string // HH:MM
   endTime?: string // HH:MM
   note?: string
+  ordName?: string  // מספר הזמנה — נדרש בפיק אנד פאק, שחר וכו'
+  ordLine?: number  // שורת ההזמנה
+  billable?: boolean // לחיוב
   source: 'timer' | 'manual'
   priorityRef?: string
   syncError?: string

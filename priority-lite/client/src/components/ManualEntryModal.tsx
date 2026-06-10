@@ -25,6 +25,10 @@ export function ManualEntryModal({ open, onClose, editing }: Props) {
   const [startTime, setStartTime] = useState('')
   const [endTime, setEndTime] = useState('')
   const [note, setNote] = useState('')
+  const [billable, setBillable] = useState(false)
+  const [ordName, setOrdName] = useState('')
+  const [ordLine, setOrdLine] = useState('')
+  const [extraOpen, setExtraOpen] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [error, setError] = useState('')
 
@@ -43,6 +47,10 @@ export function ManualEntryModal({ open, onClose, editing }: Props) {
       setStartTime(editing.startTime ?? '')
       setEndTime(editing.endTime ?? '')
       setNote(editing.note ?? '')
+      setBillable(editing.billable ?? false)
+      setOrdName(editing.ordName ?? '')
+      setOrdLine(editing.ordLine != null ? String(editing.ordLine) : '')
+      setExtraOpen(!!(editing.ordName || editing.ordLine != null))
     } else {
       setTask(null)
       setDate(todayISO())
@@ -51,6 +59,10 @@ export function ManualEntryModal({ open, onClose, editing }: Props) {
       setStartTime('')
       setEndTime('')
       setNote('')
+      setBillable(false)
+      setOrdName('')
+      setOrdLine('')
+      setExtraOpen(false)
     }
     setError('')
   }, [open, editing])
@@ -67,6 +79,11 @@ export function ManualEntryModal({ open, onClose, editing }: Props) {
       if (!durationMin) return setError('משך לא תקין — לדוגמה: 1:30 או 1.5')
     }
 
+    const parsedOrdLine = ordLine.trim() ? parseInt(ordLine, 10) : undefined
+    if (ordLine.trim() && (isNaN(parsedOrdLine!) || parsedOrdLine! < 1)) {
+      return setError('שורת הזמנה חייבת להיות מספר חיובי')
+    }
+
     const fields = {
       date,
       taskId: task.id,
@@ -76,6 +93,9 @@ export function ManualEntryModal({ open, onClose, editing }: Props) {
       startTime: mode === 'range' ? startTime : undefined,
       endTime: mode === 'range' ? endTime : undefined,
       note: note.trim() || undefined,
+      billable: billable || undefined,
+      ordName: ordName.trim() || undefined,
+      ordLine: parsedOrdLine,
     }
 
     if (editing) {
@@ -158,6 +178,66 @@ export function ManualEntryModal({ open, onClose, editing }: Props) {
             onChange={(e) => setNote(e.target.value)}
           />
         </Field>
+
+        {/* דגל לחיוב — תמיד גלוי */}
+        <button
+          type="button"
+          onClick={() => setBillable((v) => !v)}
+          className={`flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-sm transition ${
+            billable
+              ? 'border-emerald-600 bg-emerald-900/30 text-emerald-300'
+              : 'border-slate-700 bg-slate-800 text-slate-400'
+          }`}
+        >
+          <span>לחיוב</span>
+          <span
+            className={`h-5 w-9 rounded-full transition-colors ${billable ? 'bg-emerald-500' : 'bg-slate-600'} relative`}
+          >
+            <span
+              className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${
+                billable ? 'right-0.5' : 'left-0.5'
+              }`}
+            />
+          </span>
+        </button>
+
+        {/* פרטים נוספים — מספר הזמנה + שורה */}
+        <div>
+          <button
+            type="button"
+            onClick={() => setExtraOpen((v) => !v)}
+            className="flex w-full items-center justify-between text-sm text-slate-400"
+          >
+            <span>פרטים נוספים (הזמנה / שורה)</span>
+            <span className="transition-transform" style={{ transform: extraOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+              ▾
+            </span>
+          </button>
+
+          {extraOpen && (
+            <div className="mt-2 space-y-3">
+              <Field label="מספר הזמנה (ORDNAME)">
+                <TextInput
+                  dir="ltr"
+                  placeholder="SO24000058"
+                  value={ordName}
+                  maxLength={50}
+                  onChange={(e) => setOrdName(e.target.value)}
+                />
+              </Field>
+              <Field label="שורת הזמנה (OLINE)">
+                <TextInput
+                  type="number"
+                  dir="ltr"
+                  placeholder="1"
+                  value={ordLine}
+                  min={1}
+                  onChange={(e) => setOrdLine(e.target.value)}
+                />
+              </Field>
+            </div>
+          )}
+        </div>
 
         {error && <p className="text-sm text-rose-400">{error}</p>}
 

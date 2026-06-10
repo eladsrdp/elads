@@ -146,9 +146,11 @@ export function createODataAdapter(cfg: ODataConfig): PriorityAdapter {
         [tf.duration]: toHours(entry.durationMin),
       }
       if (entry.note) body[tf.note] = entry.note.slice(0, m.noteMaxLength)
-      // שעות התחלה/סיום — אופציונלי; אצל rdp בפועל מדווחים רק כמות
       if (entry.startTime) body[tf.startTime] = entry.startTime
       if (entry.endTime) body[tf.endTime] = entry.endTime
+      if (entry.ordName) body[tf.ordName] = entry.ordName
+      if (entry.ordLine != null) body[tf.ordLine] = entry.ordLine
+      if (entry.billable) body[tf.billable] = 'Y'
 
       const row = await request<Row>(m.entities.timeEntries, {
         method: 'POST',

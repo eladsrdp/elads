@@ -15,6 +15,9 @@ export interface NewTimeEntry {
   startTime?: string // HH:MM
   endTime?: string // HH:MM
   note?: string
+  ordName?: string  // ORDNAME — נדרש בחלק מהלקוחות
+  ordLine?: number  // OLINE
+  billable?: boolean // FLAG="Y"
 }
 
 export interface PriorityAdapter {

@@ -40,6 +40,9 @@ export interface TimeEntryInput {
   startTime?: string // HH:MM
   endTime?: string // HH:MM
   note?: string
+  ordName?: string  // מספר הזמנה (ORDNAME) — נדרש בחלק מהלקוחות
+  ordLine?: number  // שורת ההזמנה (OLINE) — ברירת מחדל: לא נשלח
+  billable?: boolean // לחיוב (FLAG="Y") — ברירת מחדל: לא מסומן
 }
 
 /** תוצאת סנכרון פר-פריט — כשל של פריט אחד לא מפיל את האחרים. */

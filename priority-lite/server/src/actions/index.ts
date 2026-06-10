@@ -49,6 +49,9 @@ export const reportTimeSchema = z.object({
   startTime: z.string().regex(timeRe).optional(),
   endTime: z.string().regex(timeRe).optional(),
   note: z.string().max(500).optional(),
+  ordName: z.string().max(50).optional(),
+  ordLine: z.number().int().min(1).optional(),
+  billable: z.boolean().optional(),
 })
 
 /** דיווח בודד — כשל הופך לתוצאת שגיאה פר-פריט במקום exception. */
@@ -66,6 +69,9 @@ export async function reportTime(
       startTime: input.startTime,
       endTime: input.endTime,
       note: input.note,
+      ordName: input.ordName,
+      ordLine: input.ordLine,
+      billable: input.billable,
     })
     return { clientId: input.clientId, ok: true, priorityRef }
   } catch (err) {
