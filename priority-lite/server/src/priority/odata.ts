@@ -109,9 +109,13 @@ export function createODataAdapter(cfg: ODataConfig): PriorityAdapter {
     }
   }
 
-  /** דקות → שעות עשרוניות לפריוריטי (90 → 1.5) */
+  /**
+   * דקות → שעות עשרוניות לפריוריטי, מעוגל כלפי מעלה לרבע שעה.
+   * 90 → 1.5 ; 80 (1:20) → 1.5 ; 65 → 1.25. שכבת הגנה אחרונה לפני פריוריטי.
+   */
   function toHours(durationMin: number): number {
-    return Math.round((durationMin / 60) * 100) / 100
+    const quarterMin = Math.ceil(durationMin / 15) * 15
+    return quarterMin / 60
   }
 
   const taskSelect = [f.id, f.name, f.projectId, f.projectName, f.status].join(',')

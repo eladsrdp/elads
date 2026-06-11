@@ -1,5 +1,14 @@
 // עוזרי משך זמן — תצוגה ופענוח קלט גמיש.
 
+/**
+ * עיגול כלפי מעלה לרבע שעה (15 דק') — כל דיווח מדווח ברזולוציית רבע שעה.
+ * 80 דק' (1:20) → 90 (1.5ש'); 1 דק' → 15; 60 → 60. מינימום רבע שעה.
+ */
+export function roundUpToQuarterHour(min: number): number {
+  if (min <= 0) return 0
+  return Math.ceil(min / 15) * 15
+}
+
 /** 205 → "3:25" */
 export function fmtMin(min: number): string {
   const h = Math.floor(min / 60)

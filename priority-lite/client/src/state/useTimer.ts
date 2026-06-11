@@ -5,6 +5,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import { db } from '../db/db'
 import { fmtClock, toISODate } from '../lib/date'
+import { roundUpToQuarterHour } from '../lib/duration'
 import type { LocalTimeEntry, TaskSummary } from '../types'
 
 const KEY = 'pl.timer'
@@ -95,7 +96,9 @@ export function useTimer() {
       taskId: current.taskId,
       taskName: current.taskName,
       projectName: current.projectName,
-      durationMin: Math.max(1, Math.round((stoppedAt - current.startedAt) / 60_000)),
+      durationMin: roundUpToQuarterHour(
+        Math.max(1, Math.round((stoppedAt - current.startedAt) / 60_000)),
+      ),
       startTime: fmtClock(current.startedAt),
       endTime: fmtClock(stoppedAt),
       note: current.note?.trim() || undefined,

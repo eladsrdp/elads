@@ -1,7 +1,7 @@
 // דיווח ידני — יצירה או עריכה של טיוטה. תומך בקלט משך ("1:30") או שעות התחלה/סיום.
 import { useEffect, useState } from 'react'
 import { todayISO } from '../lib/date'
-import { diffMinutes, fmtMin, parseDuration } from '../lib/duration'
+import { diffMinutes, fmtMin, parseDuration, roundUpToQuarterHour } from '../lib/duration'
 import { addDraft, updateDraft } from '../state/useEntries'
 import type { LocalTimeEntry, TaskSummary } from '../types'
 import type { ParsedEntry } from './AiEntryModal'
@@ -95,6 +95,9 @@ export function ManualEntryModal({ open, onClose, editing, initialValues }: Prop
     }
 
     if (!note.trim()) return setError('כתוב על מה עבדת')
+
+    // כל דיווח מעוגל כלפי מעלה לרבע שעה
+    durationMin = roundUpToQuarterHour(durationMin)
 
     const parsedOrdLine = ordLine.trim() ? parseInt(ordLine, 10) : undefined
     if (ordLine.trim() && (isNaN(parsedOrdLine!) || parsedOrdLine! < 1)) {

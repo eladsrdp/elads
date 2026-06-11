@@ -5,7 +5,7 @@ import { EntryRow } from '../components/EntryRow'
 import { ManualEntryModal } from '../components/ManualEntryModal'
 import { TimerCard } from '../components/TimerCard'
 import { todayISO } from '../lib/date'
-import { fmtMin } from '../lib/duration'
+import { fmtMin, roundUpToQuarterHour } from '../lib/duration'
 import { addDraft, deleteEntry, useDayEntries } from '../state/useEntries'
 import { useTimer } from '../state/useTimer'
 import type { LocalTimeEntry } from '../types'
@@ -41,7 +41,7 @@ export function Today() {
         taskId: e.task?.id ?? '',
         taskName: e.task?.name ?? '',
         projectName: e.task?.projectName ?? '',
-        durationMin: e.durationMin ?? 0,
+        durationMin: roundUpToQuarterHour(e.durationMin ?? 0),
         note: e.note,
         billable: e.billable,
         ordName: e.ordName,
