@@ -9,7 +9,8 @@
 - **Resend domain** — whitelist רשום עם @dpri.com אבל Resend (בלי דומיין מאומת) שולח רק ל-elads@rdpri.com. להדגמה מקומית עברנו ל-EMAIL_MODE=console (קוד בטרמינל). למיילים אמיתיים לכל העובדים — לאמת דומיין.
 - אין dedupe מול Priority בכשל רשת אחרי שליחה חלקית — סיכון דיווח כפול
 - אייקוני PWA הם SVG בלבד — כדאי PNG ‏192/512 (יובל)
-- **פיצ'ר AI parse** — שיוך פרויקט (taskId) עדיין מוחזר null בקלט גנרי; עובד טוב על משך/הערה/billable/תאריך. לשפר את ה-prompt או להציג למשתמש את הפרויקט שזוהה לאישור.
+- **פיצ'ר AI parse** — שיוך פרויקט (taskId) עובד כשהשם מצוין במפורש; בקלט גנרי עדיין null. לשפר prompt או להציג אישור למשתמש.
+- **הקלטה קולית** — Web Speech API לא אמין מחוץ ל-Chrome רשמי ובטלפונים. תוכנן מעבר ל-MediaRecorder→Gemini (audio), אך המשתמש דיווח שאצלו ההקלטה עובדת — נדחה עד שיתעורר צורך אמיתי.
 
 ## Session Log
 
@@ -54,3 +55,9 @@
 - **Decisions:** Local mode הוא ברירת המחדל להדגמה — אפס תלויות חיצוניות. **AI עבר מ-Anthropic ל-Gemini** כי למשתמש יש מפתח Gemini (לא Anthropic): ‏gemini-2.5-flash דרך REST ב-fetch (בלי SDK), `thinkingConfig.thinkingBudget=0` ‏(משימת חילוץ — לא צריך thinking, חוסך טוקנים; עם thinking דלוק ו-512 טוקנים קיבלנו תשובה ריקה). הוסר `@anthropic-ai/sdk`. גוף שגיאה מ-Gemini לא נחשף ללקוח (רק status). **EMAIL_MODE=console** להדגמה — Resend בלי דומיין מאומת שולח רק ל-elads@rdpri.com וה-whitelist הוא @dpri.com, אז OTP מודפס לטרמינל.
 - **Notes / Caveats:** באג בטסט ולא בקוד: ‏curl `-d` ב-bash על Windows משבש UTF-8 עברי → פענוח שגוי בטסט; עם `--data-binary @file` (UTF-8) ה-route עובד מושלם. הקליינט שולח UTF-8 דרך fetch אז תקין. אומת E2E: ‏login (console OTP) → parse "שעתיים וחצי על תמיכה היום, לחיוב" → {durationMin:150, note:"תמיכה", billable:true}. ‏taskId עדיין null בקלט גנרי. ‏GEMINI_API_KEY רק ב-.env (מוחרג). בעיה חוזרת בדיבוג: שרתי node מרובים נתקעים על 8787 בין קריאות Bash — לנקות עם `Get-Process node | Stop-Process` לפני בדיקה.
 - **Related:** [[repo-github-migration]], [[env-config]]
+
+### 2026-06-11 — אימות E2E בדפדפן + סינון פרויקטים לסטטוס טיוטא [shipped]
+- **What was done:** (1) אימות ויזואלי מלא בדפדפן (preview): login עם OTP מהטרמינל → בורר משימות טען 280 פרויקטים אמיתיים מפריוריטי + כפתור רענון → דיווח ידני נשמר → **פיצ'ר ה-AI אומת מקצה לקצה**: "עבדתי שעתיים ורבע על תחרות חדשנות RDP היום, לחיוב, הזמנה SO24000058 שורה 2" → Gemini החזיר {taskId:PR26000025 (זוהה!), durationMin:135, ordName:SO24000058, ordLine:2, billable:true, date:היום} → הטופס נפתח ממולא במלואו → טיוטה נשמרה. (2) **סינון סטטוס**: בורר הפרויקטים מציג רק `activeStatuses=['טיוטא']` (חדש ב-mapping.ts), מסנן ב-fetchAllTasks ב-odata.ts. אומת מול אמת: 309 פרויקטים = 280 טיוטא + 3 סופית + 26 מבוטלת; אחרי סינון רק 280 הטיוטא מוצגים.
+- **Decisions:** allow-list (`includes(status.trim())`) ולא deny-list — "רק טיוטא" כבקשת המשתמש, כך פרויקטים סגורים (סופית/מבוטלת) שאי אפשר לדווח עליהם לא מופיעים. הסטטוס המותר ב-mapping.ts כי זה ידע פריוריטי-ספציפי.
+- **Notes / Caveats:** הסינון משפיע גם על cache (TTL 5דק') — node --watch מאפס cache על reload. ה-UTF-8 דרך fetch בדפדפן עובד מצוין (להבדיל מ-bash curl). הקלטה קולית: המשתמש דיווח שעובדת אצלו, לא נדרש שינוי.
+- **Related:** [[repo-github-migration]]
