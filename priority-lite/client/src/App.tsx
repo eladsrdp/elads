@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { BottomNav, type Tab } from './components/BottomNav'
+import { RdpLogo } from './components/RdpLogo'
 import { usePendingEntries } from './state/useEntries'
 import { useAuth } from './state/useAuth'
 import { Entries } from './screens/Entries'
@@ -28,10 +29,27 @@ export default function App() {
 
   return (
     <div className="mx-auto flex h-full max-w-md flex-col">
-      <header className="flex items-center justify-between px-4 pb-2 pt-5">
-        <h1 className="text-xl font-bold text-slate-100">{TAB_TITLES[tab]}</h1>
-        <span className="text-sm text-slate-500">שלום, {me.name}</span>
+      {/* ===== כותרת מותגית RDP ===== */}
+      <header className="relative bg-gradient-to-l from-slate-900 to-slate-800 px-4 pt-4">
+        <div className="flex items-center justify-between">
+          <RdpLogo />
+          <span className="text-sm text-slate-300">שלום, {me.name}</span>
+        </div>
+        {/* גל דגל — אקסנט ויזואלי מהבאנר */}
+        <svg
+          className="pointer-events-none -mx-4 mt-3 block w-[calc(100%+2rem)]"
+          viewBox="0 0 400 18"
+          preserveAspectRatio="none"
+          aria-hidden
+        >
+          <path d="M0 9 Q100 1 200 9 T400 9 V18 H0 Z" fill="#1ca0e0" opacity="0.9" />
+          <path d="M0 12 Q100 4 200 12 T400 12 V18 H0 Z" fill="#ffffff" opacity="0.12" />
+        </svg>
       </header>
+
+      <div className="px-4 pb-1 pt-3">
+        <h1 className="text-xl text-slate-100">{TAB_TITLES[tab]}</h1>
+      </div>
 
       <main className="flex-1 overflow-y-auto px-4 pb-6">
         {tab === 'today' && <Today />}

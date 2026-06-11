@@ -1,5 +1,75 @@
 @import 'tailwindcss';
 
+/* ===== גופני RDP ===== */
+@font-face {
+  font-family: 'Secular One';
+  src: url('/fonts/SecularOne-Regular.ttf') format('truetype');
+  font-weight: 400 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Suez One';
+  src: url('/fonts/SuezOne-Regular.ttf') format('truetype');
+  font-weight: 400 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Miriam Libre';
+  src: url('/fonts/MiriamLibre-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Miriam Libre';
+  src: url('/fonts/MiriamLibre-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Horev';
+  src: url('/fonts/horevclm-heavy-webfont.woff') format('woff');
+  font-weight: 700 900;
+  font-display: swap;
+}
+
+/*
+  ===== רידיזיין מותג RDP =====
+  טריק Tailwind v4: דורסים את סולמות הצבע הקיימים (slate / emerald / violet)
+  בגווני המותג של RDP. כך כל ה-bg-slate-900 / text-emerald-400 וכו' שבקומפוננטות
+  מקבלים אוטומטית את צבעי RDP — בלי לגעת בעשרות קבצים. שומר על אותה בהירות
+  יחסית (כהה נשאר כהה, בהיר נשאר בהיר) כדי לא לשבור ניגודיות.
+*/
+@theme {
+  /* slate → ניטרלים בגוון נייבי של RDP (בסיס כהה-מותגי) */
+  --color-slate-50: #f3f8fd;
+  --color-slate-100: #e7f1fb;
+  --color-slate-200: #c9def2;
+  --color-slate-300: #a3c4e2;
+  --color-slate-400: #6f97c2;
+  --color-slate-500: #4f739b;
+  --color-slate-600: #33598a;
+  --color-slate-700: #244674;
+  --color-slate-800: #14315c;
+  --color-slate-900: #0c2347;
+  --color-slate-950: #071831;
+
+  /* emerald → כחול RDP (כפתורים ראשיים, סכומים, הדגשות) */
+  --color-emerald-300: #5cc6f5;
+  --color-emerald-400: #36b0ef;
+  --color-emerald-500: #1ca0e0;
+  --color-emerald-600: #1684c4;
+  --color-emerald-700: #136ca3;
+  --color-emerald-900: #0b3a5e;
+
+  /* violet → נייבי מלכותי (כפתור ה-AI) — נשאר מובחן מהכחול הראשי */
+  --color-violet-500: #2f5bd0;
+  --color-violet-600: #2848b0;
+
+  /* פונטים */
+  --font-sans: 'Miriam Libre', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-display: 'Secular One', 'Suez One', sans-serif;
+}
+
 :root {
   color-scheme: dark;
 }
@@ -12,10 +82,20 @@ body,
 
 body {
   margin: 0;
-  font-family: 'Heebo', 'Segoe UI', system-ui, -apple-system, sans-serif;
-  background-color: #0f172a;
-  color: #e2e8f0;
+  font-family: var(--font-sans);
+  background-color: #0c2347;
+  color: #e7f1fb;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* כותרות ומספרים גדולים — Secular One */
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0.01em;
 }
 
 /* מספרים תמיד נקראים משמאל לימין, גם בתוך טקסט RTL */

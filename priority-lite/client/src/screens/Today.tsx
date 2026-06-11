@@ -56,7 +56,7 @@ export function Today() {
 
       <div className="rounded-3xl bg-slate-800/40 p-4 text-center ring-1 ring-slate-700/50">
         <p className="text-xs text-slate-500">סה״כ היום{running ? ' (כולל טיימר רץ)' : ''}</p>
-        <p className="ltr-nums text-4xl font-bold tabular-nums text-emerald-400">{fmtMin(totalMin)}</p>
+        <p className="font-display ltr-nums text-4xl tabular-nums text-emerald-400">{fmtMin(totalMin)}</p>
       </div>
 
       {entries && entries.length > 0 && (
