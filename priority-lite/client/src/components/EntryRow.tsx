@@ -28,6 +28,7 @@ export function EntryRow({ entry, showDate, onEdit, onDelete }: Props) {
           <p className="truncate font-medium text-slate-100">{entry.taskName}</p>
           <p className="truncate text-xs text-slate-500">
             {entry.projectName}
+            {entry.siteName ? ` · 📍${entry.siteName}` : ''}
             {showDate ? ` · ${fmtDateHe(entry.date)}` : ''}
             {entry.startTime && entry.endTime ? (
               <span className="ltr-nums"> · {entry.startTime}–{entry.endTime}</span>

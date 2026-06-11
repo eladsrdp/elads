@@ -52,6 +52,7 @@ export const reportTimeSchema = z.object({
   ordName: z.string().max(50).optional(),
   ordLine: z.number().int().min(1).optional(),
   billable: z.boolean().optional(),
+  dcode: z.string().max(20).optional(),
 })
 
 /** דיווח בודד — כשל הופך לתוצאת שגיאה פר-פריט במקום exception. */
@@ -72,6 +73,7 @@ export async function reportTime(
       ordName: input.ordName,
       ordLine: input.ordLine,
       billable: input.billable,
+      dcode: input.dcode,
     })
     return { clientId: input.clientId, ok: true, priorityRef }
   } catch (err) {
@@ -81,6 +83,17 @@ export async function reportTime(
       error: err instanceof Error ? err.message : 'שגיאה לא ידועה',
     }
   }
+}
+
+export const listSitesSchema = z.object({ customerId: z.string().min(1) })
+
+/** אתרי הלקוח (DCODE) — לבורר אתרים בקליינט. */
+export async function listSites(
+  adapter: PriorityAdapter,
+  _me: Me,
+  input: z.infer<typeof listSitesSchema>,
+) {
+  return adapter.listSites(input.customerId)
 }
 
 export const getTimeEntriesSchema = z.object({

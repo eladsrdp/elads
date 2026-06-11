@@ -6,6 +6,8 @@ import {
   createTask,
   createTaskSchema,
   getTask,
+  listSites,
+  listSitesSchema,
   searchTasks,
   searchTasksSchema,
 } from '../actions'
@@ -27,6 +29,15 @@ export function createTaskRoutes(ctx: AppContext) {
     const detail = await getTask(ctx.adapter, c.get('me'), { id: c.req.param('id') })
     if (!detail) return c.json({ error: 'משימה לא נמצאה' }, 404)
     return c.json(detail)
+  })
+
+  // אתרי לקוח (DCODE) לפי מזהה פרויקט — מאתרים את הלקוח (CUSTNAME) ושולפים את אתריו
+  app.get('/:id/sites', async (c) => {
+    const detail = await getTask(ctx.adapter, c.get('me'), { id: c.req.param('id') })
+    if (!detail) return c.json({ error: 'משימה לא נמצאה' }, 404)
+    const parsed = listSitesSchema.safeParse({ customerId: detail.projectId })
+    if (!parsed.success) return c.json([]) // לפרויקט בלי לקוח — אין אתרים
+    return c.json(await listSites(ctx.adapter, c.get('me'), parsed.data))
   })
 
   app.post('/', async (c) => {

@@ -1,9 +1,10 @@
 // דיווח ידני — יצירה או עריכה של טיוטה. תומך בקלט משך ("1:30") או שעות התחלה/סיום.
 import { useEffect, useState } from 'react'
+import { api } from '../lib/api'
 import { todayISO } from '../lib/date'
 import { diffMinutes, fmtMin, parseDuration, roundUpToQuarterHour } from '../lib/duration'
 import { addDraft, updateDraft } from '../state/useEntries'
-import type { LocalTimeEntry, TaskSummary } from '../types'
+import type { LocalTimeEntry, ProjectSite, TaskSummary } from '../types'
 import type { ParsedEntry } from './AiEntryModal'
 import { Field, PrimaryButton, TextInput } from './forms'
 import { Modal } from './Modal'
@@ -34,6 +35,9 @@ export function ManualEntryModal({ open, onClose, editing, initialValues }: Prop
   const [extraOpen, setExtraOpen] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [error, setError] = useState('')
+  const [sites, setSites] = useState<ProjectSite[]>([])
+  const [dcode, setDcode] = useState('')
+  const [sitesLoading, setSitesLoading] = useState(false)
 
   useEffect(() => {
     if (!open) return
@@ -54,6 +58,7 @@ export function ManualEntryModal({ open, onClose, editing, initialValues }: Prop
       setOrdName(editing.ordName ?? '')
       setOrdLine(editing.ordLine != null ? String(editing.ordLine) : '')
       setExtraOpen(!!(editing.ordName || editing.ordLine != null))
+      setDcode(editing.dcode ?? '')
     } else if (initialValues) {
       setTask(initialValues.task ?? null)
       setDate(initialValues.date ?? todayISO())
@@ -66,6 +71,7 @@ export function ManualEntryModal({ open, onClose, editing, initialValues }: Prop
       setOrdName(initialValues.ordName ?? '')
       setOrdLine(initialValues.ordLine != null ? String(initialValues.ordLine) : '')
       setExtraOpen(!!(initialValues.ordName || initialValues.ordLine != null))
+      setDcode('')
     } else {
       setTask(null)
       setDate(todayISO())
@@ -78,9 +84,27 @@ export function ManualEntryModal({ open, onClose, editing, initialValues }: Prop
       setOrdName('')
       setOrdLine('')
       setExtraOpen(false)
+      setDcode('')
     }
     setError('')
   }, [open, editing, initialValues])
+
+  // טעינת אתרי הלקוח (DCODE) לפרויקט הנבחר — מציג בורר רק אם יש אתרים
+  useEffect(() => {
+    if (!open || !task?.id) {
+      setSites([])
+      return
+    }
+    let cancelled = false
+    setSitesLoading(true)
+    api<ProjectSite[]>(`/api/tasks/${encodeURIComponent(task.id)}/sites`)
+      .then((s) => !cancelled && setSites(s))
+      .catch(() => !cancelled && setSites([]))
+      .finally(() => !cancelled && setSitesLoading(false))
+    return () => {
+      cancelled = true
+    }
+  }, [open, task?.id])
 
   const save = async () => {
     if (!task) return setError('בחר פרויקט')
@@ -95,6 +119,8 @@ export function ManualEntryModal({ open, onClose, editing, initialValues }: Prop
     }
 
     if (!note.trim()) return setError('כתוב על מה עבדת')
+
+    if (sites.length > 0 && !dcode) return setError('בחר אתר')
 
     // כל דיווח מעוגל כלפי מעלה לרבע שעה
     durationMin = roundUpToQuarterHour(durationMin)
@@ -116,6 +142,8 @@ export function ManualEntryModal({ open, onClose, editing, initialValues }: Prop
       billable: billable || undefined,
       ordName: ordName.trim() || undefined,
       ordLine: parsedOrdLine,
+      dcode: dcode || undefined,
+      siteName: sites.find((s) => s.code === dcode)?.name || undefined,
     }
 
     if (editing) {
@@ -150,6 +178,28 @@ export function ManualEntryModal({ open, onClose, editing, initialValues }: Prop
             )}
           </button>
         </Field>
+
+        {/* בורר אתר (DCODE) — מופיע רק כשללקוח יש אתרים (למשל פיק אנד פאק) */}
+        {task && (sitesLoading || sites.length > 0) && (
+          <Field label="אתר *">
+            {sitesLoading ? (
+              <p className="px-1 py-2 text-sm text-slate-500">טוען אתרים…</p>
+            ) : (
+              <select
+                value={dcode}
+                onChange={(e) => setDcode(e.target.value)}
+                className="w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-slate-100 outline-none focus:border-emerald-500"
+              >
+                <option value="">בחר אתר…</option>
+                {sites.map((s) => (
+                  <option key={s.code} value={s.code}>
+                    {s.name} ({s.code})
+                  </option>
+                ))}
+              </select>
+            )}
+          </Field>
+        )}
 
         <Field label="תאריך">
           <TextInput type="date" value={date} max={todayISO()} onChange={(e) => setDate(e.target.value)} />

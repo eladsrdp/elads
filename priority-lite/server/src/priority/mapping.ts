@@ -18,7 +18,13 @@ export const priorityMapping = {
      * המבנה המאומת שעובד (מתועד מתרחיש Make של המשתמש + נבדק חי).
      */
     timeEntries: 'ZRDP_TRANSORDER_q',
+    /** לקוחות — שורש לרשימת האתרים (CUSTDESTS_SUBFORM) */
+    customers: 'CUSTOMERS',
   },
+  /** תת-טופס אתרי הלקוח (אתרים/יעדים) — CUSTOMERS(CUSTNAME)/<subform> */
+  customerSitesSubform: 'CUSTDESTS_SUBFORM',
+  /** שדות אתר ב-CUSTDESTS: CODE = הערך שנשלח כ-DCODE, CODEDES = תאור */
+  siteFields: { code: 'CODE', name: 'CODEDES' },
   /**
    * מק"ט השירות (PARTNAME) שכל שורת דיווח שעות חייבת לשאת.
    * ב-rdp כל הדיווחים משתמשים ב"ש'ע" (שעת עבודה). שדה חובה — בלעדיו: "חסר מק"ט".
@@ -42,6 +48,7 @@ export const priorityMapping = {
     endTime: 'ETIME',
     note: 'PDES',
     partName: 'PARTNAME',  // מק"ט השירות — שדה חובה בשורת דיווח
+    dcode: 'DCODE',        // אתר/יעד — נדרש בחלק מהלקוחות
     ref: 'TRANS',
     ordName: 'ORDNAME',  // מספר הזמנה — נדרש בחלק מהלקוחות (פיק, שחר וכו')
     ordLine: 'OLINE',    // שורת ההזמנה

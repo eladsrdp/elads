@@ -2,6 +2,7 @@
 // שני מימושים: mock (פיתוח) ו-odata (אמיתי).
 import type {
   CreateTaskInput,
+  ProjectSite,
   RemoteTimeEntry,
   TaskDetail,
   TaskSummary,
@@ -18,6 +19,7 @@ export interface NewTimeEntry {
   ordName?: string  // ORDNAME — נדרש בחלק מהלקוחות
   ordLine?: number  // OLINE
   billable?: boolean // FLAG="Y"
+  dcode?: string    // DCODE — אתר/יעד, נדרש בחלק מהלקוחות
 }
 
 export interface PriorityAdapter {
@@ -26,4 +28,6 @@ export interface PriorityAdapter {
   createTask(input: CreateTaskInput): Promise<TaskSummary>
   createTimeEntry(entry: NewTimeEntry): Promise<{ priorityRef: string }>
   getTimeEntries(priorityEmpId: string, from: string, to: string): Promise<RemoteTimeEntry[]>
+  /** אתרי הלקוח (DCODE) לפי מספר לקוח (CUSTNAME = TaskSummary.projectId) */
+  listSites(customerId: string): Promise<ProjectSite[]>
 }

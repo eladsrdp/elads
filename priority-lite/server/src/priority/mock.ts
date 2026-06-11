@@ -121,5 +121,18 @@ export function createMockAdapter(opts: { failRate?: number } = {}): PriorityAda
         .filter((e) => e.empId === priorityEmpId && e.date >= from && e.date <= to)
         .map(({ empId: _e, ...rest }) => rest)
     },
+
+    async listSites(customerId) {
+      await simulate('שליפת אתרים')
+      // לקוח "P-200" (לוגיסטיקה) מדמה לקוח רב-אתרים, השאר בלי אתרים
+      if (customerId === 'P-200') {
+        return [
+          { code: '01', name: 'מחסן מרכזי' },
+          { code: '02', name: 'סניף צפון' },
+          { code: '03', name: 'סניף דרום' },
+        ]
+      }
+      return []
+    },
   }
 }

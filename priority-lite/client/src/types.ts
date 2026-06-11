@@ -2,6 +2,7 @@
 export type {
   CreateTaskInput,
   Me,
+  ProjectSite,
   RemoteTimeEntry,
   SyncItemResult,
   TaskDetail,
@@ -26,6 +27,8 @@ export interface LocalTimeEntry {
   ordName?: string  // מספר הזמנה — נדרש בפיק אנד פאק, שחר וכו'
   ordLine?: number  // שורת ההזמנה
   billable?: boolean // לחיוב
+  dcode?: string    // אתר/יעד (DCODE) — נדרש בחלק מהלקוחות
+  siteName?: string // תאור האתר — לתצוגה בלבד
   source: 'timer' | 'manual'
   priorityRef?: string
   syncError?: string

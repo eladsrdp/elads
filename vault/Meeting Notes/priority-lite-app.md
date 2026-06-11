@@ -109,3 +109,9 @@
 - **Decisions:** ה-JSON של המשתמש הוא ה-authority. אומת חי: POST גולמי ל-PR23000014 → 201 + נמחק; ואז **מסלול אפליקציה מלא** (fetch ל-/api/time-entries/sync) → `ok:true, priorityRef:82385` → נמחק מפריוריטי. סוונג נקי: 0 שורות elads ב-2026-06-11. שגיאה נקייה אומתה על PR26000025 ("נא להוריד דגל לחיוב").
 - **Notes / Caveats:** כל בדיקות הכתיבה נוקו (DELETE על TRANS). PR26000025 דוחה בגלל כלל חיוב פר-פרויקט — לא באג. node --watch טוען מחדש קוד (לא .env).
 - **Related:** [[repo-github-migration]]
+
+### 2026-06-11 — בורר אתרים (DCODE) ללקוחות רב-אתריים [shipped]
+- **What was done:** הוסף שדה "אתר" (DCODE) לדיווחים — נדרש בלקוחות כמו פיק אנד פאק. מקור האתרים: `CUSTOMERS(CUSTNAME)/CUSTDESTS_SUBFORM` (CODE+CODEDES); ‏TaskSummary.projectId כבר = CUSTNAME. נוסף endpoint `GET /api/tasks/:id/sites` (מאתר לקוח דרך getTask ואז שולף אתרים), `adapter.listSites(customerId)`, ‏`tf.dcode='DCODE'`, ושליחת DCODE ב-createTimeEntry. בקליינט: בורר אתר (select) ב-ManualEntryModal שמופיע רק אם לפרויקט יש אתרים, חובה לבחור כשקיימים; ‏dcode+siteName נשמרים בטיוטה ונשלחים ב-sync; הוצג גם ב-EntryRow (📍). mock: לקוח P-200 מדמה רב-אתרים.
+- **Decisions:** מקור האתרים = אתרי הלקוח בפריוריטי (לא נגזר מדיווחים קודמים) — בחירת המשתמש "בורר מפריוריטי". ה-endpoint לפי taskId (לא customer) כי מצב עריכה משחזר task בלי projectId. אומת E2E מלא: פיק אנד פאק החזיר 16 אתרים, נבחר ניקלס(03), נשמרה טיוטה עם dcode='03'+siteName='ניקלס', סונכרן לפריוריטי (priorityRef 82388, DCODE=03 אומת), ונמחק. סוונג: 0 שורות.
+- **Notes / Caveats:** טיוטות טיימר/AI נוצרות בלי אתר — המשתמש עורך אותן (אותו בורר במצב עריכה) לפני שליחה. אין חסם-שליחה ייעודי לאתר חסר (פריוריטי ידחה עם שגיאה נקייה אם חסר). באג עדין בבדיקה: placeholder "תיאור קצר" משותף לטיימר ולמודאל.
+- **Related:** [[repo-github-migration]]

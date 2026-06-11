@@ -200,12 +200,27 @@ export function createODataAdapter(cfg: ODataConfig): PriorityAdapter {
       if (entry.ordName) body[tf.ordName] = entry.ordName
       if (entry.ordLine != null) body[tf.ordLine] = entry.ordLine
       if (entry.billable) body[tf.billable] = 'Y'
+      if (entry.dcode) body[tf.dcode] = entry.dcode
 
       const row = await request<Row>(m.entities.timeEntries, {
         method: 'POST',
         body: JSON.stringify(body),
       })
       return { priorityRef: String(row[tf.ref] ?? '') }
+    },
+
+    async listSites(customerId) {
+      const cust = escapeOData(customerId)
+      const sel = `${m.siteFields.code},${m.siteFields.name}`
+      const data = await request<{ value: Row[] }>(
+        `${m.entities.customers}('${cust}')/${m.customerSitesSubform}?$select=${sel}`,
+      )
+      return data.value
+        .map((row) => ({
+          code: String(row[m.siteFields.code] ?? '').trim(),
+          name: String(row[m.siteFields.name] ?? '').trim(),
+        }))
+        .filter((s) => s.code)
     },
 
     async getTimeEntries(priorityEmpId, from, to) {
