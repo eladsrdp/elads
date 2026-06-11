@@ -13,18 +13,12 @@ export const priorityMapping = {
   entities: {
     /** "משימות" באפליקציה = פרויקטים (תיקי פרויקט פעילים) */
     tasks: 'ZRDP_DOCUMENTS_p',
-    /** דיווחי שעות — קריאה: collection שטוח לשליפה לפי עובד/תאריך */
-    timeEntries: 'ZRDP_TRANSORDER_q',
     /**
-     * דיווחי שעות — כתיבה: תת-טופס מוכל (containment) של מסמך הפרויקט.
-     * אי אפשר ליצור ב-collection השטוח — יוצרים בנתיב הניווט:
-     *   POST ZRDP_DOCUMENTS_p(DOCNO='PR…',TYPE='p')/ZRDP_TRANSORDER_qp_SUBFORM
-     * ה-DOCNO יורש מההורה, ולכן לא נשלח בגוף.
+     * דיווחי שעות (קריאה ו-POST). יוצרים ב-collection השטוח עם DOCNO בגוף —
+     * המבנה המאומת שעובד (מתועד מתרחיש Make של המשתמש + נבדק חי).
      */
-    timeEntrySubform: 'ZRDP_TRANSORDER_qp_SUBFORM',
+    timeEntries: 'ZRDP_TRANSORDER_q',
   },
-  /** TYPE במפתח המורכב של ZRDP_DOCUMENTS_p (DOCNO+TYPE) — קבוע 'p' לפרויקטים */
-  projectDocType: 'p',
   /**
    * מק"ט השירות (PARTNAME) שכל שורת דיווח שעות חייבת לשאת.
    * ב-rdp כל הדיווחים משתמשים ב"ש'ע" (שעת עבודה). שדה חובה — בלעדיו: "חסר מק"ט".

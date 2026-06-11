@@ -34,24 +34,37 @@ function escapeOData(value: string): string {
 
 /**
  * מחלץ הודעת שגיאה נקייה מתשובת פריוריטי — בלי XML/JSON גולמי.
- * פריוריטי מחזיר שגיאות גם כ-JSON ‏({error:{message}}) וגם כ-XML ‏(<message>…</message>).
+ * פריוריטי מחזיר שגיאות בכמה פורמטים:
+ *   1. שגיאות טופס: { FORM: { InterfaceErrors: { text: "..."|[...] } } }  ← הנפוץ ב-POST
+ *   2. OData תקני: { error: { message: "..."|{value} } }
+ *   3. XML: <message>…</message>
  * מחזיר רק את טקסט ההודעה (לרוב בעברית), בלי תגיות וקוד ישות פנימי.
  */
 function extractErrorMessage(raw: string): string {
   const text = raw.trim()
-  // JSON: { "error": { "message": "..." | { "value": "..." } } }
   try {
     const parsed = JSON.parse(text) as {
+      FORM?: { InterfaceErrors?: { text?: unknown } }
       error?: { message?: string | { value?: string } }
     }
+    // פורמט שגיאת טופס של פריוריטי — ההודעה ב-FORM.InterfaceErrors.text
+    const ieText = parsed.FORM?.InterfaceErrors?.text
+    if (typeof ieText === 'string' && ieText.trim()) return ieText.trim()
+    if (Array.isArray(ieText)) {
+      const msgs = ieText
+        .map((x) => (typeof x === 'string' ? x : (x as { text?: string })?.text))
+        .filter((s): s is string => !!s && s.trim().length > 0)
+      if (msgs.length) return msgs.join('; ')
+    }
+    // OData תקני
     const msg = parsed.error?.message
     if (typeof msg === 'string' && msg.trim()) return msg.trim()
     if (msg && typeof msg === 'object' && msg.value?.trim()) return msg.value.trim()
   } catch {
     // לא JSON — ננסה XML
   }
-  // XML: <message ...>TEXT</message>  (אפשר כמה — לוקחים את הראשון הלא-ריק)
-  for (const match of text.matchAll(/<message[^>]*>([\s\S]*?)<\/message>/gi)) {
+  // XML: <message>/<text> ...TEXT...
+  for (const match of text.matchAll(/<(?:message|text)[^>]*>([\s\S]*?)<\/(?:message|text)>/gi)) {
     const inner = match[1]?.replace(/<[^>]+>/g, '').trim()
     if (inner) return inner
   }
@@ -171,13 +184,15 @@ export function createODataAdapter(cfg: ODataConfig): PriorityAdapter {
     },
 
     async createTimeEntry(entry: NewTimeEntry) {
-      // ה-DOCNO לא נשלח בגוף — הוא יורש מההורה דרך נתיב הניווט.
-      // PARTNAME (מק"ט שירות) הוא שדה חובה בשורת דיווח שעות.
+      // POST ל-collection השטוח עם DOCNO בגוף — המבנה שמאומת שעובד מול פריוריטי.
+      // שדות חובה: DOCNO (פרויקט), PARTNAME (מק"ט שירות 'ש'ע'), CURDATE, USERLOGIN, TQUANT.
+      // CURDATE כתאריך בלבד (YYYY-MM-DD). ה-PDES (הערה) מתקבל יחד ב-POST בודד.
       const body: Row = {
         [tf.employeeId]: entry.priorityEmpId,
-        [tf.date]: `${entry.date}T00:00:00+02:00`,
-        [tf.duration]: toHours(entry.durationMin),
+        [tf.date]: entry.date,
+        [tf.taskId]: entry.taskId,
         [tf.partName]: m.serviceItem,
+        [tf.duration]: toHours(entry.durationMin),
       }
       if (entry.note) body[tf.note] = entry.note.slice(0, m.noteMaxLength)
       if (entry.startTime) body[tf.startTime] = entry.startTime
@@ -186,10 +201,7 @@ export function createODataAdapter(cfg: ODataConfig): PriorityAdapter {
       if (entry.ordLine != null) body[tf.ordLine] = entry.ordLine
       if (entry.billable) body[tf.billable] = 'Y'
 
-      // POST לתת-הטופס של מסמך הפרויקט (containment navigation)
-      const parentKey = `${f.id}='${escapeOData(entry.taskId)}',TYPE='${m.projectDocType}'`
-      const path = `${m.entities.tasks}(${parentKey})/${m.entities.timeEntrySubform}`
-      const row = await request<Row>(path, {
+      const row = await request<Row>(m.entities.timeEntries, {
         method: 'POST',
         body: JSON.stringify(body),
       })
