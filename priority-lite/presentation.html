@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Priority Lite — מצגת</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;900&family=Secular+One&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --navy-950: #071831;
+    --navy-900: #0c2347;
+    --navy-800: #14315c;
+    --navy-700: #244674;
+    --blue-300: #5cc6f5;
+    --blue-400: #36b0ef;
+    --blue-500: #1ca0e0;
+    --royal: #2f5bd0;
+    --ink: #e7f1fb;
+    --muted: #a3c4e2;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Rubik', 'Segoe UI', system-ui, sans-serif;
+    background: radial-gradient(1200px 800px at 80% -10%, #16386b 0%, var(--navy-900) 45%, var(--navy-950) 100%);
+    color: var(--ink);
+    overflow: hidden;
+  }
+  .display { font-family: 'Secular One', 'Rubik', sans-serif; letter-spacing: .01em; }
+
+  /* ---- deck ---- */
+  .slide {
+    position: fixed; inset: 0;
+    display: none;
+    flex-direction: column; justify-content: center;
+    padding: 7vh 9vw;
+    opacity: 0; transition: opacity .35s ease;
+  }
+  .slide.active { display: flex; opacity: 1; }
+
+  /* ---- brand badge ---- */
+  .badge {
+    display: inline-flex; flex-direction: column; align-items: center; gap: 4px;
+    border: 3px solid var(--blue-400); border-radius: 14px;
+    padding: 10px 18px; background: rgba(28,160,224,.08);
+  }
+  .badge .rdp { font-family: 'Secular One', sans-serif; font-size: 30px; color: var(--blue-300); line-height: 1; letter-spacing: .06em; }
+  .badge .star { color: var(--blue-400); font-size: 18px; }
+  .badge .slogan { font-size: 11px; color: var(--muted); }
+
+  .topbar { position: fixed; top: 4vh; inset-inline: 9vw; display: flex; align-items: center; justify-content: space-between; }
+  .topbar .where { color: var(--muted); font-size: 14px; }
+
+  h1 { font-size: clamp(34px, 6vw, 76px); line-height: 1.05; overflow-wrap: anywhere; }
+  h2 { font-size: clamp(26px, 4.2vw, 52px); line-height: 1.1; margin-bottom: 28px; overflow-wrap: anywhere; }
+  .lead { font-size: clamp(18px, 2.2vw, 28px); color: var(--muted); margin-top: 18px; max-width: 22ch; }
+  .accent { color: var(--blue-400); }
+
+  /* cover */
+  .cover-logo { margin-bottom: 36px; }
+  .cover h1 .sub { display:block; font-family:'Rubik'; font-weight:500; font-size: clamp(18px,2.4vw,30px); color: var(--blue-300); margin-top: 14px; }
+  .pill { display:inline-block; margin-top: 34px; padding: 8px 16px; border:1px solid var(--navy-700); border-radius: 999px; color: var(--muted); font-size: 14px; }
+
+  /* feature grid */
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; margin-top: 10px; }
+  .card {
+    background: rgba(20,49,92,.5); border: 1px solid var(--navy-700); border-radius: 18px;
+    padding: 22px 24px; display: flex; gap: 16px; align-items: flex-start;
+  }
+  .card .ico { font-size: 30px; flex: none; }
+  .card h3 { font-size: 21px; margin-bottom: 4px; }
+  .card p { color: var(--muted); font-size: 15px; line-height: 1.4; }
+
+  /* flow */
+  .flow { display: flex; align-items: stretch; gap: 14px; margin-top: 18px; flex-wrap: wrap; }
+  .step { flex: 1; min-width: 180px; background: rgba(20,49,92,.5); border:1px solid var(--navy-700); border-radius: 16px; padding: 20px; }
+  .step .n { width: 34px; height: 34px; border-radius: 999px; background: var(--blue-500); color: var(--navy-950); font-weight: 700; display:flex; align-items:center; justify-content:center; margin-bottom: 12px; }
+  .step h3 { font-size: 19px; margin-bottom: 6px; }
+  .step p { color: var(--muted); font-size: 14px; line-height: 1.45; }
+  .arrow { align-self: center; color: var(--blue-400); font-size: 26px; }
+
+  /* status */
+  .cols { display:grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 10px; }
+  .cols h3 { font-size: 22px; margin-bottom: 14px; }
+  ul.checks { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+  ul.checks li { font-size: 18px; color: var(--ink); display:flex; gap: 10px; align-items: flex-start; }
+  ul.checks li .mk { flex: none; }
+  .done .mk { color: #34d399; }
+  .next .mk { color: var(--blue-400); }
+  .next li { color: var(--muted); }
+
+  /* tech chips */
+  .chips { display:flex; flex-wrap: wrap; gap: 12px; margin-top: 22px; }
+  .chip { border:1px solid var(--navy-700); background: rgba(20,49,92,.45); border-radius: 12px; padding: 12px 18px; font-size: 16px; }
+  .chip b { color: var(--blue-300); }
+
+  /* footer nav */
+  .nav { position: fixed; bottom: 3.4vh; inset-inline: 9vw; display:flex; align-items:center; justify-content: space-between; }
+  .dots { display:flex; gap: 9px; }
+  .dot { width: 9px; height: 9px; border-radius: 999px; background: var(--navy-700); transition: all .2s; cursor: pointer; }
+  .dot.on { background: var(--blue-400); width: 26px; }
+  .count { color: var(--muted); font-size: 13px; direction: ltr; }
+  .hint { color: #5a7aa6; font-size: 12px; }
+  .flag { color: var(--blue-400); font-weight: 700; }
+
+  /* צר / פורטרט — עמודה אחת, פחות ריווח */
+  @media (max-width: 820px) {
+    .slide { padding: 9vh 7vw; }
+    .grid, .cols { grid-template-columns: 1fr; gap: 12px; }
+    .flow { flex-direction: column; }
+    .arrow { transform: rotate(-90deg); align-self: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="display" style="font-size:20px;color:var(--blue-300)">Priority Lite</span>
+  <span class="where" id="where"></span>
+</div>
+
+<!-- 1 — Cover -->
+<section class="slide active cover" data-where="">
+  <div class="cover-logo">
+    <span class="badge"><span class="rdp">RDP</span><span class="star">✡</span><span class="slogan">עם ישראל חי!</span></span>
+  </div>
+  <h1 class="display">Priority Lite<span class="sub">דיווחי שעות לפריוריטי — בשניות, מכל מכשיר</span></h1>
+  <span class="pill">RDP · ממשק חכם מעל Priority ERP</span>
+</section>
+
+<!-- 2 — Problem -->
+<section class="slide" data-where="הבעיה">
+  <h2>דיווח שעות בפריוריטי <span class="accent">מסורבל</span></h2>
+  <div class="grid">
+    <div class="card"><span class="ico">🐌</span><div><h3>הרבה מסכים וקליקים</h3><p>לפתוח פרויקט, למצוא את התת-טופס, למלא שדות — לכל שעה.</p></div></div>
+    <div class="card"><span class="ico">📵</span><div><h3>לא נוח מהנייד</h3><p>הממשק המלא של פריוריטי כבד לטלפון, בדרכים או בפגישה.</p></div></div>
+    <div class="card"><span class="ico">🧠</span><div><h3>צריך לזכור פרטים</h3><p>מק"ט, סטטוס פרויקט, שדה הערה — קל לטעות או לדלג.</p></div></div>
+    <div class="card"><span class="ico">⏳</span><div><h3>אז דוחים את זה</h3><p>שעות נצברות, נשכחות, ומדווחות באיחור או חלקית.</p></div></div>
+  </div>
+</section>
+
+<!-- 3 — Solution -->
+<section class="slide" data-where="הפתרון">
+  <h2>אפליקציית כיס <span class="accent">בעברית</span></h2>
+  <p class="lead" style="max-width:34ch">מדווחים תוך שניות — והדיווח נכנס ישירות לפריוריטי. עובד מהדפדפן ומהטלפון, כמו אפליקציה מותקנת.</p>
+  <div class="chips" style="margin-top:34px">
+    <span class="chip">⚡ מהיר</span>
+    <span class="chip">📱 מובייל-first</span>
+    <span class="chip">🇮🇱 עברית RTL</span>
+    <span class="chip">🔌 מחובר ל-Priority</span>
+    <span class="chip">📶 עובד גם offline</span>
+  </div>
+</section>
+
+<!-- 4 — Features -->
+<section class="slide" data-where="מה היא יודעת">
+  <h2>הדרכים לדווח</h2>
+  <div class="grid">
+    <div class="card"><span class="ico">⏱️</span><div><h3>טיימר חי</h3><p>לחיצה אחת מתחילה טיימר על פרויקט. שורד רענון, שינה וסגירת האפליקציה.</p></div></div>
+    <div class="card"><span class="ico">✦</span><div><h3>טקסט חופשי / קול + AI</h3><p>"שעתיים על שריג ושעה על פיק אנד פאק" — ה-AI מפענח וממלא הכול, כמה דיווחים בבת אחת.</p></div></div>
+    <div class="card"><span class="ico">✍️</span><div><h3>דיווח ידני מהיר</h3><p>לפי משך או לפי שעות התחלה/סיום, עם הערה ודגל לחיוב.</p></div></div>
+    <div class="card"><span class="ico">🔎</span><div><h3>בחירת פרויקט חכמה</h3><p>חיפוש חי בעברית, רק פרויקטים פעילים (טיוטא) — בלי לבחור פרויקט סגור בטעות.</p></div></div>
+    <div class="card"><span class="ico">📊</span><div><h3>סיכומים</h3><p>סך הכול ליום / שבוע / חודש, מקובץ לפי פרויקט.</p></div></div>
+    <div class="card"><span class="ico">¼</span><div><h3>עיגול לרבע שעה</h3><p>כל דיווח מעוגל אוטומטית כלפי מעלה לרבע שעה — אחיד ונקי.</p></div></div>
+  </div>
+</section>
+
+<!-- 5 — How it works -->
+<section class="slide" data-where="איך זה עובד">
+  <h2>מהדיווח עד פריוריטי</h2>
+  <div class="flow">
+    <div class="step"><div class="n">1</div><h3>מדווחים</h3><p>טיימר, טקסט חופשי/קול, או ידני — מה שנוח באותו רגע.</p></div>
+    <span class="arrow">←</span>
+    <div class="step"><div class="n">2</div><h3>נשמר כטיוטה</h3><p>הכול נשמר מקומית במכשיר — גם בלי רשת.</p></div>
+    <span class="arrow">←</span>
+    <div class="step"><div class="n">3</div><h3>מאשרים</h3><p>סוקרים את הטיוטות ולוחצים "אשר ושלח".</p></div>
+    <span class="arrow">←</span>
+    <div class="step"><div class="n">4</div><h3>נכנס לפריוריטי</h3><p>נשלח ישירות לתיק הפרויקט ב-Priority, עם חיווי הצלחה לכל שורה.</p></div>
+  </div>
+  <p class="lead" style="margin-top:30px;max-width:40ch">טיוטה-קודם = שליטה מלאה. כלום לא נכנס לפריוריטי בלי אישור.</p>
+</section>
+
+<!-- 6 — Tech -->
+<section class="slide" data-where="מתחת למכסה">
+  <h2>איך זה בנוי</h2>
+  <div class="chips">
+    <span class="chip"><b>PWA</b> · React — מותקן כמו אפליקציה</span>
+    <span class="chip"><b>Priority OData</b> — חיבור מאובטח לתיקי הפרויקט</span>
+    <span class="chip"><b>AI · Gemini</b> — פענוח טקסט/קול חופשי</span>
+    <span class="chip"><b>אימות OTP</b> — כניסה בקוד חד-פעמי למייל</span>
+    <span class="chip"><b>נתונים מקומיים</b> — עובד offline, מסתנכרן ברשת</span>
+  </div>
+  <p class="lead" style="margin-top:30px;max-width:42ch">חשבון שירות אחד מול פריוריטי, שם העובד נרשם בכל דיווח. אין סיסמאות בקוד.</p>
+</section>
+
+<!-- 7 — Status / roadmap -->
+<section class="slide" data-where="מצב ומה הלאה">
+  <h2>איפה אנחנו</h2>
+  <div class="cols">
+    <div class="done">
+      <h3 class="accent">מוכן ועובד ✓</h3>
+      <ul class="checks">
+        <li><span class="mk">✓</span> כניסה, טיימר, דיווח ידני</li>
+        <li><span class="mk">✓</span> פענוח טקסט/קול ב-AI (כמה דיווחים יחד)</li>
+        <li><span class="mk">✓</span> קריאת דיווחים מפריוריטי</li>
+        <li><span class="mk">✓</span> בחירת פרויקט חכמה + סיכומים</li>
+        <li><span class="mk">✓</span> מיתוג RDP, עברית, עיגול רבע שעה</li>
+      </ul>
+    </div>
+    <div class="next">
+      <h3>בקרוב →</h3>
+      <ul class="checks">
+        <li><span class="mk">→</span> שליחת דיווח אמיתי לפריוריטי (אימות אחרון)</li>
+        <li><span class="mk">→</span> פריסה לכל העובדים</li>
+        <li><span class="mk">→</span> התקנה כאפליקציה בטלפון</li>
+        <li><span class="mk">→</span> צ'אט-עוזר לדיווח בשיחה</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<div class="nav">
+  <span class="hint">← → מקשים · רווח · לחיצה</span>
+  <div class="dots" id="dots"></div>
+  <span class="count" id="count"></span>
+</div>
+
+<script>
+  const slides = [...document.querySelectorAll('.slide')];
+  const dotsWrap = document.getElementById('dots');
+  const countEl = document.getElementById('count');
+  const whereEl = document.getElementById('where');
+  let i = 0;
+
+  slides.forEach((_, idx) => {
+    const d = document.createElement('span');
+    d.className = 'dot' + (idx === 0 ? ' on' : '');
+    d.onclick = () => go(idx);
+    dotsWrap.appendChild(d);
+  });
+  const dots = [...dotsWrap.children];
+
+  function go(n) {
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach((s, idx) => s.classList.toggle('active', idx === i));
+    dots.forEach((d, idx) => d.classList.toggle('on', idx === i));
+    countEl.textContent = (i + 1) + ' / ' + slides.length;
+    whereEl.textContent = slides[i].dataset.where || '';
+  }
+  // RTL: ArrowRight = previous, ArrowLeft = next
+  function next() { go(i + 1); }
+  function prev() { go(i - 1); }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft' || e.key === 'PageDown') next();
+    else if (e.key === 'ArrowRight' || e.key === 'PageUp') prev();
+    else if (e.key === ' ') { e.preventDefault(); next(); }
+    else if (e.key === 'Home') go(0);
+    else if (e.key === 'End') go(slides.length - 1);
+    else if (e.key === 'f' || e.key === 'F') document.documentElement.requestFullscreen?.();
+  });
+  document.addEventListener('click', (e) => { if (!e.target.closest('.dot')) next(); });
+  go(0);
+</script>
+</body>
+</html>

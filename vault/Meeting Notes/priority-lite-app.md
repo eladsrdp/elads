@@ -97,3 +97,9 @@
 - **Decisions:** השדה יושב על הכרטיס הרץ (לא במודאל נפרד) — מופיע מיד עם פתיחת הטיימר ונשמר תוך כדי. חסם השליחה הקיים (ב-Entries) ימנע שליחת טיוטת-טיימר בלי הערה.
 - **Notes / Caveats:** אומת E2E בדפדפן (login elads דרך OTP console): השדה מופיע, הקלדה נשמרת ל-`pl.timer` ב-localStorage (timerNotePersisted). typecheck client+server עבר. עדיין תלוי בחוסם המק"ט-תאור-נעול לשליחה בפועל.
 - **Related:** [[repo-github-migration]]
+
+### 2026-06-11 — עיגול לרבע שעה + מצגת מוצר [shipped]
+- **What was done:** (1) **עיגול כלפי מעלה לרבע שעה**: `roundUpToQuarterHour()` ב-lib/duration ‏(`Math.ceil(min/15)*15`), מוחל בכל מסלולי יצירת הטיוטה — דיווח ידני, עצירת טיימר, ו-confirm של AI ‏(Today). בנוסף `toHours` בשרת מעגל כלפי מעלה לרבע שעה כשכבת הגנה אחרונה לפני פריוריטי (1:20→1.5, 1:05→1.25). אומת E2E: קלט 1:20 → טיוטה 90 דק'. (2) **מצגת**: `priority-lite/presentation.html` — דק HTML עצמאי, 7 שקפים, מיתוג RDP (נייבי+כחול, Rubik+Secular One, badge), RTL, ניווט חצים/רווח/לחיצה + מסך מלא (F). אומת בדפדפן (נטען, ניווט עובד, מונה תקין).
+- **Decisions:** עיגול בכל הנקודות + בשרת (defense-in-depth) — "תמיד רבע שעה" הוא כלל קשיח. המצגת נשמרת כקובץ root (לא ב-public) — לא נארז לאפליקציה; נפתח בדאבל-קליק. תוקן באג bidi במונה (direction:ltr) ונוסף @media לצר (עמודה אחת).
+- **Notes / Caveats:** המצגת משתמשת ב-Rubik מ-Google CDN (קובץ עצמאי, אונליין). עדיין תלוי בחוסם המק"ט-תאור לשליחה אמיתית.
+- **Related:** [[repo-github-migration]]
