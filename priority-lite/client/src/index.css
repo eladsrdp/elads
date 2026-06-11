@@ -26,6 +26,12 @@
   font-display: swap;
 }
 @font-face {
+  font-family: 'Abraham';
+  src: url('/fonts/Abraham-Regular.woff') format('woff');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
   font-family: 'Horev';
   src: url('/fonts/horevclm-heavy-webfont.woff') format('woff');
   font-weight: 700 900;
@@ -66,7 +72,7 @@
   --color-violet-600: #2848b0;
 
   /* פונטים */
-  --font-sans: 'Miriam Libre', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-sans: 'Abraham', 'Segoe UI', system-ui, -apple-system, sans-serif;
   --font-display: 'Secular One', 'Suez One', sans-serif;
 }
 
