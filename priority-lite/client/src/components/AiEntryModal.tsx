@@ -1,4 +1,4 @@
-// הזנה חופשית בטקסט או קול — שולח ל-Claude ומחזיר ערכים מולאים לטופס.
+// הזנה חופשית בטקסט או קול — שולח ל-AI (Gemini) ומחזיר ערכים מולאים לטופס.
 import { useRef, useState } from 'react'
 import { api } from '../lib/api'
 import type { TaskSummary } from '../types'

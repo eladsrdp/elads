@@ -14,7 +14,7 @@ export function createApp(ctx: AppContext) {
       ok: true,
       priorityMode: ctx.env.PRIORITY_MODE,
       emailMode: ctx.env.EMAIL_MODE,
-      aiEnabled: !!ctx.env.ANTHROPIC_API_KEY,
+      aiEnabled: !!ctx.env.GEMINI_API_KEY,
     }),
   )
   app.route('/api/auth', createAuthRoutes(ctx))

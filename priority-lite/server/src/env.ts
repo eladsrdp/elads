@@ -8,7 +8,7 @@ const schema = z.object({
   SESSION_SECRET: z.string().default('dev-secret-change-me'),
   SUPABASE_URL: z.string().optional(),
   SUPABASE_SERVICE_KEY: z.string().optional(),
-  ANTHROPIC_API_KEY: z.string().optional(),
+  GEMINI_API_KEY: z.string().optional(),
   EMAIL_MODE: z.enum(['console', 'resend']).default('console'),
   RESEND_API_KEY: z.string().optional(),
   OTP_FROM_EMAIL: z.string().default('Priority Lite <onboarding@resend.dev>'),

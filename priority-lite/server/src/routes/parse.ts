@@ -1,8 +1,9 @@
-// פענוח טקסט חופשי לדיווח שעות — שולח ל-Claude ומחזיר JSON מובנה.
-import Anthropic from '@anthropic-ai/sdk'
+// פענוח טקסט חופשי לדיווח שעות — שולח ל-Gemini ומחזיר JSON מובנה.
 import { Hono } from 'hono'
 import { type AuthVars, authRequired } from '../auth/middleware'
 import type { AppContext } from '../context'
+
+const GEMINI_MODEL = 'gemini-2.5-flash'
 
 export function createParseRoutes(ctx: AppContext) {
   const app = new Hono<AuthVars>()
@@ -13,8 +14,8 @@ export function createParseRoutes(ctx: AppContext) {
     const text = typeof body?.text === 'string' ? body.text.trim().slice(0, 500) : ''
     if (!text) return c.json({ error: 'חסר שדה text' }, 400)
 
-    if (!ctx.env.ANTHROPIC_API_KEY) {
-      return c.json({ error: 'ANTHROPIC_API_KEY לא מוגדר בשרת' }, 503)
+    if (!ctx.env.GEMINI_API_KEY) {
+      return c.json({ error: 'GEMINI_API_KEY לא מוגדר בשרת' }, 503)
     }
 
     // Fetch task list for context (best effort)
@@ -27,16 +28,8 @@ export function createParseRoutes(ctx: AppContext) {
         .join('\n')
     } catch { /* best effort */ }
 
-    const client = new Anthropic({ apiKey: ctx.env.ANTHROPIC_API_KEY })
     const today = new Date().toISOString().slice(0, 10)
-
-    const msg = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 512,
-      messages: [
-        {
-          role: 'user',
-          content: `אתה מנתח דיווחי שעות בעברית. פענח את הטקסט הבא לרשומה מובנית.
+    const prompt = `אתה מנתח דיווחי שעות בעברית. פענח את הטקסט הבא לרשומה מובנית.
 
 תאריך היום: ${today}
 
@@ -45,7 +38,7 @@ ${taskContext}
 
 קלט המשתמש: "${text}"
 
-החזר JSON בלבד (ללא markdown), לפי הסכמה:
+החזר JSON בלבד לפי הסכמה:
 {
   "taskId": "מחרוזת או null — מזהה פרויקט מהרשימה אם זוהה",
   "taskName": "מחרוזת או null",
@@ -59,22 +52,58 @@ ${taskContext}
 }
 
 כללים:
-- "שעתיים"=120, "שעה"=60, "שעה וחצי"=90, "45 דקות"=45, "רבע שעה"=15, "שלוש רבע"=45
+- "שעתיים"=120, "שעה"=60, "שעה וחצי"=90, "45 דקות"=45, "רבע שעה"=15, "שלושת רבעי שעה"=45
 - "היום"=היום, "אתמול"=אתמול, "שלשום"=שלשום
 - התאם פרויקט לפי ID מדויק או שם (גם חלקי/מקורב)
-- אם אי אפשר לקבוע שדה — null`,
-        },
-      ],
-    })
+- אם אי אפשר לקבוע שדה — null`
 
-    const content = msg.content[0]
-    if (content.type !== 'text') return c.json({ error: 'תשובה לא צפויה מהמודל' }, 500)
+    let res: Response
+    try {
+      res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
+        {
+          method: 'POST',
+          signal: AbortSignal.timeout(20_000),
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': ctx.env.GEMINI_API_KEY,
+          },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              temperature: 0,
+              maxOutputTokens: 1024,
+              responseMimeType: 'application/json',
+              // משימת חילוץ פשוטה — מכבים "thinking" כדי לא לבזבז טוקנים ולהאיץ
+              thinkingConfig: { thinkingBudget: 0 },
+            },
+          }),
+        },
+      )
+    } catch {
+      return c.json({ error: 'שגיאת תקשורת מול Gemini — נסה שוב' }, 502)
+    }
+
+    if (!res.ok) {
+      // לא חושפים את גוף השגיאה החיצוני למשתמש — רק קוד סטטוס
+      console.error('[gemini] HTTP', res.status)
+      return c.json({ error: 'שירות הפענוח החזיר שגיאה — נסה שוב' }, 502)
+    }
+
+    const data = (await res.json()) as {
+      candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>
+    }
+    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text
+    if (!raw) {
+      console.error('[gemini] empty response:', JSON.stringify(data).slice(0, 500))
+      return c.json({ error: 'תשובה ריקה מהמודל' }, 500)
+    }
 
     try {
-      const parsed = JSON.parse(content.text)
-      return c.json(parsed)
+      return c.json(JSON.parse(raw))
     } catch {
-      return c.json({ error: 'לא ניתן לפענח את הטקסט', raw: content.text }, 422)
+      console.error('[gemini] unparseable:', raw.slice(0, 300))
+      return c.json({ error: 'לא ניתן לפענח את הטקסט' }, 422)
     }
   })
 
