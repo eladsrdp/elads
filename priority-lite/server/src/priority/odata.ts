@@ -101,7 +101,10 @@ export function createODataAdapter(cfg: ODataConfig): PriorityAdapter {
     const data = await request<{ value: Row[] }>(
       `${m.entities.tasks}?$select=${taskSelect}&$top=2000`,
     )
-    const items = data.value.map(rowToTask)
+    // מציגים רק פרויקטים פעילים (טיוטא) — לא מבוטלת/סופית, שאי אפשר לדווח עליהם
+    const items = data.value
+      .map(rowToTask)
+      .filter((t) => t.status != null && m.activeStatuses.includes(t.status.trim()))
     tasksCache = { at: Date.now(), items }
     return items
   }

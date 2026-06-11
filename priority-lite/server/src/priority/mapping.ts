@@ -42,6 +42,11 @@ export const priorityMapping = {
   hoursAsDecimal: true,
   /** PDES מוגבל ל-60 תווים בפריוריטי */
   noteMaxLength: 60,
+  /**
+   * רק פרויקטים בסטטוסים האלה (STATDES) מוצגים לבחירה.
+   * "מבוטלת" / "סופית" מסוננים — אי אפשר לדווח עליהם.
+   */
+  activeStatuses: ['טיוטא'] as readonly string[],
 } as const
 
 /** זורק שגיאה ברורה אם נשארו placeholders — מופעל רק במצב real. */
