@@ -23,6 +23,14 @@ export function Entries() {
   const totalSendableMin = sendable.reduce((s, e) => s + e.durationMin, 0)
 
   const handleSync = async () => {
+    // "על מה עבדת" חובה לכל דיווח — חוסם טיוטות מהטיימר/AI שאין בהן הערה
+    const missingNote = sendable.filter((e) => !e.note?.trim())
+    if (missingNote.length > 0) {
+      setMessage(
+        `יש להוסיף "על מה עבדת" ל-${missingNote.length} דיווחים לפני שליחה — ערוך אותם והשלם`,
+      )
+      return
+    }
     setSyncing(true)
     setMessage('')
     try {

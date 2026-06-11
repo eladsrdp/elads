@@ -94,6 +94,8 @@ export function ManualEntryModal({ open, onClose, editing, initialValues }: Prop
       if (!durationMin) return setError('משך לא תקין — לדוגמה: 1:30 או 1.5')
     }
 
+    if (!note.trim()) return setError('כתוב על מה עבדת')
+
     const parsedOrdLine = ordLine.trim() ? parseInt(ordLine, 10) : undefined
     if (ordLine.trim() && (isNaN(parsedOrdLine!) || parsedOrdLine! < 1)) {
       return setError('שורת הזמנה חייבת להיות מספר חיובי')
@@ -185,9 +187,9 @@ export function ManualEntryModal({ open, onClose, editing, initialValues }: Prop
           </div>
         )}
 
-        <Field label="הערה (אופציונלי)">
+        <Field label="על מה עבדת? *">
           <TextInput
-            placeholder="על מה עבדת?"
+            placeholder="תיאור קצר של העבודה (חובה)"
             value={note}
             maxLength={500}
             onChange={(e) => setNote(e.target.value)}
