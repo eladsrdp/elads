@@ -9,14 +9,15 @@ import {
   requestOtp,
   verifyOtp,
 } from '../src/auth/otp'
-import { createDb, upsertEmployee, type DB } from '../src/db/db'
+import type { AppDB } from '../src/db/db'
+import { createLocalDb } from '../src/db/local-impl'
 
 const PHONE = '0501234567'
-let db: DB
+let db: AppDB
 
-beforeEach(() => {
-  db = createDb(':memory:')
-  upsertEmployee(db, { phone: PHONE, email: 'elad@test.co', priorityEmpId: '42', name: 'אלעד' })
+beforeEach(async () => {
+  db = createLocalDb('__nonexistent__') // in-memory, no file
+  await db.upsertEmployee({ phone: PHONE, email: 'elad@test.co', priorityEmpId: '42', name: 'אלעד' })
 })
 
 describe('normalizePhone', () => {
@@ -37,8 +38,8 @@ describe('normalizePhone', () => {
 })
 
 describe('requestOtp', () => {
-  it('מצליח לעובד רשום ומחזיר קוד בן 6 ספרות', () => {
-    const r = requestOtp(db, PHONE)
+  it('מצליח לעובד רשום ומחזיר קוד בן 6 ספרות', async () => {
+    const r = await requestOtp(db, PHONE)
     expect(r.ok).toBe(true)
     if (r.ok) {
       expect(r.code).toMatch(/^\d{6}$/)
@@ -46,63 +47,63 @@ describe('requestOtp', () => {
     }
   })
 
-  it('נכשל למספר שאינו ב-whitelist', () => {
-    const r = requestOtp(db, '0599999999')
+  it('נכשל למספר שאינו ב-whitelist', async () => {
+    const r = await requestOtp(db, '0599999999')
     expect(r).toEqual({ ok: false, error: 'not_registered' })
   })
 
-  it('חוסם אחרי המכסה ומשחרר אחרי החלון', () => {
+  it('חוסם אחרי המכסה ומשחרר אחרי החלון', async () => {
     const now = Date.now()
     for (let i = 0; i < MAX_SENDS_PER_WINDOW; i++) {
-      expect(requestOtp(db, PHONE, now + i).ok).toBe(true)
+      const r = await requestOtp(db, PHONE, now + i)
+      expect(r.ok).toBe(true)
     }
-    const blocked = requestOtp(db, PHONE, now + 1000)
+    const blocked = await requestOtp(db, PHONE, now + 1000)
     expect(blocked.ok).toBe(false)
     if (!blocked.ok) expect(blocked.error).toBe('rate_limited')
 
-    const afterWindow = requestOtp(db, PHONE, now + RATE_WINDOW_MS + 1)
+    const afterWindow = await requestOtp(db, PHONE, now + RATE_WINDOW_MS + 1)
     expect(afterWindow.ok).toBe(true)
   })
 })
 
 describe('verifyOtp', () => {
-  function issueCode(now = Date.now()): string {
-    const r = requestOtp(db, PHONE, now)
+  async function issueCode(now = Date.now()): Promise<string> {
+    const r = await requestOtp(db, PHONE, now)
     if (!r.ok) throw new Error('request failed')
     return r.code
   }
 
-  it('happy path — קוד נכון מחזיר את העובד ומוחק את הקוד', () => {
-    const code = issueCode()
-    const r = verifyOtp(db, PHONE, code)
+  it('happy path — קוד נכון מחזיר את העובד ומוחק את הקוד', async () => {
+    const code = await issueCode()
+    const r = await verifyOtp(db, PHONE, code)
     expect(r.ok).toBe(true)
     if (r.ok) expect(r.employee.name).toBe('אלעד')
     // שימוש חוזר באותו קוד נכשל
-    expect(verifyOtp(db, PHONE, code)).toEqual({ ok: false, error: 'no_code' })
+    expect(await verifyOtp(db, PHONE, code)).toEqual({ ok: false, error: 'no_code' })
   })
 
-  it('קוד שפג תוקפו נדחה ונמחק', () => {
+  it('קוד שפג תוקפו נדחה ונמחק', async () => {
     const now = Date.now()
-    const code = issueCode(now)
-    expect(verifyOtp(db, PHONE, code, now + OTP_TTL_MS + 1)).toEqual({ ok: false, error: 'expired' })
+    const code = await issueCode(now)
+    expect(await verifyOtp(db, PHONE, code, now + OTP_TTL_MS + 1)).toEqual({ ok: false, error: 'expired' })
   })
 
-  it('אחרי מקסימום ניסיונות שגויים הקוד נחסם', () => {
-    const code = issueCode()
+  it('אחרי מקסימום ניסיונות שגויים הקוד נחסם', async () => {
+    const code = await issueCode()
     for (let i = 0; i < MAX_ATTEMPTS; i++) {
-      expect(verifyOtp(db, PHONE, '000000')).toEqual({ ok: false, error: 'wrong_code' })
+      expect(await verifyOtp(db, PHONE, '000000')).toEqual({ ok: false, error: 'wrong_code' })
     }
-    // גם הקוד הנכון כבר לא עובד
-    expect(verifyOtp(db, PHONE, code)).toEqual({ ok: false, error: 'too_many_attempts' })
+    expect(await verifyOtp(db, PHONE, code)).toEqual({ ok: false, error: 'too_many_attempts' })
   })
 
-  it('בקשת קוד חדש מבטלת את הקודם', () => {
+  it('בקשת קוד חדש מבטלת את הקודם', async () => {
     const now = Date.now()
-    const first = issueCode(now)
-    const second = issueCode(now + 1000)
+    const first = await issueCode(now)
+    const second = await issueCode(now + 1000)
     if (first !== second) {
-      expect(verifyOtp(db, PHONE, first, now + 2000).ok).toBe(false)
+      expect((await verifyOtp(db, PHONE, first, now + 2000)).ok).toBe(false)
     }
-    expect(verifyOtp(db, PHONE, second, now + 2000).ok).toBe(true)
+    expect((await verifyOtp(db, PHONE, second, now + 2000)).ok).toBe(true)
   })
 })

@@ -4,6 +4,7 @@ import { todayISO } from '../lib/date'
 import { diffMinutes, fmtMin, parseDuration } from '../lib/duration'
 import { addDraft, updateDraft } from '../state/useEntries'
 import type { LocalTimeEntry, TaskSummary } from '../types'
+import type { ParsedEntry } from './AiEntryModal'
 import { Field, PrimaryButton, TextInput } from './forms'
 import { Modal } from './Modal'
 import { TaskPicker } from './TaskPicker'
@@ -13,11 +14,13 @@ interface Props {
   onClose: () => void
   /** אם מוגדר — מצב עריכה של טיוטה קיימת */
   editing?: LocalTimeEntry | null
+  /** ערכים ראשוניים מ-AI parse (מצב יצירה בלבד) */
+  initialValues?: ParsedEntry
 }
 
 type Mode = 'duration' | 'range'
 
-export function ManualEntryModal({ open, onClose, editing }: Props) {
+export function ManualEntryModal({ open, onClose, editing, initialValues }: Props) {
   const [task, setTask] = useState<TaskSummary | null>(null)
   const [date, setDate] = useState(todayISO())
   const [mode, setMode] = useState<Mode>('duration')
@@ -51,6 +54,18 @@ export function ManualEntryModal({ open, onClose, editing }: Props) {
       setOrdName(editing.ordName ?? '')
       setOrdLine(editing.ordLine != null ? String(editing.ordLine) : '')
       setExtraOpen(!!(editing.ordName || editing.ordLine != null))
+    } else if (initialValues) {
+      setTask(initialValues.task ?? null)
+      setDate(initialValues.date ?? todayISO())
+      setMode('duration')
+      setDurationText(initialValues.durationMin ? fmtMin(initialValues.durationMin) : '')
+      setStartTime('')
+      setEndTime('')
+      setNote(initialValues.note ?? '')
+      setBillable(initialValues.billable ?? false)
+      setOrdName(initialValues.ordName ?? '')
+      setOrdLine(initialValues.ordLine != null ? String(initialValues.ordLine) : '')
+      setExtraOpen(!!(initialValues.ordName || initialValues.ordLine != null))
     } else {
       setTask(null)
       setDate(todayISO())
@@ -65,7 +80,7 @@ export function ManualEntryModal({ open, onClose, editing }: Props) {
       setExtraOpen(false)
     }
     setError('')
-  }, [open, editing])
+  }, [open, editing, initialValues])
 
   const save = async () => {
     if (!task) return setError('בחר משימה')

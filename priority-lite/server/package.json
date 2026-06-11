@@ -13,6 +13,7 @@
   "dependencies": {
     "@hono/node-server": "^1.13.7",
     "@priority-lite/shared": "*",
+    "@anthropic-ai/sdk": "^0.54.0",
     "@supabase/supabase-js": "^2.49.8",
     "dotenv": "^16.4.7",
     "hono": "^4.6.14",
