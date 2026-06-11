@@ -6,7 +6,7 @@ import { ManualEntryModal } from '../components/ManualEntryModal'
 import { TimerCard } from '../components/TimerCard'
 import { todayISO } from '../lib/date'
 import { fmtMin } from '../lib/duration'
-import { deleteEntry, useDayEntries } from '../state/useEntries'
+import { addDraft, deleteEntry, useDayEntries } from '../state/useEntries'
 import { useTimer } from '../state/useTimer'
 import type { LocalTimeEntry } from '../types'
 
@@ -17,7 +17,6 @@ export function Today() {
   const [modalOpen, setModalOpen] = useState(false)
   const [aiModalOpen, setAiModalOpen] = useState(false)
   const [editing, setEditing] = useState<LocalTimeEntry | null>(null)
-  const [prefill, setPrefill] = useState<ParsedEntry | undefined>(undefined)
 
   const savedMin = (entries ?? []).reduce((sum, e) => sum + e.durationMin, 0)
   const runningMin = running ? Math.floor(elapsedMs / 60_000) : 0
@@ -25,14 +24,30 @@ export function Today() {
 
   const openManual = () => {
     setEditing(null)
-    setPrefill(undefined)
     setModalOpen(true)
   }
 
-  const handleParsed = (entry: ParsedEntry) => {
-    setPrefill(entry)
-    setEditing(null)
-    setModalOpen(true)
+  // יוצר טיוטה לכל דיווח שזוהה ע"י ה-AI. נשמרות ל"היום" ועריכה דרך השורה.
+  const handleConfirm = async (parsed: ParsedEntry[]) => {
+    const base = Date.now()
+    for (let i = 0; i < parsed.length; i++) {
+      const e = parsed[i]
+      await addDraft({
+        id: crypto.randomUUID(),
+        status: 'draft',
+        source: 'manual',
+        createdAt: base + i,
+        date: e.date ?? today,
+        taskId: e.task?.id ?? '',
+        taskName: e.task?.name ?? '',
+        projectName: e.task?.projectName ?? '',
+        durationMin: e.durationMin ?? 0,
+        note: e.note,
+        billable: e.billable,
+        ordName: e.ordName,
+        ordLine: e.ordLine,
+      })
+    }
   }
 
   return (
@@ -56,7 +71,6 @@ export function Today() {
                 entry={e}
                 onEdit={(entry) => {
                   setEditing(entry)
-                  setPrefill(undefined)
                   setModalOpen(true)
                 }}
                 onDelete={(entry) => void deleteEntry(entry.id)}
@@ -91,7 +105,7 @@ export function Today() {
       <AiEntryModal
         open={aiModalOpen}
         onClose={() => setAiModalOpen(false)}
-        onParsed={handleParsed}
+        onConfirm={handleConfirm}
       />
 
       <ManualEntryModal
@@ -99,10 +113,8 @@ export function Today() {
         onClose={() => {
           setModalOpen(false)
           setEditing(null)
-          setPrefill(undefined)
         }}
         editing={editing}
-        initialValues={prefill}
       />
     </div>
   )

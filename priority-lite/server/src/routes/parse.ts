@@ -29,7 +29,7 @@ export function createParseRoutes(ctx: AppContext) {
     } catch { /* best effort */ }
 
     const today = new Date().toISOString().slice(0, 10)
-    const prompt = `אתה מנתח דיווחי שעות בעברית. פענח את הטקסט הבא לרשומה מובנית.
+    const prompt = `אתה מנתח דיווחי שעות בעברית. פענח את הטקסט לדיווח אחד או יותר.
 
 תאריך היום: ${today}
 
@@ -38,20 +38,26 @@ ${taskContext}
 
 קלט המשתמש: "${text}"
 
-החזר JSON בלבד לפי הסכמה:
+החזר JSON בלבד לפי הסכמה — מערך "entries" עם דיווח אחד או יותר:
 {
-  "taskId": "מחרוזת או null — מזהה פרויקט מהרשימה אם זוהה",
-  "taskName": "מחרוזת או null",
-  "projectName": "מחרוזת או null",
-  "date": "YYYY-MM-DD או null — ברירת מחדל היום אם לא צויין",
-  "durationMin": מספר שלם דקות או null,
-  "note": "מחרוזת או null — על מה עבדו",
-  "ordName": "מחרוזת או null — מספר הזמנה אם צויין",
-  "ordLine": מספר שלם או null,
-  "billable": true/false/null
+  "entries": [
+    {
+      "taskId": "מחרוזת או null — מזהה פרויקט מהרשימה אם זוהה",
+      "taskName": "מחרוזת או null",
+      "projectName": "מחרוזת או null",
+      "date": "YYYY-MM-DD או null — ברירת מחדל היום אם לא צויין",
+      "durationMin": מספר שלם דקות או null,
+      "note": "מחרוזת או null — על מה עבדו",
+      "ordName": "מחרוזת או null — מספר הזמנה אם צויין",
+      "ordLine": מספר שלם או null,
+      "billable": true/false/null
+    }
+  ]
 }
 
 כללים:
+- אם הטקסט מתאר כמה דיווחים נפרדים (משימות/פרויקטים שונים, או זמנים שונים) — החזר אובייקט נפרד לכל אחד ב-entries. לדוגמה: "שעתיים על פרויקט א' ושעה על פרויקט ב'" → שני אובייקטים.
+- אם יש דיווח אחד בלבד — entries יכיל אובייקט אחד.
 - "שעתיים"=120, "שעה"=60, "שעה וחצי"=90, "45 דקות"=45, "רבע שעה"=15, "שלושת רבעי שעה"=45
 - "היום"=היום, "אתמול"=אתמול, "שלשום"=שלשום
 - התאם פרויקט לפי ID מדויק או שם (גם חלקי/מקורב)
@@ -100,7 +106,14 @@ ${taskContext}
     }
 
     try {
-      return c.json(JSON.parse(raw))
+      const parsed = JSON.parse(raw)
+      // מנרמלים לפורמט אחיד { entries: [...] } — גם אם המודל החזיר מערך גולמי או אובייקט בודד
+      let entries: unknown[]
+      if (Array.isArray(parsed)) entries = parsed
+      else if (Array.isArray(parsed?.entries)) entries = parsed.entries
+      else entries = [parsed]
+      if (entries.length === 0) return c.json({ error: 'לא זוהה אף דיווח' }, 422)
+      return c.json({ entries })
     } catch {
       console.error('[gemini] unparseable:', raw.slice(0, 300))
       return c.json({ error: 'לא ניתן לפענח את הטקסט' }, 422)
