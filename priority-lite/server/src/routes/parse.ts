@@ -40,9 +40,9 @@ ${taskContext}
 {
   "entries": [
     {
-      "taskId": "מחרוזת או null — מזהה פרויקט מהרשימה אם זוהה",
-      "taskName": "מחרוזת או null",
-      "projectName": "מחרוזת או null",
+      "taskId": "מחרוזת או null — ה-ID של הפרויקט מהרשימה (PRxxxxxxxx) אם זוהה",
+      "taskName": "מחרוזת או null — שם הפרויקט (החלק לפני הסוגריים ברשימה). אם זיהית taskId — חובה למלא גם את taskName",
+      "projectName": "מחרוזת או null — שם הלקוח (החלק בתוך הסוגריים ברשימה)",
       "date": "YYYY-MM-DD או null — ברירת מחדל היום אם לא צויין",
       "durationMin": מספר שלם דקות או null,
       "note": "מחרוזת או null — על מה עבדו",

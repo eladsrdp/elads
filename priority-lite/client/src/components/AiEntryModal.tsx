@@ -37,8 +37,10 @@ interface Props {
 
 function toParsed(r: RawEntry): ParsedEntry {
   const parsed: ParsedEntry = {}
-  if (r.taskId && r.taskName) {
-    parsed.task = { id: r.taskId, name: r.taskName, projectId: '', projectName: r.projectName ?? '' }
+  // מספיק taskId כדי לזהות פרויקט — שם התצוגה נופל חזרה ל-projectName אם taskName חסר
+  if (r.taskId) {
+    const name = r.taskName || r.projectName || r.taskId
+    parsed.task = { id: r.taskId, name, projectId: '', projectName: r.projectName ?? name }
   }
   if (r.date) parsed.date = r.date
   if (r.durationMin) parsed.durationMin = r.durationMin
