@@ -16,6 +16,8 @@ export interface RunningTimer {
   taskName: string
   projectName: string
   startedAt: number
+  /** "על מה עבדת" — נלכד תוך כדי הטיימר ועובר לטיוטה בעצירה (PDES בפריוריטי) */
+  note?: string
 }
 
 function read(): RunningTimer | null {
@@ -76,6 +78,12 @@ export function useTimer() {
 
   const discard = () => setTimer(null)
 
+  /** עדכון "על מה עבדת" תוך כדי ריצת הטיימר — נשמר מיד ל-localStorage */
+  const updateNote = (note: string) => {
+    if (!current) return
+    setTimer({ ...current, note })
+  }
+
   /** עוצר את הטיימר ושומר טיוטה. מעגל לדקה שלמה (מינימום 1). */
   const stop = async (): Promise<LocalTimeEntry | null> => {
     if (!current) return null
@@ -90,6 +98,7 @@ export function useTimer() {
       durationMin: Math.max(1, Math.round((stoppedAt - current.startedAt) / 60_000)),
       startTime: fmtClock(current.startedAt),
       endTime: fmtClock(stoppedAt),
+      note: current.note?.trim() || undefined,
       source: 'timer',
       createdAt: stoppedAt,
     }
@@ -99,7 +108,7 @@ export function useTimer() {
   }
 
   const elapsedMs = running ? Math.max(0, now - running.startedAt) : 0
-  return { running, elapsedMs, isStale: elapsedMs > STALE_MS, start, stop, discard }
+  return { running, elapsedMs, isStale: elapsedMs > STALE_MS, start, stop, discard, updateNote }
 }
 
 /** "1:23:45" מתוך אלפיות — לתצוגת הטיימר הרץ. */

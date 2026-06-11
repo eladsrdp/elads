@@ -5,7 +5,7 @@ import type { TaskSummary } from '../types'
 import { TaskPicker } from './TaskPicker'
 
 export function TimerCard() {
-  const { running, elapsedMs, isStale, start, stop, discard } = useTimer()
+  const { running, elapsedMs, isStale, start, stop, discard, updateNote } = useTimer()
   const [pickerOpen, setPickerOpen] = useState(false)
   const [stopping, setStopping] = useState(false)
 
@@ -49,6 +49,17 @@ export function TimerCard() {
       <p className="ltr-nums my-3 text-center text-5xl font-bold tabular-nums text-slate-100">
         {fmtElapsed(elapsedMs)}
       </p>
+
+      <label className="mb-3 block">
+        <span className="mb-1 block text-xs text-slate-400">על מה עבדת? *</span>
+        <input
+          value={running.note ?? ''}
+          onChange={(e) => updateNote(e.target.value)}
+          placeholder="תיאור קצר של העבודה (חובה לשליחה)"
+          maxLength={500}
+          className="w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-slate-100 outline-none focus:border-emerald-500"
+        />
+      </label>
 
       {isStale && (
         <div className="mb-3 rounded-xl bg-amber-500/10 p-3 text-sm text-amber-400">
