@@ -4,12 +4,12 @@
 אפליקציית web ‏(PWA, עברית RTL) בתיקייה `priority-lite/` שעוטפת את Priority ERP בממשק מהיר: טיימר, דיווחי שעות ידניים, סיכומים (יום/שבוע/חודש לפי פרויקט→משימה), וחיפוש משימות. ארכיטקטורה: monorepo ‏(npm workspaces) עם `shared/` (טיפוסים), `server/` (Hono + better-sqlite3, אימות OTP במייל לפי whitelist טלפונים, JWT cookie ל-7 ימים, adapter מבודד מול Priority OData עם mock לפיתוח), ו-`client/` (React 19 + Vite 8 + Tailwind v4 + Dexie). דיווחים נשמרים כטיוטות מקומיות ונשלחים לפריוריטי רק אחרי אישור המשתמש (תוצאה פר-פריט, שגיאות עם retry). שכבת actions עם zod schemas מוכנה לחיבור צ'אט-LLM בשלב 3. סטטוס: M0–M5 בנויים ומאומתים מול mock ‏(32 בדיקות + E2E בדפדפן); מיילים אמיתיים דרך Resend פעילים; **קריאה אמיתית מפריוריטי אומתה בפרודקשן** (PAT + Basic auth, ‏getTimeEntries דרך scripts/report.ts); נותר אימות כתיבה, מעבר PRIORITY_MODE=real ופריסה (M7).
 
 ## Open Questions
-- **פריסה ל-Vercel**: עדיין דורש ידנית: (1) יצירת פרויקט Supabase + הרצת supabase-schema.sql, (2) הגדרת env vars ב-Vercel, (3) seed עובדים מחדש מול Supabase.
-- **מעבר ל-PRIORITY_MODE=real באפליקציה** — קריאה אומתה (report.ts); נותר אימות כתיבה (smoke.ts write — רק בחברת טסט!) ומעבר סופי
-- **Resend domain** — אימות dpri.com עדיין תלוי; בינתיים מיילים רק לכתובת הרשמה
+- **Supabase**: ה-URL נשמר ב-.env (uryyijvcafmzqjuqankl); עדיין חסר service_role key + הרצת supabase-schema.sql + seed. עד שכולם קיימים — נשאר Local mode (factory דורש URL וגם key).
+- **כתיבה לפריוריטי עם השדות החדשים** (billable/ordName/ordLine) — עדיין לא נבדקה מול אמת (smoke.ts write בחברת טסט)
+- **Resend domain** — whitelist רשום עם @dpri.com אבל Resend (בלי דומיין מאומת) שולח רק ל-elads@rdpri.com. להדגמה מקומית עברנו ל-EMAIL_MODE=console (קוד בטרמינל). למיילים אמיתיים לכל העובדים — לאמת דומיין.
 - אין dedupe מול Priority בכשל רשת אחרי שליחה חלקית — סיכון דיווח כפול
 - אייקוני PWA הם SVG בלבד — כדאי PNG ‏192/512 (יובל)
-- **רשימת פרויקטים בבחירה** — infrastructure קיים (searchTasks), חסרה UI picker בטופס הדיווח
+- **פיצ'ר AI parse** — שיוך פרויקט (taskId) עדיין מוחזר null בקלט גנרי; עובד טוב על משך/הערה/billable/תאריך. לשפר את ה-prompt או להציג למשתמש את הפרויקט שזוהה לאישור.
 
 ## Session Log
 
@@ -48,3 +48,9 @@
 - **Decisions:** ordName/ordLine בסקשן מתקפל כי נדרשים רק לחלק מהלקוחות (פיק אנד פאק, שחר תשלובות). billable גלוי תמיד כי רלוונטי לכלל הלקוחות. שני שדות ORDNAME+OLINE מספיקים לשני הלקוחות — שניהם השתמשו באותו pattern (ORDNAME=SO24000058 + OLINE).
 - **Notes / Caveats:** כתיבה לפריוריטי עדיין לא נבדקה עם השדות החדשים — יש לאמת מול חברת טסט.
 - **Related:** [[repo-github-migration]]
+
+### 2026-06-11 — Local DB fallback + רענון פרויקטים + AI parse (Gemini) [shipped]
+- **What was done:** שלוש מטרות להדגמה מקומית היום. (1) **Dual DB**: רפקטור ל-`AppDB` interface עם שני מימושים — `supabase-impl.ts` ו-`local-impl.ts` (in-memory + whitelist.json). `createDb` בוחר Supabase רק אם URL+key קיימים, אחרת Local. ‏SUPABASE_URL/KEY הפכו optional ב-env.ts → השרת קם בלי Supabase. ‏otp.ts ו-context.ts עברו ל-AppDB; ‏seed עודכן. בדיקות otp עודכנו ל-async מול createLocalDb. (2) **רענון פרויקטים**: כפתור ↻ ב-TaskPicker שמנקה את ה-cache ומושך מחדש מפריוריטי. (3) **AI parse**: `routes/parse.ts` — ‏POST /api/parse-entry, פענוח טקסט חופשי עברי ל-JSON מובנה. `AiEntryModal.tsx` עם תיבת טקסט + מיקרופון (Web Speech API, he-IL) → ממלא את ManualEntryModal דרך prop חדש `initialValues`. כפתור צף סגול ✦ ב-Today.
+- **Decisions:** Local mode הוא ברירת המחדל להדגמה — אפס תלויות חיצוניות. **AI עבר מ-Anthropic ל-Gemini** כי למשתמש יש מפתח Gemini (לא Anthropic): ‏gemini-2.5-flash דרך REST ב-fetch (בלי SDK), `thinkingConfig.thinkingBudget=0` ‏(משימת חילוץ — לא צריך thinking, חוסך טוקנים; עם thinking דלוק ו-512 טוקנים קיבלנו תשובה ריקה). הוסר `@anthropic-ai/sdk`. גוף שגיאה מ-Gemini לא נחשף ללקוח (רק status). **EMAIL_MODE=console** להדגמה — Resend בלי דומיין מאומת שולח רק ל-elads@rdpri.com וה-whitelist הוא @dpri.com, אז OTP מודפס לטרמינל.
+- **Notes / Caveats:** באג בטסט ולא בקוד: ‏curl `-d` ב-bash על Windows משבש UTF-8 עברי → פענוח שגוי בטסט; עם `--data-binary @file` (UTF-8) ה-route עובד מושלם. הקליינט שולח UTF-8 דרך fetch אז תקין. אומת E2E: ‏login (console OTP) → parse "שעתיים וחצי על תמיכה היום, לחיוב" → {durationMin:150, note:"תמיכה", billable:true}. ‏taskId עדיין null בקלט גנרי. ‏GEMINI_API_KEY רק ב-.env (מוחרג). בעיה חוזרת בדיבוג: שרתי node מרובים נתקעים על 8787 בין קריאות Bash — לנקות עם `Get-Process node | Stop-Process` לפני בדיקה.
+- **Related:** [[repo-github-migration]], [[env-config]]
