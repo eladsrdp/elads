@@ -210,7 +210,7 @@ export function AiEntryModal({ open, onClose, onConfirm }: Props) {
                     ) : null}
                   </p>
                 ) : (
-                  <p className="text-sm text-amber-400">⚠ לא זוהתה משימה — תבחר בעריכת הטיוטה</p>
+                  <p className="text-sm text-amber-400">⚠ לא זוהה פרויקט — תבחר בעריכת הטיוטה</p>
                 )}
 
                 <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-400">

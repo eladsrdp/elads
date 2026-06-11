@@ -18,14 +18,12 @@ export function createParseRoutes(ctx: AppContext) {
       return c.json({ error: 'GEMINI_API_KEY לא מוגדר בשרת' }, 503)
     }
 
-    // Fetch task list for context (best effort)
+    // רשימת כל הפרויקטים הפעילים כהקשר ל-AI (best effort).
+    // חשוב לשלוח את כולם — אחרת המודל לא יוכל להתאים פרויקט שלא ברשימה.
     let taskContext = 'לא זמין'
     try {
-      const tasks = await ctx.adapter.searchTasks('', 100)
-      taskContext = tasks
-        .slice(0, 60)
-        .map((t) => `${t.id}: ${t.name} (${t.projectName})`)
-        .join('\n')
+      const tasks = await ctx.adapter.searchTasks('', 1000)
+      taskContext = tasks.map((t) => `${t.id}: ${t.name} (${t.projectName})`).join('\n')
     } catch { /* best effort */ }
 
     const today = new Date().toISOString().slice(0, 10)

@@ -49,13 +49,13 @@ export function TaskPicker({ open, onClose, onSelect }: Props) {
   }
 
   return (
-    <Modal open={open} title="בחירת משימה" onClose={onClose}>
+    <Modal open={open} title="בחירת פרויקט" onClose={onClose}>
       <div className="mb-3 flex gap-2">
         <input
           autoFocus
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="חפש משימה או פרויקט…"
+          placeholder="חפש פרויקט…"
           className="flex-1 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-slate-100 outline-none focus:border-emerald-500"
         />
         <button
@@ -68,13 +68,13 @@ export function TaskPicker({ open, onClose, onSelect }: Props) {
       </div>
       {offline && (
         <p className="mb-2 rounded-lg bg-amber-500/10 px-3 py-1.5 text-xs text-amber-400">
-          אין חיבור לשרת — מציג משימות מהמטמון המקומי
+          אין חיבור לשרת — מציג פרויקטים מהמטמון המקומי
         </p>
       )}
       <div className="max-h-72 space-y-1 overflow-y-auto">
         {loading && results.length === 0 && <p className="py-4 text-center text-slate-500">טוען…</p>}
         {!loading && results.length === 0 && (
-          <p className="py-4 text-center text-slate-500">לא נמצאו משימות</p>
+          <p className="py-4 text-center text-slate-500">לא נמצאו פרויקטים</p>
         )}
         {results.map((t) => (
           <button

@@ -60,7 +60,7 @@ export function Login() {
       <div className="mb-8 text-center">
         <p className="text-5xl">⏱️</p>
         <h1 className="mt-3 text-2xl font-bold text-slate-100">Priority Lite</h1>
-        <p className="mt-1 text-sm text-slate-500">דיווחי שעות ומשימות — בקלות</p>
+        <p className="mt-1 text-sm text-slate-500">דיווחי שעות ופרויקטים — בקלות</p>
       </div>
 
       {step === 'phone' ? (

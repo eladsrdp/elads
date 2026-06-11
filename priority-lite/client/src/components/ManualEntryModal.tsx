@@ -83,7 +83,7 @@ export function ManualEntryModal({ open, onClose, editing, initialValues }: Prop
   }, [open, editing, initialValues])
 
   const save = async () => {
-    if (!task) return setError('בחר משימה')
+    if (!task) return setError('בחר פרויקט')
     let durationMin: number | null
     if (mode === 'range') {
       if (!startTime || !endTime) return setError('מלא שעת התחלה וסיום')
@@ -130,7 +130,7 @@ export function ManualEntryModal({ open, onClose, editing, initialValues }: Prop
   return (
     <Modal open={open} title={editing ? 'עריכת דיווח' : 'דיווח ידני'} onClose={onClose}>
       <div className="space-y-3">
-        <Field label="משימה">
+        <Field label="פרויקט">
           <button
             onClick={() => setPickerOpen(true)}
             className="w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-right text-slate-100"
@@ -141,7 +141,7 @@ export function ManualEntryModal({ open, onClose, editing, initialValues }: Prop
                 <span className="block text-xs text-slate-500">{task.projectName}</span>
               </>
             ) : (
-              <span className="text-slate-500">לחץ לבחירת משימה…</span>
+              <span className="text-slate-500">לחץ לבחירת פרויקט…</span>
             )}
           </button>
         </Field>

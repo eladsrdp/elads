@@ -27,7 +27,7 @@ export function TimerCard() {
         >
           <span className="text-4xl">▶️</span>
           <span className="font-semibold text-slate-100">התחל טיימר</span>
-          <span className="text-xs text-slate-500">בחר משימה והתחל לעבוד</span>
+          <span className="text-xs text-slate-500">בחר פרויקט והתחל לעבוד</span>
         </button>
         <TaskPicker
           open={pickerOpen}
