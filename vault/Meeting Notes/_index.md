@@ -22,3 +22,4 @@
 - [[obsidian-config]] — הגדרות Obsidian (.obsidian/) ומבנה ה-vault
 - [[repo-github-migration]] — הגירה ל-github.com/eladsrdp/elads + נהלי vault וקומיט אוטומטי
 - [[hargal-ors-ws]] — ממשק SOAP למערכת שכר הרגל ORS — קליטה/עדכון/שליפת עובדים
+- [[priority-yoman-ws]] — ממשק REST לפקודות יומן Priority כולל שדות PCN874 (מע"מ)
