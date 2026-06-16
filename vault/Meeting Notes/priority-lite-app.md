@@ -4,7 +4,9 @@
 אפליקציית web ‏(PWA, עברית RTL) בתיקייה `priority-lite/` שעוטפת את Priority ERP בממשק מהיר: טיימר, דיווחי שעות ידניים, סיכומים (יום/שבוע/חודש לפי פרויקט→משימה), וחיפוש משימות. ארכיטקטורה: monorepo ‏(npm workspaces) עם `shared/` (טיפוסים), `server/` (Hono + better-sqlite3, אימות OTP במייל לפי whitelist טלפונים, JWT cookie ל-7 ימים, adapter מבודד מול Priority OData עם mock לפיתוח), ו-`client/` (React 19 + Vite 8 + Tailwind v4 + Dexie). דיווחים נשמרים כטיוטות מקומיות ונשלחים לפריוריטי רק אחרי אישור המשתמש (תוצאה פר-פריט, שגיאות עם retry). שכבת actions עם zod schemas מוכנה לחיבור צ'אט-LLM בשלב 3. סטטוס: M0–M5 בנויים ומאומתים מול mock ‏(32 בדיקות + E2E בדפדפן); מיילים אמיתיים דרך Resend פעילים; **קריאה וכתיבה אמיתיות מול פריוריטי אומתו בפרודקשן** (PAT + Basic auth; קריאה דרך scripts/report.ts; כתיבה — POST שטוח ל-ZRDP_TRANSORDER_q עם DOCNO+PARTNAME='ש'ע'+PDES, אומת E2E דרך מסלול האפליקציה ונוקה); נותר רק מעבר קבוע ל-PRIORITY_MODE=real ופריסה (M7).
 
 ## Open Questions
-- **Supabase**: ה-URL נשמר ב-.env (uryyijvcafmzqjuqankl); עדיין חסר service_role key + הרצת supabase-schema.sql + seed. עד שכולם קיימים — נשאר Local mode (factory דורש URL וגם key).
+- **Supabase**: ה-URL נשמר ב-.env; עדיין חסר service_role key + הרצת supabase-schema.sql + seed. עד שכולם קיימים — נשאר Local mode.
+- **CUSTNOTESA E2E**: לא נבדק מול פריוריטי אמיתי עם PRIORITY_MODE=real — elads אין לו משימות פתוחות. לבדוק עם moti/tal שיש להם CUSTNOTE אמיתי.
+- **יצירת משימה חדשה**: POST ל-CUSTNOTESA אמיתי לא נבדק — יתכן שדרוש הגדרת שדות נוספים (TOPICDES וכד') לפי הגדרות חברה.
 - **כתיבה לפריוריטי — עובד ואומת E2E** ✅: POST ל-collection השטוח `ZRDP_TRANSORDER_q` עם DOCNO+PARTNAME('ש'ע')+PDES+CURDATE(תאריך בלבד)+USERLOGIN+TQUANT. אומת דרך מסלול האפליקציה המלא (app→server→Priority, ‏priorityRef חזר, נמחק). הערה: פרויקטים מסוימים (PR26000025) דוחים עם "נא להוריד דגל לחיוב" — כלל פר-פרויקט, לא באג. ה-billable עדיין לא נבדק לעומק מול פרויקט שמאפשר חיוב.
 - **Resend domain** — whitelist רשום עם @dpri.com אבל Resend (בלי דומיין מאומת) שולח רק ל-elads@rdpri.com. להדגמה מקומית עברנו ל-EMAIL_MODE=console (קוד בטרמינל). למיילים אמיתיים לכל העובדים — לאמת דומיין.
 - אין dedupe מול Priority בכשל רשת אחרי שליחה חלקית — סיכון דיווח כפול
@@ -109,6 +111,12 @@
 - **Decisions:** ה-JSON של המשתמש הוא ה-authority. אומת חי: POST גולמי ל-PR23000014 → 201 + נמחק; ואז **מסלול אפליקציה מלא** (fetch ל-/api/time-entries/sync) → `ok:true, priorityRef:82385` → נמחק מפריוריטי. סוונג נקי: 0 שורות elads ב-2026-06-11. שגיאה נקייה אומתה על PR26000025 ("נא להוריד דגל לחיוב").
 - **Notes / Caveats:** כל בדיקות הכתיבה נוקו (DELETE על TRANS). PR26000025 דוחה בגלל כלל חיוב פר-פרויקט — לא באג. node --watch טוען מחדש קוד (לא .env).
 - **Related:** [[repo-github-migration]]
+
+### 2026-06-16 — פיצ'ר משימות לקוח (CUSTNOTESA): קישור דיווחים למשימות [shipped]
+- **What was done:** זוהה שה-"משימה" ב-RDP = רשומה ב-`CUSTNOTESA` (EntitySet נגיש, מפתח `CUSTNOTE` Int64). שדה `CUSTNOTE` כבר קיים ב-`ZRDP_TRANSORDER_q` כ-FK. מימוש מלא בכל ה-stack: `CustNote` + `CreateCustNoteInput` ב-shared types; `custNoteFields` + `custnote` ב-mapping.ts; `listCustNotes` / `createCustNote` ב-adapter interface, odata (מול פריוריטי אמיתי), ו-mock (4 רשומות לדוגמה); actions עם zod schemas; endpoints `GET+POST /api/tasks/:id/custnotes` (מאתר CUSTNAME דרך lookup הפרויקט); `custnoteId` ב-`reportTimeSchema` ו-sync payload; ב-`ManualEntryModal`: dropdown "משימה (אופציונלי)" + טופס inline לפתיחת משימה חדשה (subject + תאריך יעד). Sites ו-CustNotes נטענים במקביל (Promise.all). TypeScript נקי, 32 בדיקות עוברות.
+- **Decisions:** גישה B (משימה אופציונלית בדיווח הקיים) — backward compatible, לא שובר כלום. `CUSTNOTE` נשלח כ-Int64 בלבד (לא string — הסיבה לשגיאות שרת קודמות). יצירת משימה ב-`POST /api/tasks/:id/custnotes` עם `userLogin = me.priorityEmpId` (לא מהקליינט — אבטחה). `TILLDATE` ו-`PROJDOCNO` אופציונליים.
+- **Notes / Caveats:** לא נבדק E2E מול פריוריטי אמיתי עם `PRIORITY_MODE=real` (elads אין לו משימות פתוחות ב-CUSTNOTESA). Mock מאמת את ה-flow המלא. לאמת עם משתמש שיש לו משימות (moti/tal/yosi) — ראו נתוני חיפוש מהסשן הקודם.
+- **Related:** [[priority-lite-app]], [[repo-github-migration]]
 
 ### 2026-06-11 — בורר אתרים (DCODE) ללקוחות רב-אתריים [shipped]
 - **What was done:** הוסף שדה "אתר" (DCODE) לדיווחים — נדרש בלקוחות כמו פיק אנד פאק. מקור האתרים: `CUSTOMERS(CUSTNAME)/CUSTDESTS_SUBFORM` (CODE+CODEDES); ‏TaskSummary.projectId כבר = CUSTNAME. נוסף endpoint `GET /api/tasks/:id/sites` (מאתר לקוח דרך getTask ואז שולף אתרים), `adapter.listSites(customerId)`, ‏`tf.dcode='DCODE'`, ושליחת DCODE ב-createTimeEntry. בקליינט: בורר אתר (select) ב-ManualEntryModal שמופיע רק אם לפרויקט יש אתרים, חובה לבחור כשקיימים; ‏dcode+siteName נשמרים בטיוטה ונשלחים ב-sync; הוצג גם ב-EntryRow (📍). mock: לקוח P-200 מדמה רב-אתרים.
