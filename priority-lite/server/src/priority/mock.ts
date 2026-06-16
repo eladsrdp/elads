@@ -1,6 +1,6 @@
 // Adapter מדומה — מאפשר פיתוח ובדיקות מלאות לפני חיבור לפריוריטי אמיתי.
 // מדמה latency של רשת וכשלים אקראיים (MOCK_FAIL_RATE) לבדיקת UI של שגיאות.
-import type { RemoteTimeEntry, TaskDetail } from '@priority-lite/shared'
+import type { CustNote, RemoteTimeEntry, TaskDetail } from '@priority-lite/shared'
 import type { NewTimeEntry, PriorityAdapter } from './adapter'
 
 const PROJECTS = [
@@ -54,11 +54,20 @@ const TASKS: TaskDetail[] = [
   task('T-1020', 'סדנת דוחות מתקדמים', 4, 'ממתינה'),
 ]
 
+const MOCK_CUSTNOTES: CustNote[] = [
+  { id: 5001, subject: 'הטמעה ראשונית — הגדרת סביבה', custName: 'P-100', custDes: 'לקוח אלפא', statDes: 'לפיתוח', tillDate: '2026-07-31', projDocNo: 'P-100', hoursReported: 4 },
+  { id: 5002, subject: 'בדיקות קבלה שלב א׳', custName: 'P-100', custDes: 'לקוח אלפא', statDes: 'טיוטא', projDocNo: 'P-100', hoursReported: 0 },
+  { id: 5003, subject: 'ממשק WMS — תיקון דילוגי שורות', custName: 'P-200', custDes: 'שדרוג לוגיסטיקה', statDes: 'לפיתוח', tillDate: '2026-06-30', projDocNo: 'P-200', hoursReported: 2 },
+  { id: 5004, subject: 'הדרכת צוות כספים', custName: 'P-500', custDes: 'הדרכות', statDes: 'ממתינה לאישור', projDocNo: 'P-500', hoursReported: 0 },
+]
+
 export function createMockAdapter(opts: { failRate?: number } = {}): PriorityAdapter {
   const failRate = opts.failRate ?? 0
   const entries: (RemoteTimeEntry & { empId: string })[] = []
+  const custNotes = [...MOCK_CUSTNOTES]
   let refCounter = 1000
   let taskCounter = 2000
+  let custNoteCounter = 6000
 
   async function simulate(op: string): Promise<void> {
     await new Promise((r) => setTimeout(r, 150 + Math.random() * 350))
@@ -133,6 +142,28 @@ export function createMockAdapter(opts: { failRate?: number } = {}): PriorityAda
         ]
       }
       return []
+    },
+
+    async listCustNotes(custName) {
+      await simulate('שליפת משימות לקוח')
+      return custNotes.filter((n) => n.custName === custName)
+    },
+
+    async createCustNote(input) {
+      await simulate('יצירת משימה')
+      const project = PROJECTS.find((p) => p.id === input.custName)
+      const created: CustNote = {
+        id: ++custNoteCounter,
+        subject: input.subject,
+        custName: input.custName,
+        custDes: project?.name ?? input.custName,
+        statDes: 'טיוטא',
+        tillDate: input.tillDate,
+        projDocNo: input.projDocNo,
+        hoursReported: 0,
+      }
+      custNotes.push(created)
+      return created
     },
   }
 }

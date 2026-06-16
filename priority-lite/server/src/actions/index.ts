@@ -53,6 +53,7 @@ export const reportTimeSchema = z.object({
   ordLine: z.number().int().min(1).optional(),
   billable: z.boolean().optional(),
   dcode: z.string().max(20).optional(),
+  custnoteId: z.number().int().positive().optional(), // CUSTNOTE — FK למשימה (Int64)
 })
 
 /** דיווח בודד — כשל הופך לתוצאת שגיאה פר-פריט במקום exception. */
@@ -74,6 +75,7 @@ export async function reportTime(
       ordLine: input.ordLine,
       billable: input.billable,
       dcode: input.dcode,
+      custnoteId: input.custnoteId,
     })
     return { clientId: input.clientId, ok: true, priorityRef }
   } catch (err) {
@@ -94,6 +96,23 @@ export async function listSites(
   input: z.infer<typeof listSitesSchema>,
 ) {
   return adapter.listSites(input.customerId)
+}
+
+export const listCustNotesSchema = z.object({ custName: z.string().min(1) })
+
+export async function listCustNotes(adapter: PriorityAdapter, _me: Me, input: z.infer<typeof listCustNotesSchema>) {
+  return adapter.listCustNotes(input.custName)
+}
+
+export const createCustNoteSchema = z.object({
+  custName: z.string().min(1),
+  subject: z.string().min(2).max(52),
+  projDocNo: z.string().optional(),
+  tillDate: z.string().regex(dateRe).optional(),
+})
+
+export async function createCustNote(adapter: PriorityAdapter, me: Me, input: z.infer<typeof createCustNoteSchema>) {
+  return adapter.createCustNote({ ...input, userLogin: me.priorityEmpId })
 }
 
 export const getTimeEntriesSchema = z.object({

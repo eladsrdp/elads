@@ -110,6 +110,7 @@ export async function syncEntries(ids: string[]): Promise<SyncSummary> {
           ordLine: e.ordLine,
           billable: e.billable,
           dcode: e.dcode || undefined,
+          custnoteId: e.custnoteId,
         })),
       },
     })

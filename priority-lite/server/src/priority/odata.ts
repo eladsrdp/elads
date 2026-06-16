@@ -1,6 +1,6 @@
 // Adapter אמיתי מול Priority REST API (OData v4).
 // מבנה הנתונים מופה מתוך $metadata ודיווחים אמיתיים — ראו mapping.ts.
-import type { TaskSummary } from '@priority-lite/shared'
+import type { CustNote, TaskSummary } from '@priority-lite/shared'
 import type { NewTimeEntry, PriorityAdapter } from './adapter'
 import { assertMappingComplete, priorityMapping as m } from './mapping'
 
@@ -201,6 +201,8 @@ export function createODataAdapter(cfg: ODataConfig): PriorityAdapter {
       if (entry.ordLine != null) body[tf.ordLine] = entry.ordLine
       if (entry.billable) body[tf.billable] = 'Y'
       if (entry.dcode) body[tf.dcode] = entry.dcode
+      // SECURITY: CUSTNOTE הוא Int64 — לא שולחים string ולא מאפשרים טקסט חופשי
+      if (entry.custnoteId) body[tf.custnote] = entry.custnoteId
 
       const row = await request<Row>(m.entities.timeEntries, {
         method: 'POST',
@@ -221,6 +223,48 @@ export function createODataAdapter(cfg: ODataConfig): PriorityAdapter {
           name: String(row[m.siteFields.name] ?? '').trim(),
         }))
         .filter((s) => s.code)
+    },
+
+    async listCustNotes(custName) {
+      const cf = m.custNoteFields
+      const select = [cf.id, cf.subject, cf.custDes, cf.statDes, cf.tillDate, cf.projDocNo, cf.hours].join(',')
+      const filter = `${cf.closed} eq 'N' and ${cf.custName} eq '${escapeOData(custName)}'`
+      const data = await request<{ value: Row[] }>(
+        `${m.entities.custNotes}?$select=${select}&$filter=${encodeURI(filter)}&$orderby=${cf.id} desc&$top=100`,
+      )
+      return data.value.map((row): CustNote => ({
+        id: Number(row[cf.id] ?? 0),
+        subject: String(row[cf.subject] ?? ''),
+        custName,
+        custDes: String(row[cf.custDes] ?? ''),
+        statDes: row[cf.statDes] != null ? String(row[cf.statDes]) : undefined,
+        tillDate: row[cf.tillDate] != null ? String(row[cf.tillDate]).slice(0, 10) : undefined,
+        projDocNo: row[cf.projDocNo] != null ? String(row[cf.projDocNo]).trim() || undefined : undefined,
+        hoursReported: row[cf.hours] != null ? Number(row[cf.hours]) : undefined,
+      }))
+    },
+
+    async createCustNote(input) {
+      const cf = m.custNoteFields
+      const body: Row = {
+        [cf.subject]: input.subject.slice(0, 52),
+        [cf.custName]: input.custName,
+        [cf.userLogin]: input.userLogin,
+      }
+      if (input.tillDate) body[cf.tillDate] = input.tillDate
+      if (input.projDocNo) body[cf.projDocNo] = input.projDocNo
+      const row = await request<Row>(m.entities.custNotes, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      })
+      return {
+        id: Number(row[cf.id] ?? 0),
+        subject: String(row[cf.subject] ?? input.subject),
+        custName: input.custName,
+        custDes: String(row[cf.custDes] ?? ''),
+        statDes: row[cf.statDes] != null ? String(row[cf.statDes]) : undefined,
+        projDocNo: input.projDocNo,
+      }
     },
 
     async getTimeEntries(priorityEmpId, from, to) {

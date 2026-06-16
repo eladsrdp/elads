@@ -4,7 +4,7 @@ import { api } from '../lib/api'
 import { todayISO } from '../lib/date'
 import { diffMinutes, fmtMin, parseDuration, roundUpToQuarterHour } from '../lib/duration'
 import { addDraft, updateDraft } from '../state/useEntries'
-import type { LocalTimeEntry, ProjectSite, TaskSummary } from '../types'
+import type { CustNote, LocalTimeEntry, ProjectSite, TaskSummary } from '../types'
 import type { ParsedEntry } from './AiEntryModal'
 import { Field, PrimaryButton, TextInput } from './forms'
 import { Modal } from './Modal'
@@ -38,6 +38,13 @@ export function ManualEntryModal({ open, onClose, editing, initialValues }: Prop
   const [sites, setSites] = useState<ProjectSite[]>([])
   const [dcode, setDcode] = useState('')
   const [sitesLoading, setSitesLoading] = useState(false)
+  const [custNotes, setCustNotes] = useState<CustNote[]>([])
+  const [custNotesLoading, setCustNotesLoading] = useState(false)
+  const [custnoteId, setCustnoteId] = useState<number | null>(null)
+  const [showNewTask, setShowNewTask] = useState(false)
+  const [newTaskSubject, setNewTaskSubject] = useState('')
+  const [newTaskTillDate, setNewTaskTillDate] = useState('')
+  const [newTaskLoading, setNewTaskLoading] = useState(false)
 
   useEffect(() => {
     if (!open) return
@@ -59,6 +66,7 @@ export function ManualEntryModal({ open, onClose, editing, initialValues }: Prop
       setOrdLine(editing.ordLine != null ? String(editing.ordLine) : '')
       setExtraOpen(!!(editing.ordName || editing.ordLine != null))
       setDcode(editing.dcode ?? '')
+      setCustnoteId(editing.custnoteId ?? null)
     } else if (initialValues) {
       setTask(initialValues.task ?? null)
       setDate(initialValues.date ?? todayISO())
@@ -72,6 +80,7 @@ export function ManualEntryModal({ open, onClose, editing, initialValues }: Prop
       setOrdLine(initialValues.ordLine != null ? String(initialValues.ordLine) : '')
       setExtraOpen(!!(initialValues.ordName || initialValues.ordLine != null))
       setDcode('')
+      setCustnoteId(null)
     } else {
       setTask(null)
       setDate(todayISO())
@@ -85,26 +94,56 @@ export function ManualEntryModal({ open, onClose, editing, initialValues }: Prop
       setOrdLine('')
       setExtraOpen(false)
       setDcode('')
+      setCustnoteId(null)
     }
     setError('')
+    setShowNewTask(false)
+    setNewTaskSubject('')
+    setNewTaskTillDate('')
   }, [open, editing, initialValues])
 
-  // טעינת אתרי הלקוח (DCODE) לפרויקט הנבחר — מציג בורר רק אם יש אתרים
+  // טעינת אתרי הלקוח (DCODE) ומשימות פתוחות (CUSTNOTESA) לפרויקט הנבחר
   useEffect(() => {
     if (!open || !task?.id) {
       setSites([])
+      setCustNotes([])
       return
     }
     let cancelled = false
     setSitesLoading(true)
-    api<ProjectSite[]>(`/api/tasks/${encodeURIComponent(task.id)}/sites`)
-      .then((s) => !cancelled && setSites(s))
-      .catch(() => !cancelled && setSites([]))
-      .finally(() => !cancelled && setSitesLoading(false))
-    return () => {
-      cancelled = true
-    }
+    setCustNotesLoading(true)
+    const taskPath = `/api/tasks/${encodeURIComponent(task.id)}`
+    Promise.all([
+      api<ProjectSite[]>(`${taskPath}/sites`).catch(() => [] as ProjectSite[]),
+      api<CustNote[]>(`${taskPath}/custnotes`).catch(() => [] as CustNote[]),
+    ]).then(([s, n]) => {
+      if (!cancelled) { setSites(s); setCustNotes(n) }
+    }).finally(() => {
+      if (!cancelled) { setSitesLoading(false); setCustNotesLoading(false) }
+    })
+    return () => { cancelled = true }
   }, [open, task?.id])
+
+  const createNewTask = async () => {
+    if (!task?.id || !newTaskSubject.trim()) return
+    setNewTaskLoading(true)
+    setError('')
+    try {
+      const created = await api<CustNote>(`/api/tasks/${encodeURIComponent(task.id)}/custnotes`, {
+        method: 'POST',
+        json: { subject: newTaskSubject.trim(), tillDate: newTaskTillDate || undefined },
+      })
+      setCustNotes((prev) => [created, ...prev])
+      setCustnoteId(created.id)
+      setShowNewTask(false)
+      setNewTaskSubject('')
+      setNewTaskTillDate('')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'שגיאה ביצירת המשימה')
+    } finally {
+      setNewTaskLoading(false)
+    }
+  }
 
   const save = async () => {
     if (!task) return setError('בחר פרויקט')
@@ -144,6 +183,8 @@ export function ManualEntryModal({ open, onClose, editing, initialValues }: Prop
       ordLine: parsedOrdLine,
       dcode: dcode || undefined,
       siteName: sites.find((s) => s.code === dcode)?.name || undefined,
+      custnoteId: custnoteId ?? undefined,
+      custnoteName: custnoteId ? (custNotes.find((n) => n.id === custnoteId)?.subject ?? undefined) : undefined,
     }
 
     if (editing) {
@@ -197,6 +238,76 @@ export function ManualEntryModal({ open, onClose, editing, initialValues }: Prop
                   </option>
                 ))}
               </select>
+            )}
+          </Field>
+        )}
+
+        {/* בורר משימה (CUSTNOTESA) — אופציונלי, מופיע לאחר בחירת פרויקט */}
+        {task && (
+          <Field label="משימה (אופציונלי)">
+            {custNotesLoading ? (
+              <p className="px-1 py-2 text-sm text-slate-500">טוען משימות…</p>
+            ) : (
+              <>
+                <div className="flex gap-2">
+                  <select
+                    value={custnoteId ?? ''}
+                    onChange={(e) => setCustnoteId(e.target.value ? Number(e.target.value) : null)}
+                    className="flex-1 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-slate-100 outline-none focus:border-emerald-500"
+                  >
+                    <option value="">ללא משימה</option>
+                    {custNotes.map((n) => (
+                      <option key={n.id} value={n.id}>
+                        {n.subject}{n.statDes ? ` · ${n.statDes}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => setShowNewTask((v) => !v)}
+                    title="פתח משימה חדשה"
+                    className="rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-emerald-400 hover:border-emerald-600 transition"
+                  >
+                    +
+                  </button>
+                </div>
+
+                {showNewTask && (
+                  <div className="mt-2 rounded-xl border border-slate-600 bg-slate-800/50 p-3 space-y-2">
+                    <p className="text-sm font-medium text-slate-300">פתיחת משימה חדשה</p>
+                    <Field label="נושא *">
+                      <TextInput
+                        placeholder="תיאור קצר של המשימה"
+                        value={newTaskSubject}
+                        maxLength={52}
+                        onChange={(e) => setNewTaskSubject(e.target.value)}
+                      />
+                    </Field>
+                    <Field label="תאריך יעד">
+                      <TextInput
+                        type="date"
+                        value={newTaskTillDate}
+                        onChange={(e) => setNewTaskTillDate(e.target.value)}
+                      />
+                    </Field>
+                    <div className="flex gap-2">
+                      <PrimaryButton
+                        onClick={createNewTask}
+                        disabled={newTaskLoading || !newTaskSubject.trim()}
+                      >
+                        {newTaskLoading ? 'שולח…' : 'פתח משימה'}
+                      </PrimaryButton>
+                      <button
+                        type="button"
+                        onClick={() => { setShowNewTask(false); setNewTaskSubject(''); setNewTaskTillDate('') }}
+                        className="rounded-xl border border-slate-700 px-3 py-2 text-sm text-slate-400 hover:text-slate-200 transition"
+                      >
+                        ביטול
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </Field>
         )}

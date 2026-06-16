@@ -1,6 +1,8 @@
 // טיפוסי הקליינט — מייצא את המשותפים ומוסיף את מודל הטיוטות המקומי.
 export type {
+  CreateCustNoteInput,
   CreateTaskInput,
+  CustNote,
   Me,
   ProjectSite,
   RemoteTimeEntry,
@@ -24,11 +26,13 @@ export interface LocalTimeEntry {
   startTime?: string // HH:MM
   endTime?: string // HH:MM
   note?: string
-  ordName?: string  // מספר הזמנה — נדרש בפיק אנד פאק, שחר וכו'
-  ordLine?: number  // שורת ההזמנה
-  billable?: boolean // לחיוב
-  dcode?: string    // אתר/יעד (DCODE) — נדרש בחלק מהלקוחות
-  siteName?: string // תאור האתר — לתצוגה בלבד
+  ordName?: string    // מספר הזמנה — נדרש בפיק אנד פאק, שחר וכו'
+  ordLine?: number    // שורת ההזמנה
+  billable?: boolean  // לחיוב
+  dcode?: string      // אתר/יעד (DCODE) — נדרש בחלק מהלקוחות
+  siteName?: string   // תאור האתר — לתצוגה בלבד
+  custnoteId?: number // CUSTNOTE — FK למשימת הלקוח (CUSTNOTESA), אופציונלי
+  custnoteName?: string // SUBJECT של המשימה — לתצוגה בלבד
   source: 'timer' | 'manual'
   priorityRef?: string
   syncError?: string

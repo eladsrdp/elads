@@ -20,6 +20,8 @@ export const priorityMapping = {
     timeEntries: 'ZRDP_TRANSORDER_q',
     /** לקוחות — שורש לרשימת האתרים (CUSTDESTS_SUBFORM) */
     customers: 'CUSTOMERS',
+    /** משימות לקוח / יומן לקוח (Customer Notes) */
+    custNotes: 'CUSTNOTESA',
   },
   /** תת-טופס אתרי הלקוח (אתרים/יעדים) — CUSTOMERS(CUSTNAME)/<subform> */
   customerSitesSubform: 'CUSTDESTS_SUBFORM',
@@ -53,6 +55,19 @@ export const priorityMapping = {
     ordName: 'ORDNAME',  // מספר הזמנה — נדרש בחלק מהלקוחות (פיק, שחר וכו')
     ordLine: 'OLINE',    // שורת ההזמנה
     billable: 'FLAG',    // לחיוב: "Y" = כן, null = לא
+    custnote: 'CUSTNOTE', // FK למשימת הלקוח (CUSTNOTESA.CUSTNOTE, Int64) — אופציונלי
+  },
+  custNoteFields: {
+    id: 'CUSTNOTE',        // מפתח ראשי (Int64)
+    subject: 'SUBJECT',    // כותרת המשימה (עד 52 תווים)
+    custName: 'CUSTNAME',  // קוד הלקוח
+    custDes: 'CUSTDES',    // שם הלקוח
+    statDes: 'STATDES',    // סטטוס
+    closed: 'CLOSED',      // "Y" = סגורה, "N" = פתוחה
+    tillDate: 'TILLDATE',  // תאריך יעד
+    userLogin: 'USERLOGIN', // בעל המשימה
+    projDocNo: 'PROJDOCNO', // מזהה הפרויקט המקושר
+    hours: 'ZRDP_HOURS',   // שעות שדווחו
   },
   /** TQUANT הוא שעות עשרוניות (1.75 = שעה ושלושת-רבעי) */
   hoursAsDecimal: true,
