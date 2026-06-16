@@ -3,6 +3,7 @@
 
 # Environment secrets — never commit real keys (.env.example IS tracked)
 .env
+hargal-ws/.env
 
 # Yael's output — generated content, not source-controlled
 Output/
