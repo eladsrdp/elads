@@ -4,3 +4,4 @@ data/
 .env
 whitelist.json
 *.tsbuildinfo
+api/bundle.mjs

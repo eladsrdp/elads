@@ -10,12 +10,13 @@
   ],
   "scripts": {
     "dev": "concurrently -n srv,web -c blue,green \"npm run dev -w server\" \"npm run dev -w client\"",
-    "build": "npm run build -w client",
+    "build": "node_modules/.bin/esbuild api/index.ts --bundle --platform=node --format=esm --outfile=api/bundle.mjs --target=node20 && npm run build -w client",
     "test": "npm run test -w server && npm run test -w client",
     "start": "npm run start -w server",
     "seed": "npm run seed -w server"
   },
   "devDependencies": {
-    "concurrently": "^9.1.0"
+    "concurrently": "^9.1.0",
+    "esbuild": "^0.25.0"
   }
 }
