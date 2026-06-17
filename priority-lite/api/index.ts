@@ -1,5 +1,5 @@
 // Vercel serverless entry point
-// TEMP DIAGNOSTIC: zero external dependencies — tests if basic function invocation works
+// DIAGNOSTIC: zero external dependencies
 import type { IncomingMessage, ServerResponse } from 'node:http'
 
 export default function handler(req: IncomingMessage, res: ServerResponse): void {
