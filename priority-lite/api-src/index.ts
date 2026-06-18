@@ -7,6 +7,9 @@ import { env } from '../server/src/env'
 import { createMockAdapter } from '../server/src/priority/mock'
 import { createODataAdapter } from '../server/src/priority/odata'
 
+// SECURITY: not logging env values — only confirming keys exist for debugging
+console.log('[boot] SESSION_SECRET set:', env.SESSION_SECRET !== 'dev-secret-change-me', '| PRIORITY_MODE:', env.PRIORITY_MODE)
+
 const db = createDb(env.SUPABASE_URL, env.SUPABASE_SERVICE_KEY)
 
 const adapter =
