@@ -1,5 +1,5 @@
 // Vercel serverless entry point — wraps the Hono app for deployment.
-import { toNodeHandler } from '@hono/node-server'
+import { getRequestListener } from '@hono/node-server'
 import { createApp } from '../server/src/app'
 import { createDb } from '../server/src/db/db'
 import { createConsoleSender, createResendSender } from '../server/src/email/sender'
@@ -27,4 +27,4 @@ const email =
 
 const app = createApp({ db, adapter, email, env })
 
-export default toNodeHandler(app)
+export default getRequestListener(app)
