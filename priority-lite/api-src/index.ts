@@ -32,5 +32,5 @@ const app = createApp({ db, adapter, email, env })
 
 // Named export forces esbuild CJS wrapper to generate exports.default + module.exports = __toCommonJS(...)
 // The vercel-build.mjs footer then sets module.exports = exports.default (the callable handler).
-export const handler = getRequestListener(app)
+export const handler = getRequestListener(app.fetch)
 export default handler
