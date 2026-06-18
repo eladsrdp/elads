@@ -23,6 +23,7 @@ export function createLocalDb(whitelistPath = './whitelist.json'): AppDB {
           priority_emp_id: e.priorityEmpId,
           name: e.name,
           active: e.active !== false,
+          totp_secret: null,
         })
       }
       console.log(`[local-db] ${employees.size} עובדים נטענו מ-${whitelistPath}`)
@@ -40,13 +41,20 @@ export function createLocalDb(whitelistPath = './whitelist.json'): AppDB {
     },
 
     async upsertEmployee(e) {
+      const existing = employees.get(e.phone)
       employees.set(e.phone, {
         phone: e.phone,
         email: e.email,
         priority_emp_id: e.priorityEmpId,
         name: e.name,
         active: e.active !== false,
+        totp_secret: existing?.totp_secret ?? null,
       })
+    },
+
+    async setTotpSecret(phone, secret) {
+      const row = employees.get(phone)
+      if (row) employees.set(phone, { ...row, totp_secret: secret })
     },
 
     async getOtpRow(phone) {

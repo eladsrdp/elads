@@ -1,40 +1,36 @@
-// מסך כניסה — טלפון → OTP במייל → session.
-import { useEffect, useState } from 'react'
+// מסך כניסה — טלפון → QR (פעם ראשונה) / קוד (כניסות חוזרות).
+import { useState } from 'react'
 import { Field, PrimaryButton, TextInput } from '../components/forms'
 import { ApiError, api } from '../lib/api'
 import { useAuth } from '../state/useAuth'
 import type { Me } from '../types'
 
-type Step = 'phone' | 'code'
+type Step = 'phone' | 'qr' | 'code'
 
 export function Login() {
   const { login } = useAuth()
   const [step, setStep] = useState<Step>('phone')
   const [phone, setPhone] = useState('')
   const [code, setCode] = useState('')
-  const [emailHint, setEmailHint] = useState('')
+  const [qrDataUrl, setQrDataUrl] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
-  const [cooldown, setCooldown] = useState(0)
 
-  useEffect(() => {
-    if (cooldown <= 0) return
-    const id = setTimeout(() => setCooldown((c) => c - 1), 1000)
-    return () => clearTimeout(id)
-  }, [cooldown])
-
-  const requestCode = async () => {
+  const initiate = async () => {
     setBusy(true)
     setError('')
     try {
-      const res = await api<{ ok: true; emailHint: string }>('/api/auth/request-otp', {
-        method: 'POST',
-        json: { phone },
-      })
-      setEmailHint(res.emailHint)
-      setStep('code')
+      const res = await api<{ ok: true; firstTime: boolean; qrDataUrl?: string }>(
+        '/api/auth/initiate',
+        { method: 'POST', json: { phone } },
+      )
       setCode('')
-      setCooldown(30)
+      if (res.firstTime && res.qrDataUrl) {
+        setQrDataUrl(res.qrDataUrl)
+        setStep('qr')
+      } else {
+        setStep('code')
+      }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'שגיאה — נסה שוב')
     } finally {
@@ -46,7 +42,7 @@ export function Login() {
     setBusy(true)
     setError('')
     try {
-      const me = await api<Me>('/api/auth/verify-otp', { method: 'POST', json: { phone, code } })
+      const me = await api<Me>('/api/auth/verify', { method: 'POST', json: { phone, code } })
       login(me)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'שגיאה — נסה שוב')
@@ -63,12 +59,12 @@ export function Login() {
         <p className="mt-1 text-sm text-slate-500">דיווחי שעות ופרויקטים — בקלות</p>
       </div>
 
-      {step === 'phone' ? (
+      {step === 'phone' && (
         <form
           className="space-y-4"
           onSubmit={(e) => {
             e.preventDefault()
-            void requestCode()
+            void initiate()
           }}
         >
           <Field label="מספר טלפון נייד">
@@ -83,10 +79,12 @@ export function Login() {
             />
           </Field>
           <PrimaryButton type="submit" disabled={busy || phone.trim().length < 9}>
-            {busy ? 'שולח…' : 'שלח לי קוד למייל'}
+            {busy ? 'בודק…' : 'המשך'}
           </PrimaryButton>
         </form>
-      ) : (
+      )}
+
+      {step === 'qr' && (
         <form
           className="space-y-4"
           onSubmit={(e) => {
@@ -94,9 +92,49 @@ export function Login() {
             void verify()
           }}
         >
-          <p className="text-center text-sm text-slate-400">
-            שלחנו קוד בן 6 ספרות אל <span className="ltr-nums font-medium">{emailHint}</span>
-          </p>
+          <div className="text-center">
+            <p className="text-sm font-medium text-slate-300">הגדרה ראשונה</p>
+            <p className="mt-1 text-xs text-slate-400">
+              סרוק עם Google Authenticator ואז הזן את הקוד
+            </p>
+          </div>
+          <div className="flex justify-center">
+            <img src={qrDataUrl} alt="QR Code" className="rounded-lg" width={200} height={200} />
+          </div>
+          <Field label="קוד מה-Authenticator">
+            <TextInput
+              autoFocus
+              inputMode="numeric"
+              dir="ltr"
+              maxLength={6}
+              placeholder="● ● ● ● ● ●"
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+              style={{ textAlign: 'center', letterSpacing: '0.5em', fontSize: '1.25rem' }}
+            />
+          </Field>
+          <PrimaryButton type="submit" disabled={busy || code.length !== 6}>
+            {busy ? 'בודק…' : 'כניסה'}
+          </PrimaryButton>
+          <button
+            type="button"
+            onClick={() => setStep('phone')}
+            className="block w-full text-center text-sm text-slate-500 hover:text-slate-300"
+          >
+            ← מספר אחר
+          </button>
+        </form>
+      )}
+
+      {step === 'code' && (
+        <form
+          className="space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault()
+            void verify()
+          }}
+        >
+          <p className="text-center text-sm text-slate-400">הזן את הקוד מה-Google Authenticator</p>
           <Field label="קוד אימות">
             <TextInput
               autoFocus
@@ -112,23 +150,13 @@ export function Login() {
           <PrimaryButton type="submit" disabled={busy || code.length !== 6}>
             {busy ? 'בודק…' : 'כניסה'}
           </PrimaryButton>
-          <div className="flex items-center justify-between text-sm">
-            <button
-              type="button"
-              onClick={() => setStep('phone')}
-              className="text-slate-500 hover:text-slate-300"
-            >
-              ← מספר אחר
-            </button>
-            <button
-              type="button"
-              disabled={cooldown > 0 || busy}
-              onClick={() => void requestCode()}
-              className="text-emerald-400 disabled:text-slate-600"
-            >
-              {cooldown > 0 ? `שלח שוב (${cooldown})` : 'שלח קוד חדש'}
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setStep('phone')}
+            className="block w-full text-center text-sm text-slate-500 hover:text-slate-300"
+          >
+            ← מספר אחר
+          </button>
         </form>
       )}
 

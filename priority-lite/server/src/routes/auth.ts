@@ -1,8 +1,10 @@
-// מסלולי אימות: בקשת OTP, אימות, יציאה, מי-אני.
+// מסלולי אימות: TOTP (Google Authenticator), יציאה, מי-אני.
+import { authenticator } from 'otplib'
+import { toDataURL } from 'qrcode'
 import { Hono } from 'hono'
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
 import type { Me } from '@priority-lite/shared'
-import { requestOtp, verifyOtp } from '../auth/otp'
+import { normalizePhone } from '../auth/otp'
 import {
   SESSION_COOKIE,
   SESSION_TTL_SEC,
@@ -12,47 +14,54 @@ import {
 import type { AppContext } from '../context'
 import { isProd } from '../env'
 
-const HEBREW_ERRORS: Record<string, string> = {
-  invalid_phone: 'מספר טלפון לא תקין',
-  not_registered: 'לא זיהינו אותך כעובד RDP — אם טעית במספר, נסה שוב',
-  rate_limited: 'יותר מדי בקשות קוד — נסה שוב בעוד כמה דקות',
-  no_code: 'לא נשלח קוד למספר הזה — בקש קוד חדש',
-  expired: 'הקוד פג תוקף — בקש קוד חדש',
-  too_many_attempts: 'יותר מדי ניסיונות — בקש קוד חדש',
-  wrong_code: 'קוד שגוי',
-}
-
-function maskEmail(email: string): string {
-  const [user, domain] = email.split('@')
-  return `${user.slice(0, 1)}***@${domain}`
-}
-
 export function createAuthRoutes(ctx: AppContext) {
   const app = new Hono()
 
-  app.post('/request-otp', async (c) => {
+  // שלב 1: בדיקת מספר טלפון.
+  // מחזיר { firstTime: true, qrDataUrl } בכניסה ראשונה — המשתמש סורק ומגדיר Authenticator.
+  // מחזיר { firstTime: false } בכניסות הבאות — רק קוד נדרש.
+  // SECURITY: qrDataUrl נשלח רק בפעם הראשונה ונשמר ב-DB לאחר מכן, לא ב-session.
+  app.post('/initiate', async (c) => {
     const body = await c.req.json().catch(() => ({}))
     const phone = typeof body.phone === 'string' ? body.phone : ''
-    const result = await requestOtp(ctx.db, phone)
-    if (!result.ok) {
-      return c.json({ error: HEBREW_ERRORS[result.error] }, result.error === 'rate_limited' ? 429 : 400)
+    const normalized = normalizePhone(phone)
+    if (!normalized) return c.json({ error: 'מספר טלפון לא תקין' }, 400)
+
+    const employee = await ctx.db.findEmployee(normalized)
+    if (!employee) return c.json({ error: 'לא זיהינו אותך כעובד RDP — אם טעית במספר, נסה שוב' }, 400)
+
+    if (employee.totp_secret) {
+      return c.json({ ok: true, firstTime: false })
     }
-    await ctx.email.sendOtp(result.employee.email, result.employee.name, result.code)
-    // הקוד עצמו לעולם לא חוזר בתשובה — רק רמז לאן נשלח
-    return c.json({ ok: true, emailHint: maskEmail(result.employee.email) })
+
+    // פעם ראשונה — יוצרים סוד ו-QR
+    const secret = authenticator.generateSecret()
+    const otpauthUri = authenticator.keyuri(employee.name, 'Priority Lite RDP', secret)
+    const qrDataUrl = await toDataURL(otpauthUri)
+    await ctx.db.setTotpSecret(normalized, secret)
+
+    return c.json({ ok: true, firstTime: true, qrDataUrl })
   })
 
-  app.post('/verify-otp', async (c) => {
+  // שלב 2: אימות קוד TOTP מה-Authenticator.
+  app.post('/verify', async (c) => {
     const body = await c.req.json().catch(() => ({}))
     const phone = typeof body.phone === 'string' ? body.phone : ''
-    const code = typeof body.code === 'string' ? body.code : ''
-    const result = await verifyOtp(ctx.db, phone, code)
-    if (!result.ok) return c.json({ error: HEBREW_ERRORS[result.error] }, 400)
+    const code = typeof body.code === 'string' ? body.code.replace(/\s/g, '') : ''
+    const normalized = normalizePhone(phone)
+    if (!normalized) return c.json({ error: 'מספר טלפון לא תקין' }, 400)
+
+    const employee = await ctx.db.findEmployee(normalized)
+    // SECURITY: לא מבחינים בין "לא נמצא" ל"קוד שגוי" — מניעת user enumeration
+    if (!employee?.totp_secret) return c.json({ error: 'קוד שגוי' }, 400)
+
+    const isValid = authenticator.verify({ token: code, secret: employee.totp_secret })
+    if (!isValid) return c.json({ error: 'קוד שגוי' }, 400)
 
     const me: Me = {
-      phone: result.employee.phone,
-      name: result.employee.name,
-      priorityEmpId: result.employee.priority_emp_id,
+      phone: employee.phone,
+      name: employee.name,
+      priorityEmpId: employee.priority_emp_id,
     }
     const token = await createSessionToken(me, ctx.env.SESSION_SECRET)
     setCookie(c, SESSION_COOKIE, token, {

@@ -14,6 +14,7 @@ export interface EmployeeRow {
   priority_emp_id: string
   name: string
   active: boolean
+  totp_secret: string | null
 }
 
 export interface AppDB {
@@ -25,6 +26,7 @@ export interface AppDB {
     name: string
     active?: boolean
   }): Promise<void>
+  setTotpSecret(phone: string, secret: string): Promise<void>
   getOtpRow(phone: string): Promise<OtpRow | undefined>
   upsertOtp(row: OtpRow): Promise<void>
   updateOtpAttempts(phone: string, attempts: number): Promise<void>

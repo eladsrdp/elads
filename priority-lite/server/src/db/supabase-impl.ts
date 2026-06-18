@@ -13,14 +13,15 @@ export function createSupabaseDb(url: string, serviceKey: string): AppDB {
   }
   const client = createClient(url, serviceKey, {
     auth: { persistSession: false },
-    realtime: { transport: NoopWs as unknown as typeof WebSocket },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    realtime: { transport: NoopWs as any },
   })
 
   return {
     async findEmployee(phone) {
       const { data } = await client
         .from('employees')
-        .select('*')
+        .select('phone, email, priority_emp_id, name, active, totp_secret')
         .eq('phone', phone)
         .eq('active', true)
         .maybeSingle()
@@ -36,6 +37,11 @@ export function createSupabaseDb(url: string, serviceKey: string): AppDB {
         active: e.active !== false,
       })
       if (error) throw new Error(`upsertEmployee failed: ${error.message}`)
+    },
+
+    async setTotpSecret(phone, secret) {
+      const { error } = await client.from('employees').update({ totp_secret: secret }).eq('phone', phone)
+      if (error) throw new Error(`setTotpSecret failed: ${error.message}`)
     },
 
     async getOtpRow(phone) {
