@@ -13,6 +13,8 @@ await mkdir('.vercel/output/functions/api/index.func', { recursive: true })
 await cp('client/dist', '.vercel/output/static', { recursive: true })
 
 // 4. Bundle API with esbuild → function output dir
+// footer: Vercel's Nodejs launcher may call require('./index.js') directly;
+// ensure module.exports IS the handler, not an { default: handler, __esModule } object.
 await build({
   entryPoints: ['api-src/index.ts'],
   bundle: true,
@@ -20,6 +22,7 @@ await build({
   format: 'cjs',
   outfile: '.vercel/output/functions/api/index.func/index.js',
   target: 'node20',
+  footer: { js: 'if (typeof module.exports.default === "function") module.exports = module.exports.default;' },
 })
 
 // 5. Function manifest (required by Build Output API)

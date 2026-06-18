@@ -1,14 +1,19 @@
 // מימוש Supabase של AppDB — לסביבת ענן (Vercel).
 import { createClient } from '@supabase/supabase-js'
-import ws from 'ws'
 import type { AppDB, EmployeeRow, OtpRow } from './interface'
 
 export function createSupabaseDb(url: string, serviceKey: string): AppDB {
-  // Node.js 20 has no native WebSocket — provide ws as the Realtime transport.
+  // Node.js 20 has no native WebSocket. We don't use Supabase Realtime (DB queries only),
+  // so provide a no-op transport to bypass the WebSocket check at client init time.
   // SECURITY: service_role key never logged; auth.persistSession false for serverless.
+  class NoopWs {
+    constructor(_url: string) {}
+    close() {}
+    send() {}
+  }
   const client = createClient(url, serviceKey, {
     auth: { persistSession: false },
-    realtime: { transport: ws as unknown as typeof WebSocket },
+    realtime: { transport: NoopWs as unknown as typeof WebSocket },
   })
 
   return {
