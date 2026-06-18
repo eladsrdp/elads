@@ -17,7 +17,7 @@ await build({
   entryPoints: ['api-src/index.ts'],
   bundle: true,
   platform: 'node',
-  format: 'esm',
+  format: 'cjs',
   outfile: '.vercel/output/functions/api/index.func/index.js',
   target: 'node20',
 })
