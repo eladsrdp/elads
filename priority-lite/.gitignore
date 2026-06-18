@@ -6,3 +6,4 @@ whitelist.json
 *.tsbuildinfo
 api/index.js
 api/bundle.mjs
+.vercel/output/
