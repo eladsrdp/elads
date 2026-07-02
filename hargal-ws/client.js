@@ -7,7 +7,7 @@
 const https = require('https');
 const http = require('http');
 
-const WS_URL = process.env.HARGAL_WS_URL || 'https://hargal.ors.co.il/WS_ORS/HG_WEBSERVICE.SVC';
+const WS_URL = process.env.HARGAL_WS_URL || 'https://hargal.ors.co.il/WS_ORS/HG_WebService.svc';
 
 function buildSoapEnvelope(bodyXml) {
   return `<?xml version="1.0" encoding="utf-8"?>
@@ -54,42 +54,40 @@ function soapRequest(envelope, soapAction) {
   });
 }
 
-function parseXmlValue(xml, tagName) {
-  const pattern = new RegExp(`<[^>]*:?${tagName}[^>]*>([^<]*)<`,'i');
-  const match = xml.match(pattern);
-  return match ? match[1].trim() : null;
-}
-
 function parseEmployees(xml) {
   const employees = [];
-  // Split by employee record delimiter (adjust tag name after seeing real response)
-  const recordPattern = /<[^>]*Worker_Data[^>]*>([\s\S]*?)<\/[^>]*Worker_Data[^>]*>/gi;
-  let match;
-  while ((match = recordPattern.exec(xml)) !== null) {
-    const block = match[1];
-    employees.push({
-      mispar_oved:    parseXmlValue(block, 'Mispar_Oved') || parseXmlValue(block, 'MisparOved'),
-      id:             parseXmlValue(block, 'id') || parseXmlValue(block, 'IDNumber'),
-      firstName:      parseXmlValue(block, 'firstName') || parseXmlValue(block, 'FirstName'),
-      lastName:       parseXmlValue(block, 'lastName') || parseXmlValue(block, 'LastName'),
-      birthDate:      parseXmlValue(block, 'BirthDate'),
-      gender:         parseXmlValue(block, 'Gender'),
-      isForeignWorker:parseXmlValue(block, 'IsForeignWorker') || parseXmlValue(block, 'IsForeignCitizen'),
-      countryOfOrigin:parseXmlValue(block, 'CountryOfOrigin') || parseXmlValue(block, 'Country'),
-      email:          parseXmlValue(block, 'email') || parseXmlValue(block, 'Email'),
-      mobile:         parseXmlValue(block, 'mobile') || parseXmlValue(block, 'Mobile'),
-      tel:            parseXmlValue(block, 'tel'),
-      street:         parseXmlValue(block, 'street') || parseXmlValue(block, 'Address'),
-      houseNo:        parseXmlValue(block, 'houseNo') || parseXmlValue(block, 'Home_Number'),
-      city:           parseXmlValue(block, 'city') || parseXmlValue(block, 'CityCode'),
-      employmentDate: parseXmlValue(block, 'employmentDate') || parseXmlValue(block, 'StartWorkDate'),
-      endDate:        parseXmlValue(block, 'EndDate'),
-      machlaka:       parseXmlValue(block, 'Machlaka'),
-      subDepartment:  parseXmlValue(block, 'SubDepartment') || parseXmlValue(block, 'Mishne'),
-      subFactory:     parseXmlValue(block, 'SubFactory') || parseXmlValue(block, 'TatMifal'),
-      roles:          parseXmlValue(block, 'Roles') || parseXmlValue(block, 'Tafkid'),
-    });
+  // Real response: Worker_Details > Data > Data_Pair[] with Name/Value children
+  const workerPattern = /<[^:>]*:?Worker_Details[^>]*>([\s\S]*?)<\/[^:>]*:?Worker_Details[^>]*>/gi;
+  let workerMatch;
+
+  while ((workerMatch = workerPattern.exec(xml)) !== null) {
+    const block = workerMatch[1];
+    const record = {};
+
+    const pairPattern = /<[^:>]*:?Data_Pair[^>]*>([\s\S]*?)<\/[^:>]*:?Data_Pair[^>]*>/gi;
+    let pairMatch;
+
+    while ((pairMatch = pairPattern.exec(block)) !== null) {
+      const pair = pairMatch[1];
+      const nameMatch = pair.match(/<[^:>]*:?Name[^>]*>([^<]+)<\//i);
+      if (!nameMatch) continue;
+      const fieldName = nameMatch[1].trim();
+
+      // <a:Value i:nil="true"/> → null; <a:Value>text</a:Value> → text
+      const isNil = /<[^:>]*:?Value[^>]+i:nil="true"/i.test(pair);
+      if (isNil) {
+        record[fieldName] = null;
+      } else {
+        const valueMatch = pair.match(/<[^:>]*:?Value[^>]*>([^<]*)<\//i);
+        record[fieldName] = valueMatch ? valueMatch[1].trim() || null : null;
+      }
+    }
+
+    if (record.Mispar_Oved !== undefined) {
+      employees.push(record);
+    }
   }
+
   return employees;
 }
 
@@ -116,7 +114,7 @@ async function getUpdates(kodMifal, sinceDate = new Date('2020-01-01')) {
       </tem:request>
     </tem:Get_Updates>`);
 
-  const result = await soapRequest(envelope, 'http://tempuri.org/IHG_WEBSERVICE/Get_Updates');
+  const result = await soapRequest(envelope, 'http://tempuri.org/IHG_WebService/Get_Updates');
   return { status: result.status, rawXml: result.body, employees: parseEmployees(result.body) };
 }
 
@@ -142,7 +140,7 @@ async function getWorkerState({ kodMifal, misparOved, idNumber, passport }) {
       </tem:worker>
     </tem:Get_Worker_State>`);
 
-  const result = await soapRequest(envelope, 'http://tempuri.org/IHG_WEBSERVICE/Get_Worker_State');
+  const result = await soapRequest(envelope, 'http://tempuri.org/IHG_WebService/Get_Worker_State');
   const employees = parseEmployees(result.body);
   return { status: result.status, rawXml: result.body, employee: employees[0] || null };
 }
@@ -152,7 +150,7 @@ async function getWorkerState({ kodMifal, misparOved, idNumber, passport }) {
  */
 async function isOnline() {
   const envelope = buildSoapEnvelope(`<tem:IsOnline/>`);
-  const result = await soapRequest(envelope, 'http://tempuri.org/IHG_WEBSERVICE/IsOnline');
+  const result = await soapRequest(envelope, 'http://tempuri.org/IHG_WebService/IsOnline');
   const isTrue = result.body.includes('true') || result.body.includes('True');
   return { status: result.status, online: isTrue, rawXml: result.body };
 }

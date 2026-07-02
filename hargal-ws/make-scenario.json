@@ -1,0 +1,140 @@
+{
+    "subflows": [
+        {
+            "flow": [
+                {
+                    "id": 9,
+                    "module": "http:MakeRequest",
+                    "version": 4,
+                    "parameters": {
+                        "authenticationType": "noAuth",
+                        "tlsType": ""
+                    },
+                    "mapper": {
+                        "url": "https://hargal.ors.co.il/WS_ORS/HG_WebService.svc",
+                        "method": "post",
+                        "headers": [
+                            {
+                                "name": "Content-Type",
+                                "value": "text/xml; charset=utf-8"
+                            },
+                            {
+                                "name": "SOAPAction",
+                                "value": "\"http://tempuri.org/IHG_WebService/Get_Updates\""
+                            }
+                        ],
+                        "contentType": "custom",
+                        "parseResponse": true,
+                        "stopOnHttpError": true,
+                        "allowRedirects": true,
+                        "shareCookies": false,
+                        "requestCompressedContent": false,
+                        "contentTypeValue": "text/xml; charset=utf-8",
+                        "rawBodyContent": "<?xml version=\"1.0\" encoding=\"utf-8\"?><soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:tem=\"http://tempuri.org/\" xmlns:har=\"http://schemas.datacontract.org/2004/07/Hargal_Sachar_WS\"><soapenv:Header/><soapenv:Body><tem:Get_Updates><tem:request><har:KodMifal>12</har:KodMifal><har:Password>secret</har:Password><har:RequestDate>2024-01-01T00:00:00</har:RequestDate><har:Username>hargal</har:Username></tem:request></tem:Get_Updates></soapenv:Body></soapenv:Envelope>"
+                    },
+                    "metadata": {
+                        "designer": {
+                            "x": 551,
+                            "y": 225
+                        },
+                        "restore": {
+                            "parameters": {
+                                "authenticationType": {
+                                    "label": "No authenticationUse when no credentials are required for the request."
+                                },
+                                "tlsType": {
+                                    "label": "Empty"
+                                }
+                            },
+                            "expect": {
+                                "method": {
+                                    "mode": "chose",
+                                    "label": "POST"
+                                },
+                                "headers": {
+                                    "mode": "chose",
+                                    "items": [
+                                        null,
+                                        null
+                                    ]
+                                },
+                                "queryParameters": {
+                                    "mode": "chose"
+                                },
+                                "contentType": {
+                                    "label": "CustomEnter data using a custom content type, such as text/plain."
+                                },
+                                "parseResponse": {
+                                    "mode": "chose"
+                                },
+                                "stopOnHttpError": {
+                                    "mode": "chose"
+                                },
+                                "allowRedirects": {
+                                    "mode": "chose"
+                                },
+                                "shareCookies": {
+                                    "mode": "chose"
+                                },
+                                "requestCompressedContent": {
+                                    "mode": "chose"
+                                },
+                                "paginationType": {
+                                    "label": "Empty"
+                                }
+                            }
+                        },
+                        "parameters": [
+                            {
+                                "name": "authenticationType",
+                                "type": "select",
+                                "label": "Authentication type",
+                                "required": true,
+                                "validate": {
+                                    "enum": ["noAuth","apiKey","basicAuth","oAuth"]
+                                }
+                            },
+                            {
+                                "name": "tlsType",
+                                "type": "select",
+                                "label": "Transport layer security (TLS)",
+                                "validate": {
+                                    "enum": ["mTls","tls"]
+                                }
+                            },
+                            {
+                                "name": "proxyKeychain",
+                                "type": "keychain:proxy",
+                                "label": "Proxy"
+                            }
+                        ],
+                        "expect": [
+                            {"name":"url","type":"url","label":"URL","required":true},
+                            {"name":"method","type":"select","label":"Method","required":true,"validate":{"enum":["get","head","post","put","patch","delete","options"]}},
+                            {"name":"headers","type":"array","label":"Headers","spec":{"name":"value","label":"Header","type":"collection","spec":[{"name":"name","label":"Name","type":"text","required":true,"validate":{"pattern":"^[-!#$%&'*+.^_`|~0-9A-Za-z]+$"}},{"name":"value","label":"Value","type":"text"}]}},
+                            {"name":"queryParameters","type":"array","label":"Query parameters","spec":{"name":"value","label":"Parameter","type":"collection","spec":[{"name":"name","label":"Name","type":"text","required":true},{"name":"value","label":"Value","type":"text"}]}},
+                            {"name":"contentType","type":"select","label":"Body content type","validate":{"enum":["json","multipart","urlEncoded","custom"]}},
+                            {"name":"parseResponse","type":"boolean","label":"Parse response","required":true},
+                            {"name":"stopOnHttpError","type":"boolean","label":"Return error if HTTP request fails","required":true},
+                            {"name":"timeout","type":"uinteger","label":"Timeout","validate":{"min":1,"max":300}},
+                            {"name":"allowRedirects","type":"boolean","label":"Allow redirects","required":true},
+                            {"name":"shareCookies","type":"boolean","label":"Share cookies with other HTTP modules","required":true},
+                            {"name":"requestCompressedContent","type":"boolean","label":"Request compressed content","required":true},
+                            {"name":"contentTypeValue","type":"text","label":"Content type value","required":true},
+                            {"name":"rawBodyContent","type":"buffer","label":"Body content","required":true},
+                            {"name":"paginationType","type":"select","label":"Pagination type","validate":{"enum":["offsetBased","pageBased","urlBased","tokenBased"]}}
+                        ],
+                        "interface": [
+                            {"name":"data","label":"Data","type":"any"},
+                            {"name":"statusCode","label":"Status Code","type":"number"},
+                            {"name":"headers","label":"Headers","type":"collection","spec":[{"name":"content-length","label":"Content-Length","type":"text"},{"name":"content-encoding","label":"Content-Encoding","type":"text"},{"name":"content-type","label":"Content-Type","type":"text"},{"name":"server","label":"Server","type":"text"},{"name":"cache-control","label":"Cache-Control","type":"text"},{"name":"set-cookie","label":"Set-Cookie","type":"array","spec":{"type":"text"}}]}
+                        ]
+                    }
+                }
+            ]
+        }
+    ],
+    "metadata": {
+        "version": 1
+    }
+}
