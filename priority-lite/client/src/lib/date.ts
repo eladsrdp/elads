@@ -42,6 +42,29 @@ export function rangeMonth(d = new Date()): DateRange {
   return { from: toISODate(start), to: toISODate(end) }
 }
 
+/** ימי עבודה בשבוע: ראשון(0)–חמישי(4). שישי+שבת חופשי. */
+const WORK_DAYS = new Set([0, 1, 2, 3, 4])
+
+/**
+ * מספר ימי העבודה (א׳–ה׳) בטווח [from..to], חסום עד היום ועד בכלל.
+ * טווח שכולו בעבר → כל ימי העבודה שבו; טווח נוכחי → רק עד היום.
+ * משמש לחישוב יעד השעות ("9 שעות ליום עבודה שחלף").
+ */
+export function workDaysElapsed(from: string, to: string, todayIso = todayISO()): number {
+  const end = to < todayIso ? to : todayIso // חסימה עד היום (השוואת מחרוזות ISO תקינה)
+  if (end < from) return 0
+  const [fy, fm, fd] = from.split('-').map(Number)
+  const [ey, em, ed] = end.split('-').map(Number)
+  const cur = new Date(fy, fm - 1, fd)
+  const endDate = new Date(ey, em - 1, ed)
+  let count = 0
+  while (cur <= endDate) {
+    if (WORK_DAYS.has(cur.getDay())) count++
+    cur.setDate(cur.getDate() + 1)
+  }
+  return count
+}
+
 const DAY_NAMES = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת']
 
 /** "יום שלישי, 10.6" מתוך YYYY-MM-DD. */
