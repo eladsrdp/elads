@@ -18,6 +18,12 @@ export function createSupabaseDb(url: string, serviceKey: string): AppDB {
   })
 
   return {
+    async ping() {
+      // HEAD count בלבד — נוגע ב-DB (מונע auto-pause) בעלות מינימלית, בלי להחזיר שורות.
+      const { error } = await client.from('employees').select('phone', { count: 'exact', head: true })
+      if (error) throw new Error(`ping failed: ${error.message}`)
+    },
+
     async findEmployee(phone) {
       const { data } = await client
         .from('employees')

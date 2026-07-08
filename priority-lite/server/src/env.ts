@@ -19,6 +19,8 @@ const schema = z.object({
   PRIORITY_USER: z.string().optional(),
   PRIORITY_PASSWORD: z.string().optional(),
   MOCK_FAIL_RATE: z.coerce.number().min(0).max(1).default(0),
+  /** מגן על /api/cron/keepalive — Vercel שולח Bearer זהה כשמוגדר env var בשם הזה. */
+  CRON_SECRET: z.string().optional(),
 })
 
 export type Env = z.infer<typeof schema>

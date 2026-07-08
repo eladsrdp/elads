@@ -35,6 +35,10 @@ export function createLocalDb(whitelistPath = './whitelist.json'): AppDB {
   }
 
   return {
+    async ping() {
+      // no-op — אין Supabase לשמור-על-חיים במצב local
+    },
+
     async findEmployee(phone) {
       const e = employees.get(phone)
       return e?.active ? e : undefined
