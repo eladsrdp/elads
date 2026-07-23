@@ -34,12 +34,20 @@ export function Entries() {
     setSyncing(true)
     setMessage('')
     try {
-      const { synced: ok, failed } = await syncEntries(sendable.map((e) => e.id))
-      setMessage(
-        failed === 0
-          ? `✓ ${ok} דיווחים נשלחו לפריוריטי`
-          : `${ok} נשלחו, ${failed} נכשלו — ראה שגיאות למטה`,
-      )
+      const { synced: ok, failed, networkError } = await syncEntries(sendable.map((e) => e.id))
+      if (networkError) {
+        setMessage(
+          ok > 0
+            ? `✓ ${ok} נשלחו, אך אין חיבור לשרת — השאר נשארו כטיוטה, נסה שוב מאוחר יותר`
+            : '✗ אין חיבור לשרת — הטיוטות נשמרו, נסה שוב מאוחר יותר',
+        )
+      } else {
+        setMessage(
+          failed === 0
+            ? `✓ ${ok} דיווחים נשלחו לפריוריטי`
+            : `${ok} נשלחו, ${failed} נכשלו — ראה שגיאות למטה`,
+        )
+      }
     } catch {
       setMessage('✗ אין חיבור לשרת — הטיוטות נשמרו, נסה שוב מאוחר יותר')
     } finally {

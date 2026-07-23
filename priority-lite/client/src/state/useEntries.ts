@@ -2,6 +2,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db/db'
 import { api } from '../lib/api'
+import { chunk } from '../lib/array'
 import type { LocalTimeEntry, RemoteTimeEntry, SyncItemResult } from '../types'
 
 /** טיוטות + שגיאות — מה שממתין לשליחה. */
@@ -75,12 +76,39 @@ export async function importFromPriority(from: string, to: string): Promise<Impo
 export interface SyncSummary {
   synced: number
   failed: number
+  /** כשל רשת עצר את הסנכרון באמצע — synced/failed משקפים את מה שהושג עד כה. */
+  networkError?: boolean
 }
 
 /**
- * שולח את הדיווחים שנבחרו לפריוריטי.
+ * מספר הדיווחים שנשלחים ב-POST אחד לשרת. פריוריטי מטופל בכל מקרה בטור אחד-אחד בשרת
+ * (ראו odata.ts) — הפיצול כאן הוא כדי שכל בקשה מהדפדפן תסתיים מהר, כך שהאטה או ניסיון-חוזר
+ * על פריט בודד לא יגרור timeout על כל הקבוצה (ראו vault: אבחון 33:30/10 דיווחים 2026-07-09).
+ */
+const SYNC_CHUNK_SIZE = 3
+
+function toSyncPayload(e: LocalTimeEntry) {
+  return {
+    clientId: e.id,
+    taskId: e.taskId,
+    date: e.date,
+    durationMin: e.durationMin,
+    startTime: e.startTime,
+    endTime: e.endTime,
+    note: e.note || undefined,
+    ordName: e.ordName || undefined,
+    ordLine: e.ordLine,
+    billable: e.billable,
+    dcode: e.dcode || undefined,
+    custnoteId: e.custnoteId,
+  }
+}
+
+/**
+ * שולח את הדיווחים שנבחרו לפריוריטי, בקבוצות קטנות (SYNC_CHUNK_SIZE) כדי שכשל רשת
+ * ייגע רק בקבוצה הנוכחית ולא במה שכבר נשלח בהצלחה.
  * draft/error → pending → (synced | error) לפי תוצאה פר-פריט.
- * כשל רשת כולל: כולם חוזרים ל-draft כדי שלא ייתקעו ב-pending.
+ * כשל רשת בקבוצה: היא (ורק היא) חוזרת ל-draft, והסנכרון נעצר (אין טעם להמשיך בלי רשת).
  */
 export async function syncEntries(ids: string[]): Promise<SyncSummary> {
   const entries = await db.timeEntries
@@ -90,49 +118,37 @@ export async function syncEntries(ids: string[]): Promise<SyncSummary> {
     .toArray()
   if (entries.length === 0) return { synced: 0, failed: 0 }
 
-  await db.timeEntries.bulkPut(
-    entries.map((e) => ({ ...e, status: 'pending' as const, syncError: undefined })),
-  )
+  let synced = 0
+  let failed = 0
 
-  try {
-    const { results } = await api<{ results: SyncItemResult[] }>('/api/time-entries/sync', {
-      method: 'POST',
-      json: {
-        entries: entries.map((e) => ({
-          clientId: e.id,
-          taskId: e.taskId,
-          date: e.date,
-          durationMin: e.durationMin,
-          startTime: e.startTime,
-          endTime: e.endTime,
-          note: e.note || undefined,
-          ordName: e.ordName || undefined,
-          ordLine: e.ordLine,
-          billable: e.billable,
-          dcode: e.dcode || undefined,
-          custnoteId: e.custnoteId,
-        })),
-      },
-    })
+  for (const group of chunk(entries, SYNC_CHUNK_SIZE)) {
+    await db.timeEntries.bulkPut(
+      group.map((e) => ({ ...e, status: 'pending' as const, syncError: undefined })),
+    )
 
-    let synced = 0
-    let failed = 0
-    for (const r of results) {
-      if (r.ok) {
-        synced++
-        await db.timeEntries.update(r.clientId, {
-          status: 'synced',
-          priorityRef: r.priorityRef,
-          syncError: undefined,
-        })
-      } else {
-        failed++
-        await db.timeEntries.update(r.clientId, { status: 'error', syncError: r.error })
+    try {
+      const { results } = await api<{ results: SyncItemResult[] }>('/api/time-entries/sync', {
+        method: 'POST',
+        json: { entries: group.map(toSyncPayload) },
+      })
+      for (const r of results) {
+        if (r.ok) {
+          synced++
+          await db.timeEntries.update(r.clientId, {
+            status: 'synced',
+            priorityRef: r.priorityRef,
+            syncError: undefined,
+          })
+        } else {
+          failed++
+          await db.timeEntries.update(r.clientId, { status: 'error', syncError: r.error })
+        }
       }
+    } catch {
+      await db.timeEntries.bulkPut(group.map((e) => ({ ...e, status: 'draft' as const })))
+      return { synced, failed, networkError: true }
     }
-    return { synced, failed }
-  } catch (err) {
-    await db.timeEntries.bulkPut(entries.map((e) => ({ ...e, status: 'draft' as const })))
-    throw err
   }
+
+  return { synced, failed }
 }
