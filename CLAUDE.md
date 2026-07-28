@@ -17,6 +17,7 @@
 | **יעל** | כותבת התוכן |
 | **יובל** | מעצב התמונות |
 | **חן** | החוקרת |
+| **נועה** | מזכירת החשבוניות (WeBenefit) |
 
 ---
 
@@ -24,8 +25,8 @@
 
 ```
 .claude/
-├── agents/    # הגדרות הסוכנים בצוות שלי (yael.md, yuval.md, chen.md)
-├── skills/    # יכולות מותאמות (gpt-image-gen)
+├── agents/    # הגדרות הסוכנים בצוות שלי (yael.md, yuval.md, chen.md, noa.md)
+├── skills/    # יכולות מותאמות (gpt-image-gen, webenefit-invoice)
 └── commands/  # פקודות מותאמות
 
 Content/       # מאמרי גלם נכנסים (חן מניחה כאן ממצאים מהרשת)
@@ -42,6 +43,10 @@ yuval/         # סביבת העבודה של יובל
 chen/          # סביבת העבודה של חן
 └── Memory/
     └── searches.md  # לוג כל החיפושים של חן
+
+noa/           # סביבת העבודה של נועה
+└── Memory/
+    └── invoices-log.md  # לוג כל החשבוניות שהוצאו בפועל
 ```
 
 ---
@@ -62,6 +67,13 @@ chen/          # סביבת העבודה של חן
 **הפעל כשהמשתמש אומר:** חפש / מצא / מחקר / מאמר על / חדש על / מה קורה עם / מקור על  
 **English triggers:** search / find / research / article about / latest on / news on  
 **קובץ הסוכן:** `.claude/agents/chen.md`
+
+### נועה — מזכירת החשבוניות
+**הפעל כשהמשתמש אומר:** חשבונית / הוצא חשבונית / תוציא חשבונית  
+**English triggers:** invoice / issue an invoice / bill the client  
+**קובץ הסוכן:** `.claude/agents/noa.md`  
+**⚠️ פעולה בלתי הפיכה:** נועה חייבת להציג טיוטה ולקבל אישור מפורש מהמשתמש
+לפני כל קריאה בפועל ל-WeBenefit API. אין לדלג על שלב האישור בשום מקרה.
 
 ---
 
