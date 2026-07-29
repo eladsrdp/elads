@@ -2,8 +2,10 @@
 name: webenefit-invoice
 description: >
   Wrapper לקריאות ל-WeBenefit Accounting API (https://wbnftapi.azurewebsites.net) —
-  חיפוש לקוח, ובדיקת תוקף טוקן. משמש את נועה (מזכירת החשבוניות).
-  דורש WEBENEFIT_ACCESS_TOKEN מ-.env.
+  חיפוש לקוח, בדיקת תוקף טוקן, הוצאת חשבונית מס מהירה (single/multi-line),
+  ויצירת כל סוג מסמך חשבונאי (חשבון עסקה, קבלה, זיכוי, ריכוז ועוד) דרך
+  ה-endpoint המלא. משמש את נועה (מזכירת החשבוניות). דורש WEBENEFIT_ACCESS_TOKEN
+  מ-.env.
 ---
 
 # webenefit-invoice — קריאות ל-WeBenefit Accounting API
@@ -178,7 +180,153 @@ cat /tmp/webenefit_invoice_multi.json
 
 ---
 
-## טבלת קודי אמצעי תשלום (`pay_method`)
+## 5. מסמך חשבונאי מלא — כל סוג מסמך — `POST /doc/add`
+
+זהו ה-endpoint שתומך **בכל סוגי המסמכים** (חשבון עסקה, קבלה, זיכוי, ריכוז וכו') —
+לא רק חשבונית מס. השתמש בו בכל פעם שהמשתמש מבקש מסמך שאינו "חשבונית מס"
+רגילה (סעיפים 3-4), או כשצריך שליטה מלאה (למשל `client` object עם כתובת מלאה,
+`vatType` פר-שורה, `payment[]` עם פרטי כרטיס/בנק).
+
+**⚠️ כמו בסעיפים הקודמים — כתוב את גוף הבקשה לקובץ ושלח עם `--data-binary
+@file`, לא inline** (בעיית encoding לעברית זהה).
+
+```bash
+# כתוב לקובץ בסקראצ'פד, לדוגמה <SCRATCHPAD>/wb_doc.json
+
+set -a; source .env; set +a
+curl -sS --ssl-revoke-best-effort \
+  -o /tmp/webenefit_doc.json -w "HTTP_STATUS:%{http_code}\n" \
+  -X POST "https://wbnftapi.azurewebsites.net/weapi/v1/doc/add" \
+  -H "Authorization: Bearer $WEBENEFIT_ACCESS_TOKEN" \
+  -H "Content-Type: application/json; charset=utf-8" \
+  --data-binary "@<SCRATCHPAD>/wb_doc.json"
+cat /tmp/webenefit_doc.json
+```
+
+### שדות ברמת השורש
+
+| שדה | חובה? | הערה |
+|-----|-------|------|
+| `type` | **כן** | קוד סוג המסמך — ראה טבלה למטה |
+| `date` | **כן** | תאריך המסמך — Unix timestamp או ISO 8601 |
+| `description` | לא | תיאור כללי (ברירת מחדל: "") |
+| `remarks` | לא | הערה פנימית (ברירת מחדל: "") |
+| `vatRateForced` | לא | דריסת שיעור מע"מ; `-1` = ברירת מחדל של המערכת |
+| `dueDate` | לא | תאריך פירעון |
+| `lang` | לא | שפת המסמך (ברירת מחדל `he`) |
+| `currency` | לא | ברירת מחדל `ILS` |
+| `client` | לא | ראה טבלת `client` למטה |
+| `income` | לא | מערך שורות — ראה טבלת `income[]` למטה |
+| `payment` | לא | מערך תשלומים — ראה טבלת `payment[]` למטה |
+
+### `client` object
+
+`id`, `name`, `email`, `taxId`, `address`, `city`, `zip`, `country`, `phone`,
+`fax`, `mobile`, `add` (boolean) — כל השדות אופציונליים, אבל בפועל כדאי למלא
+לפחות `name` ו-`taxId` (אם ידוע, ובוודאי אם הסכום ≥5,000 ₪ — אותו כלל כמו
+ב-endpoints המהירים).
+
+### `income[]` — שורת מוצר/שירות
+
+| שדה | הערה |
+|-----|------|
+| `description` | תיאור הפריט (ברירת מחדל "") |
+| `quantity` | כמות |
+| `price` | מחיר יחידה |
+| `currency` | ברירת מחדל `ILS` |
+| `currencyRate` | שער המרה, אם המטבע שונה מ-ILS |
+| `vatType` | enum: `Excluded` (לפני מע"מ) / `Included` (כולל מע"מ) / `Exempt` (פטור) / `ZeroVat` (מע"מ 0%) |
+| `itemId`, `catalogNum`, `add` | אופציונליים, לרוב לא נדרשים לשימוש שוטף |
+
+### `payment[]` — שורת תשלום
+
+| שדה | הערה |
+|-----|------|
+| `date` | תאריך התשלום |
+| `type` | קוד אמצעי תשלום — **אותה טבלה** כמו `pay_method` (למטה); זהו נתון ייחוס משותף ב-API |
+| `price` | סכום |
+| `currency` | ברירת מחדל `ILS` |
+| `cardType` | enum: `None` / `Isracard` / `Visa` / `Diners` / `AmericanExpress` / `MaxCard` / `Mastercard` / `OtherCard` |
+| `dealType` | enum: `Regular` / `Payments` (תשלומים) / `Credit` / `Debit` / `Other` |
+| `numPayments` | מספר תשלומים (אם `dealType: Payments`) |
+| `bankNumber`, `bankBranch`, `bankAccount`, `chequeNum` | לתשלום בהעברה/צ'ק |
+| `cardNum` | **⚠️ רגיש — לעולם אל תדפיס/תרשום בלוג, ואל תבקש מהמשתמש מספר כרטיס מלא בצ'אט** |
+| `accountId`, `transactionId` | מזהי אינטגרציה, אופציונלי |
+
+### טבלת סוגי מסמכים (`type`)
+
+| קוד | מסמך |
+|-----|------|
+| 10 | הצעת מחיר |
+| 100 | הזמנה |
+| 200 | תעודת משלוח |
+| 210 | תעודת החזרה |
+| 300 | **חשבון עסקה** |
+| 305 | חשבונית מס |
+| 310 | חשבונית ריכוז |
+| 320 | חשבונית מס/קבלה |
+| 330 | **חשבונית זיכוי** |
+| 340 | חשבונית שיריון (pro forma) |
+| 400 | **קבלה** |
+| 405 | קבלה על תרומה |
+| 500 | הזמנת רכש |
+| 600 | קבלת פיקדון |
+| 35000 | תדפיס חיוב אשראי |
+
+### ⚠️ מגבלה ידועה — זיכוי (330) וקבלה על חשבונית (400/320)
+
+**ה-API לא מתעד שדה פורמלי לקישור מסמך חדש למסמך מקורי** (למשל: חשבונית
+זיכוי שמפנה לחשbonית המקורית שהיא מזכה, או קבלה שמפנה לחשבונית שהיא סוגרת).
+עד שיתברר אחרת (או שתתקבל תשובה מ-WeBenefit support):
+
+- בהוצאת **חשבונית זיכוי (330)** — נועה **חייבת** לשאול את המשתמש מהו מספר/
+  תאריך המסמך המקורי, ולהכניס את ההפניה כטקסט חופשי וברור ב-`description`
+  (למשל: "זיכוי לחשבונית מס' 1234 מתאריך 01/07/2026"). יש לציין למשתמש
+  בטיוטה שזו הפניה טקסטואלית בלבד, לא קישור מובנה במערכת.
+- בהוצאת **קבלה (400) על חשבונית קיימת** — אותו עיקרון: הפניה טקסטואלית
+  ב-`description`, ולציין זאת למשתמש מפורשות בטיוטה.
+- לפני שימוש בפועל בסוגי מסמכים אלה בהיקף משמעותי, מומלץ לאמת מול WeBenefit
+  support (`info@webenefit.co.il`) שאין endpoint/שדה ייעודי שפוספס בתיעוד.
+
+---
+
+## 6. חיפוש מסמכים קיימים — `POST /doc/list`
+
+לבדיקה אם מסמך כבר הופק (למניעת כפילות), או לאיתור מסמך מקורי לזיכוי/קבלה:
+
+```bash
+# גוף לדוגמה: {"clientId": "<id>", "type": 305, "dateStart": <unix>, "dateEnd": <unix>, "max": 20}
+set -a; source .env; set +a
+curl -sS --ssl-revoke-best-effort \
+  -o /tmp/webenefit_doc_list.json -w "HTTP_STATUS:%{http_code}\n" \
+  -X POST "https://wbnftapi.azurewebsites.net/weapi/v1/doc/list" \
+  -H "Authorization: Bearer $WEBENEFIT_ACCESS_TOKEN" \
+  -H "Content-Type: application/json; charset=utf-8" \
+  --data-binary "@<SCRATCHPAD>/wb_doc_list.json"
+cat /tmp/webenefit_doc_list.json
+```
+
+פרמטרים שימושיים: `clientId`, `type`, `number`, `searchText`, `dateStart`/
+`dateEnd` (Unix timestamp), `max`.
+
+---
+
+## 7. שליפת מסמך בודד — `GET /doc/find/{id}`
+
+```bash
+set -a; source .env; set +a
+curl -sS --ssl-revoke-best-effort \
+  -o /tmp/webenefit_doc_find.json -w "HTTP_STATUS:%{http_code}\n" \
+  "https://wbnftapi.azurewebsites.net/weapi/v1/doc/find/<id>" \
+  -H "Authorization: Bearer $WEBENEFIT_ACCESS_TOKEN"
+cat /tmp/webenefit_doc_find.json
+```
+
+השתמש בזה כדי לוודא שמסמך שנשלח אכן נוצר, לפני שמנסים שוב אחרי שגיאה לא ברורה.
+
+---
+
+## טבלת קודי אמצעי תשלום (`pay_method` / `payment[].type`)
 
 | קוד | אמצעי |
 |-----|-------|
@@ -201,7 +349,13 @@ cat /tmp/webenefit_invoice_multi.json
 ## אימות פלט
 
 לאחר כל קריאה, בדוק את `HTTP_STATUS`:
-- `200` → הצלחה. שלוף `number`/`url` מהתגובה ודווח.
+- `200` → הצלחה. שלוף `number`/`url`/`urlHe` מהתגובה (גם ב-`doc/add` וגם
+  ב-endpoints המהירים) ודווח.
 - `400` → שגיאת נתונים. הצג את `errorMessage` למשתמש.
 - `401` → טוקן לא תקף. הפנה לבדיקת טוקן (סעיף 1) ואם עדיין נכשל — לפנות ל-WeBenefit.
+- `403` → לרוב ב-`doc/list` — הרשאה/פרמטרים שגויים.
 - אחר → הצג את הקוד והתוכן הגולמי של הקובץ הזמני, אל תניח מה קרה.
+
+**בכל מקרה של ספק אם מסמך נוצר בפועל** (timeout, תגובה לא ברורה) — **אל
+תנסה לשלוח שוב אוטומטית**. השתמש ב-`doc/list`/`doc/find` (סעיפים 6-7) כדי
+לבדוק אם המסמך כבר קיים, או שאל את המשתמש. הרצה כפולה יוצרת מסמך כפול אמיתי.
