@@ -28,6 +28,19 @@ export function createSupabaseDb(url: string, key: string): AppDB {
     if (error) throw new Error(`[supabase] ${table}: ${error.message}`)
   }
 
+  // עוזר משותף ל-.maybeSingle() — ראו code review: קודם לכן 7 מתודות התעלמו מ-error
+  // כאן, מה שהיה מסתיר תקלת רשת/הרשאות כ"לא נמצא" (undefined/false) במקום לזרוק.
+  // המקרה החריף ביותר: getMaxContentDayNumber שהחזירה 0 בשגיאה, מה שגרם ל-generate-daily
+  // לסמן את כל הקבוצה הפעילה כ-completed בטעות (dayNumber > 0 נכון לרוב הנרשמים).
+  async function maybeSingleOrThrow<T>(
+    table: string,
+    query: PromiseLike<{ data: T | null; error: { message: string } | null }>,
+  ): Promise<T | undefined> {
+    const { data, error } = await query
+    if (error) throw new Error(`[supabase] ${table}: ${error.message}`)
+    return data ?? undefined
+  }
+
   return {
     async ping() {
       await supabase.from('participants').select('id').limit(1)
@@ -44,13 +57,14 @@ export function createSupabaseDb(url: string, key: string): AppDB {
     },
 
     async getParticipant(id) {
-      const { data } = await supabase.from('participants').select().eq('id', id).maybeSingle()
-      return data ?? undefined
+      return maybeSingleOrThrow('participants', supabase.from('participants').select().eq('id', id).maybeSingle())
     },
 
     async findParticipantByPhone(phone) {
-      const { data } = await supabase.from('participants').select().eq('phone', phone).maybeSingle()
-      return data ?? undefined
+      return maybeSingleOrThrow(
+        'participants',
+        supabase.from('participants').select().eq('phone', phone).maybeSingle(),
+      )
     },
 
     async getActiveParticipants() {
@@ -68,18 +82,18 @@ export function createSupabaseDb(url: string, key: string): AppDB {
     },
 
     async getContentDay(dayNumber) {
-      const { data } = await supabase.from('content_days').select().eq('day_number', dayNumber).maybeSingle()
-      return data ?? undefined
+      return maybeSingleOrThrow(
+        'content_days',
+        supabase.from('content_days').select().eq('day_number', dayNumber).maybeSingle(),
+      )
     },
 
     async getMaxContentDayNumber() {
-      const { data } = await supabase
-        .from('content_days')
-        .select('day_number')
-        .order('day_number', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-      return data?.day_number ?? 0
+      const row = await maybeSingleOrThrow<{ day_number: number }>(
+        'content_days',
+        supabase.from('content_days').select('day_number').order('day_number', { ascending: false }).limit(1).maybeSingle(),
+      )
+      return row?.day_number ?? 0
     },
 
     async createMessage(input) {
@@ -94,8 +108,7 @@ export function createSupabaseDb(url: string, key: string): AppDB {
     },
 
     async getMessage(id) {
-      const { data } = await supabase.from('messages').select().eq('id', id).maybeSingle()
-      return data ?? undefined
+      return maybeSingleOrThrow('messages', supabase.from('messages').select().eq('id', id).maybeSingle())
     },
 
     async getMessagesForContentDay(dayNumber) {
@@ -117,18 +130,19 @@ export function createSupabaseDb(url: string, key: string): AppDB {
     },
 
     async findDailyTrigger(participantId, calendarDate) {
-      const { data } = await supabase
-        .from('daily_triggers')
-        .select()
-        .eq('participant_id', participantId)
-        .eq('calendar_date', calendarDate)
-        .maybeSingle()
-      return data ?? undefined
+      return maybeSingleOrThrow(
+        'daily_triggers',
+        supabase
+          .from('daily_triggers')
+          .select()
+          .eq('participant_id', participantId)
+          .eq('calendar_date', calendarDate)
+          .maybeSingle(),
+      )
     },
 
     async getDailyTrigger(id) {
-      const { data } = await supabase.from('daily_triggers').select().eq('id', id).maybeSingle()
-      return data ?? undefined
+      return maybeSingleOrThrow('daily_triggers', supabase.from('daily_triggers').select().eq('id', id).maybeSingle())
     },
 
     async getUnsentDailyTriggers(calendarDate) {
@@ -195,12 +209,11 @@ export function createSupabaseDb(url: string, key: string): AppDB {
     },
 
     async isSessionWindowOpen(participantId, now) {
-      const { data } = await supabase
-        .from('session_windows')
-        .select('expires_at')
-        .eq('participant_id', participantId)
-        .maybeSingle()
-      return !!data && data.expires_at > now
+      const row = await maybeSingleOrThrow<{ expires_at: string }>(
+        'session_windows',
+        supabase.from('session_windows').select('expires_at').eq('participant_id', participantId).maybeSingle(),
+      )
+      return !!row && row.expires_at > now
     },
   }
 }

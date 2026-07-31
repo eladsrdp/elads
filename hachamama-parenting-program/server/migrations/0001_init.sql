@@ -60,3 +60,16 @@ create table session_windows (
 create index idx_daily_triggers_unsent on daily_triggers (calendar_date) where trigger_sent_at is null;
 create index idx_deliveries_by_trigger on message_deliveries (daily_trigger_id, status);
 create index idx_deliveries_due_pending on message_deliveries (status, scheduled_for) where status = 'pending';
+
+-- SECURITY: הטבלאות מכילות PII (שם מלא, טלפון). מפעילים RLS בלי policies כלל —
+-- זה חוסם אוטומטית anon/authenticated (מפתחות שהמערכת הזו לא משתמשת בהם ולעולם
+-- לא צריכה להפיץ), בעוד ש-service role (היחיד שהשרת מתחבר איתו, ראו env.ts /
+-- repository/db.ts) ממשיך לעבוד — service role עוקף RLS מטבעו. בלי זה, ה-linter
+-- הפנימי של Supabase מתריע "RLS disabled on public table", וכל שימוש עתידי
+-- (למשל דשבורד מנחות עם anon key) יימצא פתוח לגמרי כברירת מחדל.
+alter table participants enable row level security;
+alter table content_days enable row level security;
+alter table messages enable row level security;
+alter table daily_triggers enable row level security;
+alter table message_deliveries enable row level security;
+alter table session_windows enable row level security;
