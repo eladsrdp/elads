@@ -7,6 +7,7 @@ import type {
   MessageDeliveryRow,
   MessageRow,
   ParticipantRow,
+  SessionWindowRow,
 } from './interface'
 
 export function createLocalDb(): AppDB {
@@ -15,7 +16,7 @@ export function createLocalDb(): AppDB {
   const messages = new Map<string, MessageRow>()
   const dailyTriggers = new Map<string, DailyTriggerRow>()
   const messageDeliveries = new Map<string, MessageDeliveryRow>()
-  const sessionWindows = new Map<string, { participant_id: string; opened_at: string; expires_at: string }>()
+  const sessionWindows = new Map<string, SessionWindowRow>()
 
   return {
     async ping() {},
