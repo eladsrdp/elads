@@ -1684,6 +1684,8 @@ git add hachamama-parenting-program/server/src/jobs/send-triggers.ts hachamama-p
 git commit -m "feat(hachamama): add morning trigger-send job"
 ```
 
+**Amendment (post-review, applied during execution):** same bug class as Task 8, flagged again by code review — and worse here, since `getUnsentDailyTriggers` filters on an exact `calendar_date` match, so a failure never gets a retry window the next day (unlike `generate-daily`/`drip`, which re-evaluate live state every run). Fixed by wrapping each trigger's send in try/catch and adding `errors: Array<{ dailyTriggerId: string; error: string }>` to `SendTriggersResult` (reflected in the `toEqual` above and in Task 12's cron-route test). See commit `167a6e0`.
+
 ---
 
 ### Task 10: Real-time drip job
@@ -2216,7 +2218,7 @@ describe('POST /api/cron/*', () => {
     })
 
     expect(res.status).toBe(200)
-    expect(await res.json()).toEqual({ sent: 0 })
+    expect(await res.json()).toEqual({ sent: 0, errors: [] })
   })
 
   it('POST /drip מריץ את ה-drip ומחזיר תוצאה', async () => {
