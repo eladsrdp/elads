@@ -35,3 +35,9 @@
 - **Notes / Caveats:** הערכים נדגמו מ-PNG (לא מקור וקטורי) — אם יופיע קובץ Figma/SVG מקורי בעתיד, להעדיף את ה-HEX משם.
 - **Related:** [[project-overview]]
 
+### 2026-07-31 — תוכנית מימוש ל-Plan A (הליבה) [planned]
+- **What was done:** ה-spec פוצל ל-4 תוכניות עצמאיות (A=ליבה: DB+תזמון+Make; B=ניהול תוכן; C=שאלונים; D=דשבורד מנחות). נכתבה תוכנית מימוש מפורטת ל-Plan A ב-`hachamama-parenting-program/docs/plans/2026-07-31-core-engine-plan.md` — 14 משימות TDD בסגנון bite-sized, Hono+Supabase+Vitest+Luxon, בהתאם למוסכמות הקוד הקיימות ב-`priority-lite/server` (factory pattern ל-DB, AppContext מוזרק, Bearer secrets ל-webhooks/cron).
+- **Decisions:** אימוץ מלא של דפוסי `priority-lite/server`: `createDb()` factory (local in-memory / Supabase לפי env), `AppContext` מוזרק ל-routes, בדיקות עם Hono `app.request()`. הריצות היומיות (generate-daily/send-triggers/drip) נחשפות כ-HTTP endpoints מוגנים ב-CRON_SECRET (לא תהליך cron עצמאי) — מאפשר לכל scheduler חיצוני (Vercel Cron/OS cron) להפעיל אותן.
+- **Notes / Caveats:** תוכנית המימוש עברה self-review ותוקן bug שהתגלה: בדיקת "הודעה עתידית לא משתחררת" ב-webhook הלחיצה השתמשה בתאריכים קבועים מ-2023 שהיו נופלים תמיד בעבר יחסית לשעון האמיתי (2026) — תוקן לתאריכים יחסיים ל-`Date.now()`.
+- **Related:** [[project-overview]]
+
