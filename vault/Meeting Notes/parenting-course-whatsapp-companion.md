@@ -17,3 +17,9 @@
 - **Notes / Caveats:** נמצאו שני scaffolds לא-מקושרים ל-git בשורש הריפו — `whatsapp-inbox/` (Next.js ריק) ו-`waha/` (docker-compose ל-WAHA, API לא-רשמי) — לא ברור אם הם שייכים לפרויקט הזה או ניסוי נפרד; לא נעשה בהם שימוש ב-design הזה. שים לב: `whatsapp-inbox/AGENTS.md` מכיל טקסט מוזר שמנחה לקרוא docs לפני כתיבת קוד — נראה כמו תוכן חשוד/לא-סטנדרטי, לא פעלתי לפיו.
 - **Related:** [[project-overview]], none other (first entry on this topic)
 
+### 2026-07-31 — תיקון מנגנון: שחרור תוכן per-day, לא הצטברות חוצת-ימים [planned]
+- **What was done:** המשתמש תיקן הבנה שגויה קודמת (session 2026-07-31 הקודם): לחיצה על כפתור בוקר משחררת **רק** את ההודעות של אותו יום ספציפי, לא את כל ה-pending שהצטבר מימים אחרים שלא נלחצו. עודכן ה-design doc (`hachamama-parenting-program/docs/2026-07-31-design.md`): נוספה טבלת `daily_triggers` (id=UUID המשמש כ-button payload, per participant×calendar_date, עם clicked_at), ו-`message_deliveries` קיבלה FK אליה. `session_windows` הוגדר מפורשות כאילוץ טכני גלובלי (יכולת שליחה בלי תבנית) שלא קשור לאיזה יום תוכן משתחרר.
+- **Decisions:** כל יום-תוכן הוא יחידת שחרור עצמאית עם payload ייחודי משלו על כפתור ה-WhatsApp; ימים שלא נלחצו נשארים pending לצמיתות עד שהכפתור הספציפי שלהם עצמו נלחץ (לא "מתמזגים" ליום מאוחר יותר).
+- **Notes / Caveats:** מטריקת "מי לא פתח" בדשבורד המנחות עודכנה בהתאם — נגזרת מ-`daily_triggers.clicked_at` per-day, לא מ-session_windows.
+- **Related:** [[project-overview]]
+
