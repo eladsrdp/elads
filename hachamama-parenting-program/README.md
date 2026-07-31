@@ -11,5 +11,6 @@ Spec מלא ומאושר, טרם התחיל מימוש.
 ## מבנה
 
 - `docs/2026-07-31-design.md` — ה-design doc המלא: מודל נתונים, מנוע תזמון, שילוב WhatsApp/Make, שאלונים, דשבורד מנחות.
+- `brand/brand-guidelines.md` — מיתוג "החממה" (לוגו, טאגליין, פלטת צבעים) לשימוש בעיצוב ה-UI.
 
 תיעוד נוסף (החלטות, session log) ב-vault הראשי: `vault/Meeting Notes/parenting-course-whatsapp-companion.md`.

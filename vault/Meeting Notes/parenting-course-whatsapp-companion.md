@@ -23,3 +23,9 @@
 - **Notes / Caveats:** מטריקת "מי לא פתח" בדשבורד המנחות עודכנה בהתאם — נגזרת מ-`daily_triggers.clicked_at` per-day, לא מ-session_windows.
 - **Related:** [[project-overview]]
 
+### 2026-07-31 — מיתוג "החממה" [planned]
+- **What was done:** המשתמש אישר את מנגנון ה-per-day trigger (ללא שינוי נוסף), והעביר לוגו של "החממה" (שם + טאגליין "הדרך לגדול עם שרה גוטליב") לשימוש בעיצוב. נכתב `hachamama-parenting-program/brand/brand-guidelines.md` עם פלטת צבעים מוערכת (ירוק כהה, ירוק-אפור, חום-נחושת, רקע נייר בהיר).
+- **Decisions:** מסמכי המיתוג נשמרים בתוך תיקיית הפרויקט המבודדת (`hachamama-parenting-program/brand/`), לא ב-vault/Brand Guidelines המשותף — כדי לשמור על הבידוד שהמשתמש ביקש.
+- **Notes / Caveats:** קובץ הלוגו עצמו (PNG/SVG) עדיין לא נשמר בדיסק — עלה כתמונה בצ'אט בלי path נגיש. ה-HEX בפלטה הם הערכה חזותית בלבד, טעונים אישור/דיוק לפני שימוש בקוד.
+- **Related:** [[project-overview]]
+
