@@ -2784,6 +2784,8 @@ git add "hachamama-parenting-program/README.md"
 git commit -m "docs(hachamama): note Plan A completion in project README"
 ```
 
+**Amendment (post-review, applied during execution):** an unset `MAKE_WEBHOOK_URL` previously failed inside `fetch('')` with Node's generic URL-parse error, giving no actionable signal. Added an early guard in `postToMake` throwing `'MAKE_WEBHOOK_URL לא מוגדר...'`, with a test asserting `fetch` is never called. Also added a "חיבור ל-Make.com אמיתי" section to `server/README.md` mirroring the Supabase one — the README previously implied deploy-readiness once Supabase was configured, with no mention that a Make.com scenario (webhook + WhatsApp send action, plus a second scenario for the button-click callback) is a separate manual prerequisite. See commit `eca73b6`.
+
 ---
 
 ## Self-Review Notes
