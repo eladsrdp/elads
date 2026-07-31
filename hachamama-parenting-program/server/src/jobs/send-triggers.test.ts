@@ -53,4 +53,45 @@ describe('sendMorningTriggers', () => {
     expect(result.sent).toBe(0)
     expect(makeClient.morningTriggersSent).toHaveLength(0)
   })
+
+  it('שגיאה עבור trigger אחד לא עוצרת שליחה לטריגרים אחרים באותה ריצה', async () => {
+    const db = createLocalDb()
+    const failingParticipant = await db.createParticipant({
+      fullName: 'ייכשל',
+      phone: '+972500000007',
+      signupSourceRef: null,
+      signupAt: '2023-01-05T10:00:00.000Z',
+      day1Date: '2023-01-08',
+    })
+    const okParticipant = await db.createParticipant({
+      fullName: 'יצליח',
+      phone: '+972500000006',
+      signupSourceRef: null,
+      signupAt: '2023-01-05T10:00:00.000Z',
+      day1Date: '2023-01-08',
+    })
+    const failingTrigger = await db.createDailyTrigger({
+      participantId: failingParticipant.id,
+      calendarDate: '2023-01-10',
+      contentDayNumber: 3,
+    })
+    const okTrigger = await db.createDailyTrigger({
+      participantId: okParticipant.id,
+      calendarDate: '2023-01-10',
+      contentDayNumber: 3,
+    })
+    const makeClient = createFakeMakeClient()
+    const originalSend = makeClient.sendMorningTrigger.bind(makeClient)
+    makeClient.sendMorningTrigger = async (input) => {
+      if (input.phone === failingParticipant.phone) throw new Error('כשל מדומה')
+      return originalSend(input)
+    }
+
+    const result = await sendMorningTriggers(db, makeClient, '2023-01-10')
+
+    expect(result.sent).toBe(1)
+    expect(result.errors).toEqual([{ dailyTriggerId: failingTrigger.id, error: 'כשל מדומה' }])
+    expect((await db.getDailyTrigger(okTrigger.id))?.trigger_sent_at).toBeTruthy()
+    expect((await db.getDailyTrigger(failingTrigger.id))?.trigger_sent_at).toBeFalsy()
+  })
 })

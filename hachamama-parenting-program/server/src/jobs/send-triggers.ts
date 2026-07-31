@@ -6,6 +6,7 @@ import type { MakeClient } from '../make/client'
 
 export interface SendTriggersResult {
   sent: number
+  errors: Array<{ dailyTriggerId: string; error: string }>
 }
 
 const DAY_OF_WEEK_HE = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת']
@@ -17,21 +18,29 @@ export async function sendMorningTriggers(
 ): Promise<SendTriggersResult> {
   const triggers = await db.getUnsentDailyTriggers(todayDate)
   let sent = 0
+  const errors: SendTriggersResult['errors'] = []
 
   for (const trigger of triggers) {
-    const participant = await db.getParticipant(trigger.participant_id)
-    if (!participant) continue
+    // מבודד לכידת שגיאות פר-trigger — שלא כמו generate-daily/drip, הריצה הזו לא
+    // חוזרת על אותו תאריך למחרת (getUnsentDailyTriggers מסונן לפי calendar_date מדויק),
+    // אז כשל שלא נבלע יבטל את שאר הריצה בלי אף הזדמנות תיקון עצמי.
+    try {
+      const participant = await db.getParticipant(trigger.participant_id)
+      if (!participant) continue
 
-    const dayOfWeekName = DAY_OF_WEEK_HE[new Date(`${trigger.calendar_date}T00:00:00Z`).getUTCDay()]
+      const dayOfWeekName = DAY_OF_WEEK_HE[new Date(`${trigger.calendar_date}T00:00:00Z`).getUTCDay()]
 
-    await makeClient.sendMorningTrigger({
-      phone: participant.phone,
-      dayOfWeekName,
-      buttonPayload: trigger.id,
-    })
-    await db.markDailyTriggerSent(trigger.id, new Date().toISOString())
-    sent++
+      await makeClient.sendMorningTrigger({
+        phone: participant.phone,
+        dayOfWeekName,
+        buttonPayload: trigger.id,
+      })
+      await db.markDailyTriggerSent(trigger.id, new Date().toISOString())
+      sent++
+    } catch (err) {
+      errors.push({ dailyTriggerId: trigger.id, error: err instanceof Error ? err.message : String(err) })
+    }
   }
 
-  return { sent }
+  return { sent, errors }
 }
