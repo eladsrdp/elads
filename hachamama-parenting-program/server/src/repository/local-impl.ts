@@ -144,17 +144,21 @@ export function createLocalDb(): AppDB {
 
     async getPendingDeliveriesForTrigger(dailyTriggerId, upTo) {
       // הערה: השוואת מחרוזות ISO תקינה כרונולוגית רק כי כל התאריכים באותו פורמט UTC (toISOString()).
-      return [...messageDeliveries.values()].filter(
-        (d) => d.daily_trigger_id === dailyTriggerId && d.status === 'pending' && d.scheduled_for <= upTo,
-      )
+      // מיון מפורש לפי scheduled_for — לא מסתמכים על סדר הוספה ל-Map (ראו code
+      // review: ב-supabase-impl.ts PostgREST מחזיר סדר לא מוגדר בלי .order() מפורש).
+      return [...messageDeliveries.values()]
+        .filter((d) => d.daily_trigger_id === dailyTriggerId && d.status === 'pending' && d.scheduled_for <= upTo)
+        .sort((a, b) => (a.scheduled_for < b.scheduled_for ? -1 : a.scheduled_for > b.scheduled_for ? 1 : 0))
     },
 
     async getDuePendingDeliveriesWithClickedTrigger(now) {
-      return [...messageDeliveries.values()].filter((d) => {
-        if (d.status !== 'pending' || d.scheduled_for > now) return false
-        const trigger = dailyTriggers.get(d.daily_trigger_id)
-        return !!trigger?.clicked_at
-      })
+      return [...messageDeliveries.values()]
+        .filter((d) => {
+          if (d.status !== 'pending' || d.scheduled_for > now) return false
+          const trigger = dailyTriggers.get(d.daily_trigger_id)
+          return !!trigger?.clicked_at
+        })
+        .sort((a, b) => (a.scheduled_for < b.scheduled_for ? -1 : a.scheduled_for > b.scheduled_for ? 1 : 0))
     },
 
     async markDeliverySent(id, sentAt) {

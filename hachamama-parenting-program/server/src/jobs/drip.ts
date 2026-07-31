@@ -20,12 +20,13 @@ export async function runDrip(db: AppDB, makeClient: MakeClient, now: string): P
     // אין סיכון לאובדן מידע קבוע: ה-delivery נשאר pending ויילקח שוב בריצה הבאה
     // כל עוד החלון עדיין פתוח.
     //
-    // מגבלה ידועה (flagged ב-code review, נדחתה בכוונה ל-Task 13): סמנטיקה של
+    // מגבלה ידועה שנשארה פתוחה בכוונה (flagged ב-code review, לא נפתרה בפועל
+    // בתוכנית הנוכחית — ראו server/README.md "מגבלות ידועות"): סמנטיקה של
     // at-least-once, לא exactly-once. אם sendSessionMessage מצליח בפועל אבל
     // markDeliverySent אחריו נכשל, ה-delivery נשאר pending וייתפס שוב בריצה
     // הבאה — כלומר הנרשם עלול לקבל את אותה הודעה פעמיים בפועל ב-WhatsApp. תיקון
     // אמיתי (סטטוס ביניים 'sending' + מדיניות timeout, או מפתח אידמפוטנטיות
-    // ל-Make) דורש שינוי סכימה ונדון בכוונה ב-Task 13, לא כאן.
+    // ל-Make) דורש שינוי סכימה — משימה נפרדת, לא חלק מהתוכנית הזו.
     try {
       const windowOpen = await db.isSessionWindowOpen(delivery.participant_id, now)
       if (!windowOpen) continue

@@ -62,3 +62,23 @@ npm test
   (היחיד שהשרת מתחבר איתו). ראו `migrations/0001_init.sql`.
 
 תזמון בפועל (Vercel Cron / OS cron / כל scheduler אחר) הוא החלטת פריסה, לא חלק מהקוד הזה.
+
+## מגבלות ידועות (מהסקירה הסופית)
+
+נמצאו וטופלו במהלך המימוש (ראו commit history), אבל כמה נשארו פתוחות בכוונה —
+כתובות כאן כדי שלא יישארו קבורות ב-commit messages בלבד:
+
+- **at-least-once delivery ב-`drip.ts`.** אם `sendSessionMessage` מצליח בפועל אבל
+  `markDeliverySent` אחריו נכשל, ה-delivery נשאר pending ונשלח שוב בריצה הבאה —
+  הנרשם עלול לקבל את אותה הודעה פעמיים. תיקון אמיתי (סטטוס ביניים `'sending'` +
+  מדיניות timeout, או מפתח אידמפוטנטיות ל-Make) דורש שינוי סכימה — לא חלק מהתוכנית הזו.
+- **at-most-once (עם סיכון אובדן) ב-`/make/button-click`.** כאן `markDeliverySent`
+  נקרא לפני שידוע אם Make בפועל שלח — הסמנטיקה ההפוכה מ-`drip.ts`, לא אוחדה בכוונה.
+- **אין run-overlap guard ל-drip.** רץ כל כמה דקות; אם ריצה אחת נמשכת יותר מהמרווח
+  (backlog גדול, כל שליחה עד 10 שניות timeout), שתי ריצות עלולות לחפוף על אותן שורות.
+- **אין generated types ל-Supabase.** `supabase-impl.ts` עושה cast (`as T`) לתוצאות
+  שאילתה, ולא טיפוסים שנוצרו מהסכימה בפועל — דריפט בין הסכימה ל-interface יתגלה רק בזמן ריצה.
+- **מסלול השגיאה של Supabase לא נבדק אוטומטית.** התיקון הקריטי ב-`maybeSingleOrThrow`
+  (Task 13) אומת בקריאת קוד, לא ב-test עם client מדומה שמדמה תשובת שגיאה אמיתית.
+- **CRON_SECRET משותף** לשלושת ה-endpoints, גם ש-send-triggers/drip גורמים לשליחה
+  אמיתית ב-WhatsApp ו-generate-daily רק כותב ל-DB — התקבל בכוונה, ראו `cron.ts`.

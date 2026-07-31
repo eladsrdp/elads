@@ -41,6 +41,28 @@ describe('POST /api/webhooks/signup', () => {
     expect(body.day1Date).toMatch(/^\d{4}-\d{2}-\d{2}$/)
   })
 
+  it('הרשמה כפולה עם אותו טלפון היא idempotent — מחזירה את הנרשם הקיים, לא יוצרת כפול', async () => {
+    const { app, db } = buildApp()
+    const signupRequest = () =>
+      app.request('/api/webhooks/signup', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${env.SIGNUP_WEBHOOK_SECRET}` },
+        body: JSON.stringify({ fullName: 'ישראל ישראלי', phone: '+972501234567' }),
+      })
+
+    const first = await signupRequest()
+    expect(first.status).toBe(201)
+    const firstBody = (await first.json()) as { participantId: string }
+
+    const second = await signupRequest() // כמו webhook שנשלח פעמיים (retry)
+    expect(second.status).toBe(200) // לא 201 — לא נוצר חדש
+    const secondBody = (await second.json()) as { participantId: string }
+    expect(secondBody.participantId).toBe(firstBody.participantId)
+
+    const all = await db.getActiveParticipants()
+    expect(all).toHaveLength(1)
+  })
+
   it('דוחה גוף בקשה לא תקין (טלפון חסר)', async () => {
     const { app } = buildApp()
     const res = await app.request('/api/webhooks/signup', {

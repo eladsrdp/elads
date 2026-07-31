@@ -173,12 +173,16 @@ export function createSupabaseDb(url: string, key: string): AppDB {
     },
 
     async getPendingDeliveriesForTrigger(dailyTriggerId, upTo) {
+      // .order(scheduled_for) — בלי זה PostgREST מחזיר בסדר לא מוגדר, וההודעות
+      // עלולות להישלח מעורבבות (ל-local-impl אין את הבעיה כי Map שומר סדר הוספה,
+      // מה שהסתיר את זה מכל הבדיקות). ראו code review בסיום התוכנית.
       const { data, error } = await supabase
         .from('message_deliveries')
         .select()
         .eq('daily_trigger_id', dailyTriggerId)
         .eq('status', 'pending')
         .lte('scheduled_for', upTo)
+        .order('scheduled_for', { ascending: true })
       if (error) throw new Error(`[supabase] message_deliveries: ${error.message}`)
       return data ?? []
     },
@@ -190,6 +194,7 @@ export function createSupabaseDb(url: string, key: string): AppDB {
         .eq('status', 'pending')
         .lte('scheduled_for', now)
         .not('daily_triggers.clicked_at', 'is', null)
+        .order('scheduled_for', { ascending: true })
       if (error) throw new Error(`[supabase] message_deliveries: ${error.message}`)
       return (data ?? []) as MessageDeliveryRow[]
     },

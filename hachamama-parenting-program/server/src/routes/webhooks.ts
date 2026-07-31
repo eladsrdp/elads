@@ -35,6 +35,15 @@ export function createWebhookRoutes(ctx: AppContext) {
     const parsed = SignupSchema.safeParse(await c.req.json())
     if (!parsed.success) return c.json({ error: 'גוף בקשה לא תקין' }, 400)
 
+    // idempotent לפי טלפון — ה-DB אוכף unique על phone (ראו migrations/0001_init.sql).
+    // בלי הבדיקה הזו, webhook כפול (retry ממערכת ההרשמה החיצונית) היה נכשל ב-Supabase
+    // עם unique violation → 500, ובלי unique constraint ב-local-impl היה יוצר נרשם
+    // כפול בשקט. ראו code review בסיום התוכנית.
+    const existing = await ctx.db.findParticipantByPhone(parsed.data.phone)
+    if (existing) {
+      return c.json({ participantId: existing.id, day1Date: existing.day1_date }, 200)
+    }
+
     const signupAt = new Date().toISOString()
     const day1Date = calculateDay1Date(new Date(signupAt))
 
@@ -72,6 +81,11 @@ export function createWebhookRoutes(ctx: AppContext) {
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
     await ctx.db.openOrExtendSessionWindow(participant.id, expiresAt)
 
+    // מגבלה ידועה (flagged ב-code review, לא נפתרה בפועל): כאן markDeliverySent
+    // נקרא בזמן *בניית* התשובה, לפני שידוע אם Make בפועל שלח את ההודעה — at-most-once
+    // עם סיכון אובדן שקט אם ה-HTTP response ל-Make לא מגיע/ה-scenario נכשל. זו
+    // הסמנטיקה ההפוכה מ-drip.ts (at-least-once, ראו ההערה שם) — שני מסלולים
+    // שונים לאותה טבלה, בכוונה לא אוחדו. ראו server/README.md "מגבלות ידועות".
     const dueDeliveries = await ctx.db.getPendingDeliveriesForTrigger(trigger.id, now)
     const messages = []
     for (const delivery of dueDeliveries) {
