@@ -25,3 +25,4 @@
 - [[repo-github-migration]] — הגירה ל-github.com/eladsrdp/elads + נהלי vault וקומיט אוטומטי
 - [[hargal-ors-ws]] — ממשק SOAP למערכת שכר הרגל ORS — קליטה/עדכון/שליפת עובדים
 - [[priority-yoman-ws]] — ממשק REST לפקודות יומן Priority כולל שדות PCN874 (מע"מ)
+- [[parenting-course-whatsapp-companion]] — תוכנית ליווי דיגיטלית לקורס הנחיית הורים, WhatsApp+Make.com, מחליף Airtable
