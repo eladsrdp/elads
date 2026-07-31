@@ -2166,6 +2166,10 @@ git add hachamama-parenting-program/server/src
 git commit -m "feat(hachamama): add signup and Make button-click webhook routes"
 ```
 
+**Amendments (post-review, applied during execution):**
+1. `res.json()` returns `Promise<unknown>` under this project's `tsconfig.json` (`lib: ["ES2023"]`, no `"dom"`) — the literal test code's property access on the parsed body (`body.participantId` etc.) is a genuine typecheck regression. Fixed with inline type-cast assertions in the 3 affected assertions (commit `14e3f79`).
+2. **Security-relevant fix:** the `/make/button-click` ownership check compared `participant.phone` (stored strict E.164 with `+`) against the incoming phone via raw string equality. Meta/WhatsApp typically sends `wa_id` *without* a leading `+`, which would have made every real button click fail with a false 403 in production. Fixed by comparing digit-only forms via a `phoneDigitsOnly()` helper, with a regression test using a `+`-less phone. Also added `.max(200)` bounds to `fullName`/`signupSourceRef`. See commit `9ccc6aa`.
+
 ---
 
 ### Task 12: Cron routes (generate-daily, send-triggers, drip)
