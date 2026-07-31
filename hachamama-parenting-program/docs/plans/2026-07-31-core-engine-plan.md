@@ -2234,7 +2234,7 @@ describe('POST /api/cron/*', () => {
     })
 
     expect(res.status).toBe(200)
-    expect(await res.json()).toEqual({ sent: 0 })
+    expect(await res.json()).toEqual({ sent: 0, errors: [] })
   })
 })
 ```
