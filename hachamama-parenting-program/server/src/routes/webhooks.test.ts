@@ -34,7 +34,9 @@ describe('POST /api/webhooks/signup', () => {
       body: JSON.stringify({ fullName: 'ישראל ישראלי', phone: '+972501234567', signupSourceRef: 'ext-1' }),
     })
     expect(res.status).toBe(201)
-    const body = await res.json()
+    // res.json() מוקלד כ-unknown (Node's undici-types, בלי "dom" ב-lib) — טיפוס מקומי
+    // לבדיקה בלבד, לא חלק מה-API הציבורי של ה-route.
+    const body = (await res.json()) as { participantId: string; day1Date: string }
     expect(body.participantId).toBeTruthy()
     expect(body.day1Date).toMatch(/^\d{4}-\d{2}-\d{2}$/)
   })
@@ -146,7 +148,9 @@ describe('POST /api/webhooks/make/button-click', () => {
     })
 
     expect(res.status).toBe(200)
-    const body = await res.json()
+    const body = (await res.json()) as {
+      messages: Array<{ bodyText: string; mediaUrl: string | null; mediaType: string | null }>
+    }
     expect(body.messages).toEqual([{ bodyText: 'הודעה מוקדמת', mediaUrl: null, mediaType: null }])
 
     const updatedTrigger = await db.getDailyTrigger(trigger.id)
