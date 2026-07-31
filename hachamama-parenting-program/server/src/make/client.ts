@@ -20,11 +20,16 @@ export function createMakeClient(webhookUrl: string): MakeClient {
   }
 }
 
+// בלי timeout, קריאה תקועה ל-Make חוסמת ריצת cron שלמה (drip רץ כל 5 דקות, פר-הודעה) —
+// ראו הערת code review: זה סיכון תפעולי אמיתי, לא רק היגיינה.
+const MAKE_REQUEST_TIMEOUT_MS = 10_000
+
 async function postToMake(url: string, payload: unknown): Promise<void> {
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(MAKE_REQUEST_TIMEOUT_MS),
   })
   if (!res.ok) {
     throw new Error(`Make webhook החזיר סטטוס ${res.status}`)
