@@ -19,6 +19,13 @@ export async function runDrip(db: AppDB, makeClient: MakeClient, now: string): P
     // ממשתתפים אחרים לקבל את ההודעה שהגיע זמנה. בשונה מ-generate-daily, כאן
     // אין סיכון לאובדן מידע קבוע: ה-delivery נשאר pending ויילקח שוב בריצה הבאה
     // כל עוד החלון עדיין פתוח.
+    //
+    // מגבלה ידועה (flagged ב-code review, נדחתה בכוונה ל-Task 13): סמנטיקה של
+    // at-least-once, לא exactly-once. אם sendSessionMessage מצליח בפועל אבל
+    // markDeliverySent אחריו נכשל, ה-delivery נשאר pending וייתפס שוב בריצה
+    // הבאה — כלומר הנרשם עלול לקבל את אותה הודעה פעמיים בפועל ב-WhatsApp. תיקון
+    // אמיתי (סטטוס ביניים 'sending' + מדיניות timeout, או מפתח אידמפוטנטיות
+    // ל-Make) דורש שינוי סכימה ונדון בכוונה ב-Task 13, לא כאן.
     try {
       const windowOpen = await db.isSessionWindowOpen(delivery.participant_id, now)
       if (!windowOpen) continue
