@@ -157,4 +157,28 @@ describe('POST /api/webhooks/make/button-click', () => {
     expect(updatedTrigger?.clicked_at).toBeTruthy()
     expect(await db.isSessionWindowOpen(participant.id, new Date().toISOString())).toBe(true)
   })
+
+  it('מזהה את בעל ה-trigger גם כש-Make שולח את הטלפון בלי + (כמו wa_id של Meta)', async () => {
+    const { app, db } = buildApp()
+    const participant = await db.createParticipant({
+      fullName: 'ישראל',
+      phone: '+972501234567', // מאוחסן ב-E.164 מלא, כפי ש-SignupSchema דורש
+      signupSourceRef: null,
+      signupAt: '2023-01-05T10:00:00.000Z',
+      day1Date: '2023-01-08',
+    })
+    const trigger = await db.createDailyTrigger({
+      participantId: participant.id,
+      calendarDate: '2023-01-08',
+      contentDayNumber: 1,
+    })
+
+    const res = await app.request('/api/webhooks/make/button-click', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${env.MAKE_WEBHOOK_SECRET}` },
+      body: JSON.stringify({ phone: '972501234567', buttonPayload: trigger.id }), // בלי '+', כמו wa_id
+    })
+
+    expect(res.status).toBe(200)
+  })
 })

@@ -8,15 +8,22 @@ import type { AppContext } from '../context'
 import { calculateDay1Date } from '../domain/scheduling'
 
 const SignupSchema = z.object({
-  fullName: z.string().min(1),
+  fullName: z.string().min(1).max(200),
   phone: z.string().regex(/^\+[1-9]\d{6,14}$/, 'טלפון חייב להיות בפורמט E.164, למשל +972501234567'),
-  signupSourceRef: z.string().optional(),
+  signupSourceRef: z.string().max(200).optional(),
 })
 
 const ButtonClickSchema = z.object({
   phone: z.string().min(1),
   buttonPayload: z.string().min(1),
 })
+
+// Meta/WhatsApp שולח את wa_id בלי '+' (למשל "972501234567"), בעוד שההרשמה מאוחסנת
+// ב-E.164 מלא ("+972501234567") לפי SignupSchema. השוואת מחרוזות גולמית הייתה
+// דוחה כל לחיצת כפתור אמיתית ב-403 — משווים רק ספרות. ראו code review.
+function phoneDigitsOnly(phone: string): string {
+  return phone.replace(/\D/g, '')
+}
 
 export function createWebhookRoutes(ctx: AppContext) {
   const app = new Hono()
@@ -53,7 +60,7 @@ export function createWebhookRoutes(ctx: AppContext) {
     if (!trigger) return c.json({ error: 'trigger לא נמצא' }, 404)
 
     const participant = await ctx.db.getParticipant(trigger.participant_id)
-    if (!participant || participant.phone !== parsed.data.phone) {
+    if (!participant || phoneDigitsOnly(participant.phone) !== phoneDigitsOnly(parsed.data.phone)) {
       return c.json({ error: 'אימות נרשם נכשל' }, 403)
     }
 
