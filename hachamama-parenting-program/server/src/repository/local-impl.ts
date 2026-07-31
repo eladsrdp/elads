@@ -161,11 +161,17 @@ export function createLocalDb(): AppDB {
       const row = messageDeliveries.get(id)
       if (row) messageDeliveries.set(id, { ...row, status: 'sent', sent_at: sentAt })
     },
-    async openOrExtendSessionWindow() {
-      throw new Error('not implemented yet — Task 5')
+    async openOrExtendSessionWindow(participantId, expiresAt) {
+      sessionWindows.set(participantId, {
+        participant_id: participantId,
+        opened_at: new Date().toISOString(),
+        expires_at: expiresAt,
+      })
     },
-    async isSessionWindowOpen() {
-      throw new Error('not implemented yet — Task 5')
+
+    async isSessionWindowOpen(participantId, now) {
+      const row = sessionWindows.get(participantId)
+      return !!row && row.expires_at > now
     },
   }
 }

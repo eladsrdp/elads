@@ -188,3 +188,24 @@ describe('createLocalDb — daily triggers ומ-message deliveries', () => {
     expect(due).toHaveLength(0) // כבר sent, לא pending
   })
 })
+
+describe('createLocalDb — session windows', () => {
+  it('חלון סגור כברירת מחדל למי שלא לחץ מעולם', async () => {
+    const db = createLocalDb()
+    expect(await db.isSessionWindowOpen('p1', '2023-01-08T07:00:00.000Z')).toBe(false)
+  })
+
+  it('נפתח אחרי openOrExtendSessionWindow, וסגור אחרי expires_at', async () => {
+    const db = createLocalDb()
+    await db.openOrExtendSessionWindow('p1', '2023-01-09T05:00:00.000Z')
+    expect(await db.isSessionWindowOpen('p1', '2023-01-08T10:00:00.000Z')).toBe(true)
+    expect(await db.isSessionWindowOpen('p1', '2023-01-09T06:00:00.000Z')).toBe(false)
+  })
+
+  it('קריאה שנייה מאריכה את החלון (לא פותחת חלון נפרד)', async () => {
+    const db = createLocalDb()
+    await db.openOrExtendSessionWindow('p1', '2023-01-08T10:00:00.000Z')
+    await db.openOrExtendSessionWindow('p1', '2023-01-09T05:00:00.000Z')
+    expect(await db.isSessionWindowOpen('p1', '2023-01-08T23:00:00.000Z')).toBe(true)
+  })
+})
