@@ -1,6 +1,12 @@
 // Endpoints שמופעלים ע"י scheduler חיצוני (Vercel Cron / curl מ-cron רגיל וכו').
 // SECURITY: מוגן ב-CRON_SECRET בדיוק כמו priority-lite/server/src/routes/cron.ts —
 // בלי זה כל אחד יכול להריץ שליחת הודעות אמיתיות ל-WhatsApp על חשבוננו.
+//
+// הערה (code review): שלושת ה-endpoints חולקים סוד אחד, גם ש-send-triggers/drip
+// גורמים לשליחה אמיתית ב-WhatsApp ו-generate-daily רק כותב ל-DB שלנו (בלאסט-רדיוס
+// שונה). התקבלה בכוונה — מי שמפעיל את שלושתם הוא אותו scheduler מהימן, ומי שיש לו
+// גישה ל-env הזה כבר יכול לגרום נזק שווה או גדול יותר דרך SUPABASE_SERVICE_KEY/
+// MAKE_WEBHOOK_URL ישירות. פיצול לסודות נפרדים לפי סיכון הוא שיפור אפשרי, לא חסימה.
 import { Hono } from 'hono'
 import type { AppContext } from '../context'
 import { getIsraelDateString } from '../domain/scheduling'
