@@ -2666,6 +2666,8 @@ git add hachamama-parenting-program/server/migrations hachamama-parenting-progra
 git commit -m "feat(hachamama): add Supabase schema migration and real repository implementation"
 ```
 
+**Amendment (post-review, applied during execution) — Critical:** 8 read methods discarded the Supabase `error` from `.maybeSingle()` calls, returning `undefined`/`0`/`false` on a transient failure instead of throwing. The worst case: `getMaxContentDayNumber` returning `0` on error would make `generateDailyDeliveries` treat nearly every active participant as past the program's end and mark them `completed` — silent mass data corruption from one network blip during the daily cron run. Fixed with a shared `maybeSingleOrThrow<T>(table, query)` helper routed through all 8 methods. Also enabled RLS with no policies on all 6 tables (PII-bearing; the app only ever connects via the service-role key, which bypasses RLS by design — this only locks out anon/authenticated). See commit `bb15876`. Noted gap: no automated test mocks a Supabase error response to directly regression-test the throw path (the smoke test needs a real project and can't simulate this) — verified instead by type-tracing and code inspection during re-review.
+
 ---
 
 ### Task 14: Wire real dependencies in `index.ts` + typecheck + README
