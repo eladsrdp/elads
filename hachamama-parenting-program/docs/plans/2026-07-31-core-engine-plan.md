@@ -1417,7 +1417,7 @@ describe('generateDailyDeliveries', () => {
     await generateDailyDeliveries(db, '2023-01-08')
     const second = await generateDailyDeliveries(db, '2023-01-08')
 
-    expect(second).toEqual({ triggersCreated: 0, deliveriesCreated: 0, participantsCompleted: 0 })
+    expect(second).toEqual({ triggersCreated: 0, deliveriesCreated: 0, participantsCompleted: 0, errors: [] })
   })
 
   it('נרשם שעדיין לא הגיע ה-day1_date שלו לא מקבל כלום', async () => {
@@ -1433,7 +1433,7 @@ describe('generateDailyDeliveries', () => {
 
     const result = await generateDailyDeliveries(db, '2023-01-07') // יום לפני day1_date
 
-    expect(result).toEqual({ triggersCreated: 0, deliveriesCreated: 0, participantsCompleted: 0 })
+    expect(result).toEqual({ triggersCreated: 0, deliveriesCreated: 0, participantsCompleted: 0, errors: [] })
   })
 
   it('נרשם שעבר את אורך התוכנית מסומן completed ולא מקבל עוד הודעות', async () => {
@@ -1545,6 +1545,8 @@ Expected: PASS — 4 tests.
 git add hachamama-parenting-program/server/src/jobs/generate-daily.ts hachamama-parenting-program/server/src/jobs/generate-daily.test.ts
 git commit -m "feat(hachamama): add JIT daily generation job"
 ```
+
+**Amendment (post-review, applied during execution):** code review flagged that an unhandled exception for one participant would abort the entire run, leaving every later participant in `getActiveParticipants()` unprocessed that day. Fixed by wrapping each participant's per-iteration body in try/catch and adding an `errors: Array<{ participantId: string; error: string }>` field to `GenerateDailyResult` (also reflected in the `toEqual` assertions above and in Task 12's cron-route test). A new test simulates a per-participant failure via a monkey-patched `db.createDailyTrigger` and confirms the other participant is still processed. See commit `b327f27` on the `worktree-hachamama-core-engine` branch.
 
 ---
 
@@ -2202,7 +2204,7 @@ describe('POST /api/cron/*', () => {
     })
 
     expect(res.status).toBe(200)
-    expect(await res.json()).toEqual({ triggersCreated: 0, deliveriesCreated: 0, participantsCompleted: 0 })
+    expect(await res.json()).toEqual({ triggersCreated: 0, deliveriesCreated: 0, participantsCompleted: 0, errors: [] })
   })
 
   it('POST /send-triggers מריץ את שליחת הטריגרים ומחזיר תוצאה', async () => {
