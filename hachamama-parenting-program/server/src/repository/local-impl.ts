@@ -161,6 +161,8 @@ export function createLocalDb(): AppDB {
       const row = messageDeliveries.get(id)
       if (row) messageDeliveries.set(id, { ...row, status: 'sent', sent_at: sentAt })
     },
+
+    // opened_at מתאפס בכל קריאה — השורה מייצגת רק את החלון הנוכחי, לא היסטוריית-חיים.
     async openOrExtendSessionWindow(participantId, expiresAt) {
       sessionWindows.set(participantId, {
         participant_id: participantId,
