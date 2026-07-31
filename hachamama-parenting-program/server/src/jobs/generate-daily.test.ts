@@ -46,7 +46,7 @@ describe('generateDailyDeliveries', () => {
 
     const result = await generateDailyDeliveries(db, '2023-01-08') // היום = day1_date שלו = יום 1
 
-    expect(result).toEqual({ triggersCreated: 1, deliveriesCreated: 2, participantsCompleted: 0 })
+    expect(result).toEqual({ triggersCreated: 1, deliveriesCreated: 2, participantsCompleted: 0, errors: [] })
     const trigger = await db.findDailyTrigger(participant.id, '2023-01-08')
     expect(trigger?.content_day_number).toBe(1)
     const deliveries = await db.getPendingDeliveriesForTrigger(trigger!.id, '2099-01-01T00:00:00.000Z')
@@ -67,7 +67,7 @@ describe('generateDailyDeliveries', () => {
     await generateDailyDeliveries(db, '2023-01-08')
     const second = await generateDailyDeliveries(db, '2023-01-08')
 
-    expect(second).toEqual({ triggersCreated: 0, deliveriesCreated: 0, participantsCompleted: 0 })
+    expect(second).toEqual({ triggersCreated: 0, deliveriesCreated: 0, participantsCompleted: 0, errors: [] })
   })
 
   it('נרשם שעדיין לא הגיע ה-day1_date שלו לא מקבל כלום', async () => {
@@ -83,7 +83,39 @@ describe('generateDailyDeliveries', () => {
 
     const result = await generateDailyDeliveries(db, '2023-01-07') // יום לפני day1_date
 
-    expect(result).toEqual({ triggersCreated: 0, deliveriesCreated: 0, participantsCompleted: 0 })
+    expect(result).toEqual({ triggersCreated: 0, deliveriesCreated: 0, participantsCompleted: 0, errors: [] })
+  })
+
+  it('שגיאה עבור נרשם אחד לא עוצרת את הריצה עבור נרשמים אחרים', async () => {
+    const db = createLocalDb()
+    await seedTwoDayProgram(db)
+    const failing = await db.createParticipant({
+      fullName: 'ייכשל',
+      phone: '+972500000007',
+      signupSourceRef: null,
+      signupAt: '2023-01-05T10:00:00.000Z',
+      day1Date: '2023-01-08',
+    })
+    const ok = await db.createParticipant({
+      fullName: 'יצליח',
+      phone: '+972500000006',
+      signupSourceRef: null,
+      signupAt: '2023-01-05T10:00:00.000Z',
+      day1Date: '2023-01-08',
+    })
+
+    const originalCreateDailyTrigger = db.createDailyTrigger.bind(db)
+    db.createDailyTrigger = async (input) => {
+      if (input.participantId === failing.id) throw new Error('כשל מדומה')
+      return originalCreateDailyTrigger(input)
+    }
+
+    const result = await generateDailyDeliveries(db, '2023-01-08')
+
+    expect(result.errors).toEqual([{ participantId: failing.id, error: 'כשל מדומה' }])
+    expect(result.triggersCreated).toBe(1) // רק "יצליח" הצליח
+    expect(await db.findDailyTrigger(ok.id, '2023-01-08')).toBeTruthy()
+    expect(await db.findDailyTrigger(failing.id, '2023-01-08')).toBeUndefined()
   })
 
   it('נרשם שעבר את אורך התוכנית מסומן completed ולא מקבל עוד הודעות', async () => {

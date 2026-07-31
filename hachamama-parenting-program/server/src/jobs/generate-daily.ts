@@ -8,6 +8,7 @@ export interface GenerateDailyResult {
   triggersCreated: number
   deliveriesCreated: number
   participantsCompleted: number
+  errors: Array<{ participantId: string; error: string }>
 }
 
 export async function generateDailyDeliveries(db: AppDB, todayDate: string): Promise<GenerateDailyResult> {
@@ -17,42 +18,51 @@ export async function generateDailyDeliveries(db: AppDB, todayDate: string): Pro
   let triggersCreated = 0
   let deliveriesCreated = 0
   let participantsCompleted = 0
+  const errors: GenerateDailyResult['errors'] = []
 
   for (const participant of participants) {
-    const dayNumber = calculateProgramDayNumber(participant.day1_date, todayDate)
+    // כל נרשם מבודד בלכידת שגיאות משלו — כשל בכתיבה עבור נרשם אחד (למשל שגיאת רשת
+    // מול Supabase) לא אמור לעצור את הריצה כולה ולמנוע מכל הנרשמים האחרים לקבל תוכן.
+    try {
+      const dayNumber = calculateProgramDayNumber(participant.day1_date, todayDate)
 
-    if (dayNumber > maxDay) {
-      await db.markParticipantCompleted(participant.id)
-      participantsCompleted++
-      continue
-    }
-    if (dayNumber < 1) continue // עדיין לא הגיע ה-day1_date שלו
+      if (dayNumber > maxDay) {
+        await db.markParticipantCompleted(participant.id)
+        participantsCompleted++
+        continue
+      }
+      if (dayNumber < 1) continue // עדיין לא הגיע ה-day1_date שלו
 
-    const contentDay = await db.getContentDay(dayNumber)
-    if (!contentDay) continue // אין תוכן מוגדר ליום הזה — לא יוצרים כלום
+      const contentDay = await db.getContentDay(dayNumber)
+      // אין תוכן מוגדר ליום הזה (למשל "חור" בין ימי תוכן) — לא יוצרים כלום; הנרשם
+      // יתעדכן ברגע שיגיע ליום שיש בו תוכן, בלי לתקוע את ההתקדמות שלו.
+      if (!contentDay) continue
 
-    const existingTrigger = await db.findDailyTrigger(participant.id, todayDate)
-    if (existingTrigger) continue // אידמפוטנטי — כבר רץ היום עבור הנרשם הזה
+      const existingTrigger = await db.findDailyTrigger(participant.id, todayDate)
+      if (existingTrigger) continue // אידמפוטנטי — כבר רץ היום עבור הנרשם הזה
 
-    const trigger = await db.createDailyTrigger({
-      participantId: participant.id,
-      calendarDate: todayDate,
-      contentDayNumber: dayNumber,
-    })
-    triggersCreated++
-
-    const messages = await db.getMessagesForContentDay(dayNumber)
-    for (const message of messages) {
-      const scheduledFor = combineDateAndTimeInIsrael(todayDate, message.send_offset_time).toISOString()
-      await db.createMessageDelivery({
+      const trigger = await db.createDailyTrigger({
         participantId: participant.id,
-        messageId: message.id,
-        dailyTriggerId: trigger.id,
-        scheduledFor,
+        calendarDate: todayDate,
+        contentDayNumber: dayNumber,
       })
-      deliveriesCreated++
+      triggersCreated++
+
+      const messages = await db.getMessagesForContentDay(dayNumber)
+      for (const message of messages) {
+        const scheduledFor = combineDateAndTimeInIsrael(todayDate, message.send_offset_time).toISOString()
+        await db.createMessageDelivery({
+          participantId: participant.id,
+          messageId: message.id,
+          dailyTriggerId: trigger.id,
+          scheduledFor,
+        })
+        deliveriesCreated++
+      }
+    } catch (err) {
+      errors.push({ participantId: participant.id, error: err instanceof Error ? err.message : String(err) })
     }
   }
 
-  return { triggersCreated, deliveriesCreated, participantsCompleted }
+  return { triggersCreated, deliveriesCreated, participantsCompleted, errors }
 }
