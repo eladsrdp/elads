@@ -26,6 +26,22 @@ npm test
 3. להגדיר ב-`.env`: `SUPABASE_URL` ו-`SUPABASE_SERVICE_KEY` (מתוך Project Settings → API).
 4. `npm test` ירוץ עכשיו גם על ה-smoke test מול Supabase אמיתי, לא רק in-memory.
 
+## חיבור ל-Make.com אמיתי
+
+הריפו הזה **לא** יוצר את תשריט ה-Make — זו הגדרה חד-פעמית שנעשית ב-UI של Make:
+
+1. ליצור scenario ב-Make עם **Custom Webhook** trigger — ה-URL שהוא ייתן הוא `MAKE_WEBHOOK_URL`.
+2. באותו scenario: לפי `payload.kind` (`morning_trigger` / `session_message`) לשלוח ב-WhatsApp
+   Business Platform — תבנית מאושרת עם כפתור (`morning_trigger`, כולל `buttonPayload`) או
+   הודעת session חופשית (`session_message`).
+3. Scenario **שני**, בכיוון ההפוך: WhatsApp trigger בלחיצת כפתור → קריאת HTTP ל-
+   `POST /api/webhooks/make/button-click` עם `{ phone, buttonPayload }` (ה-`Authorization` header
+   עם `MAKE_WEBHOOK_SECRET` מוגדר בתוך ה-scenario ב-Make, לא כאן).
+
+בלי `MAKE_WEBHOOK_URL` מוגדר, שליחות דרך `send-triggers`/`drip` ייכשלו עם שגיאה ברורה
+(`MAKE_WEBHOOK_URL לא מוגדר`) שנתפסת ב-`errors[]` של אותה ריצה — לא תיפול השרת, אבל
+גם לא תישלח שום הודעה בפועל עד שה-scenario מוגדר.
+
 ## Endpoints
 
 | Method | Path | הגנה | תפקיד |

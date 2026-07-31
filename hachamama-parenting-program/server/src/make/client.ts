@@ -25,6 +25,12 @@ export function createMakeClient(webhookUrl: string): MakeClient {
 const MAKE_REQUEST_TIMEOUT_MS = 10_000
 
 async function postToMake(url: string, payload: unknown): Promise<void> {
+  // בלי הבדיקה הזו, MAKE_WEBHOOK_URL ריק/שגוי נכשל בתוך fetch('') עם שגיאת URL
+  // גנרית של Node ("Failed to parse URL from ") — לא ברור לאופרטור מה קרה בפועל
+  // (ראו code review). מכשילים מוקדם עם הודעה שמצביעה בדיוק על מקור הבעיה.
+  if (!url) {
+    throw new Error('MAKE_WEBHOOK_URL לא מוגדר — לא ניתן לשלוח הודעות ל-WhatsApp')
+  }
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },

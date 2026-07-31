@@ -47,6 +47,17 @@ describe('createMakeClient', () => {
       client.sendSessionMessage({ phone: '+972501234567', bodyText: 'הי', mediaUrl: null, mediaType: null }),
     ).rejects.toThrow('500')
   })
+
+  it('זורק שגיאה ברורה כש-webhook URL ריק, בלי לגעת ב-fetch כלל', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    const client = createMakeClient('')
+    await expect(
+      client.sendSessionMessage({ phone: '+972501234567', bodyText: 'הי', mediaUrl: null, mediaType: null }),
+    ).rejects.toThrow('MAKE_WEBHOOK_URL')
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
 })
 
 describe('createFakeMakeClient', () => {
