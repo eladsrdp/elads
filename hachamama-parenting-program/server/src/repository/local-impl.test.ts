@@ -58,3 +58,133 @@ describe('createLocalDb — participants', () => {
     expect(active[0].full_name).toBe('ב')
   })
 })
+
+describe('createLocalDb — content', () => {
+  it('שומר ומחזיר content day + הודעות שלו, ממוינות לפי order_in_day', async () => {
+    const db = createLocalDb()
+    await db.createContentDay({ dayNumber: 1, title: 'יום ראשון בתוכנית' })
+    await db.createMessage({
+      contentDayNumber: 1,
+      sendOffsetTime: '08:00',
+      orderInDay: 2,
+      bodyText: 'הודעה שנייה',
+      mediaUrl: null,
+      mediaType: null,
+    })
+    await db.createMessage({
+      contentDayNumber: 1,
+      sendOffsetTime: '06:00',
+      orderInDay: 1,
+      bodyText: 'הודעה ראשונה',
+      mediaUrl: null,
+      mediaType: null,
+    })
+
+    const day = await db.getContentDay(1)
+    expect(day?.title).toBe('יום ראשון בתוכנית')
+
+    const msgs = await db.getMessagesForContentDay(1)
+    expect(msgs.map((m) => m.body_text)).toEqual(['הודעה ראשונה', 'הודעה שנייה'])
+  })
+
+  it('getMaxContentDayNumber מחזיר 0 כשאין תוכן, ואחרת את המקסימום', async () => {
+    const db = createLocalDb()
+    expect(await db.getMaxContentDayNumber()).toBe(0)
+    await db.createContentDay({ dayNumber: 3, title: null })
+    await db.createContentDay({ dayNumber: 7, title: null })
+    expect(await db.getMaxContentDayNumber()).toBe(7)
+  })
+})
+
+describe('createLocalDb — daily triggers ומ-message deliveries', () => {
+  it('יוצר daily_trigger, מוצא אותו לפי participant+date, ומסמן נשלח/נלחץ', async () => {
+    const db = createLocalDb()
+    const trigger = await db.createDailyTrigger({
+      participantId: 'p1',
+      calendarDate: '2023-01-08',
+      contentDayNumber: 1,
+    })
+    expect(trigger.trigger_sent_at).toBeNull()
+    expect(trigger.clicked_at).toBeNull()
+
+    const found = await db.findDailyTrigger('p1', '2023-01-08')
+    expect(found?.id).toBe(trigger.id)
+
+    await db.markDailyTriggerSent(trigger.id, '2023-01-08T05:00:00.000Z')
+    await db.markDailyTriggerClicked(trigger.id, '2023-01-08T06:00:00.000Z')
+    const updated = await db.getDailyTrigger(trigger.id)
+    expect(updated?.trigger_sent_at).toBe('2023-01-08T05:00:00.000Z')
+    expect(updated?.clicked_at).toBe('2023-01-08T06:00:00.000Z')
+  })
+
+  it('getUnsentDailyTriggers מחזיר רק טריגרים של אותו תאריך שעדיין לא נשלחו', async () => {
+    const db = createLocalDb()
+    const t1 = await db.createDailyTrigger({ participantId: 'p1', calendarDate: '2023-01-08', contentDayNumber: 1 })
+    await db.createDailyTrigger({ participantId: 'p2', calendarDate: '2023-01-08', contentDayNumber: 1 })
+    await db.markDailyTriggerSent(t1.id, '2023-01-08T05:00:00.000Z')
+    await db.createDailyTrigger({ participantId: 'p3', calendarDate: '2023-01-09', contentDayNumber: 2 })
+
+    const unsent = await db.getUnsentDailyTriggers('2023-01-08')
+    expect(unsent).toHaveLength(1)
+    expect(unsent[0].participant_id).toBe('p2')
+  })
+
+  it('getPendingDeliveriesForTrigger מחזיר רק pending של אותו trigger שזמנן עבר', async () => {
+    const db = createLocalDb()
+    const trigger = await db.createDailyTrigger({ participantId: 'p1', calendarDate: '2023-01-08', contentDayNumber: 1 })
+    const early = await db.createMessageDelivery({
+      participantId: 'p1',
+      messageId: 'm1',
+      dailyTriggerId: trigger.id,
+      scheduledFor: '2023-01-08T05:00:00.000Z',
+    })
+    await db.createMessageDelivery({
+      participantId: 'p1',
+      messageId: 'm2',
+      dailyTriggerId: trigger.id,
+      scheduledFor: '2023-01-08T09:00:00.000Z', // עדיין לא הגיע
+    })
+
+    const due = await db.getPendingDeliveriesForTrigger(trigger.id, '2023-01-08T07:00:00.000Z')
+    expect(due).toHaveLength(1)
+    expect(due[0].id).toBe(early.id)
+  })
+
+  it('getDuePendingDeliveriesWithClickedTrigger מתעלם מ-trigger שלא נלחץ', async () => {
+    const db = createLocalDb()
+    const clicked = await db.createDailyTrigger({ participantId: 'p1', calendarDate: '2023-01-08', contentDayNumber: 1 })
+    await db.markDailyTriggerClicked(clicked.id, '2023-01-08T06:00:00.000Z')
+    const notClicked = await db.createDailyTrigger({ participantId: 'p2', calendarDate: '2023-01-08', contentDayNumber: 1 })
+
+    const dueForClicked = await db.createMessageDelivery({
+      participantId: 'p1',
+      messageId: 'm1',
+      dailyTriggerId: clicked.id,
+      scheduledFor: '2023-01-08T05:00:00.000Z',
+    })
+    await db.createMessageDelivery({
+      participantId: 'p2',
+      messageId: 'm1',
+      dailyTriggerId: notClicked.id,
+      scheduledFor: '2023-01-08T05:00:00.000Z',
+    })
+
+    const due = await db.getDuePendingDeliveriesWithClickedTrigger('2023-01-08T07:00:00.000Z')
+    expect(due).toHaveLength(1)
+    expect(due[0].id).toBe(dueForClicked.id)
+  })
+
+  it('markDeliverySent מעדכן status ו-sent_at', async () => {
+    const db = createLocalDb()
+    const trigger = await db.createDailyTrigger({ participantId: 'p1', calendarDate: '2023-01-08', contentDayNumber: 1 })
+    const delivery = await db.createMessageDelivery({
+      participantId: 'p1',
+      messageId: 'm1',
+      dailyTriggerId: trigger.id,
+      scheduledFor: '2023-01-08T05:00:00.000Z',
+    })
+    await db.markDeliverySent(delivery.id, '2023-01-08T05:01:00.000Z')
+    const due = await db.getPendingDeliveriesForTrigger(trigger.id, '2023-01-08T07:00:00.000Z')
+    expect(due).toHaveLength(0) // כבר sent, לא pending
+  })
+})

@@ -52,53 +52,114 @@ export function createLocalDb(): AppDB {
       if (row) participants.set(id, { ...row, status: 'completed' })
     },
 
-    async createContentDay() {
-      throw new Error('not implemented yet — Task 4')
+    async createContentDay(input) {
+      const row: ContentDayRow = { day_number: input.dayNumber, title: input.title }
+      contentDays.set(row.day_number, row)
+      return row
     },
-    async getContentDay() {
-      throw new Error('not implemented yet — Task 4')
+
+    async getContentDay(dayNumber) {
+      return contentDays.get(dayNumber)
     },
+
     async getMaxContentDayNumber() {
-      throw new Error('not implemented yet — Task 4')
+      const nums = [...contentDays.keys()]
+      return nums.length ? Math.max(...nums) : 0
     },
-    async createMessage() {
-      throw new Error('not implemented yet — Task 4')
+
+    async createMessage(input) {
+      const row: MessageRow = {
+        id: randomUUID(),
+        content_day_number: input.contentDayNumber,
+        send_offset_time: input.sendOffsetTime,
+        order_in_day: input.orderInDay,
+        body_text: input.bodyText,
+        media_url: input.mediaUrl,
+        media_type: input.mediaType,
+      }
+      messages.set(row.id, row)
+      return row
     },
-    async getMessage() {
-      throw new Error('not implemented yet — Task 4')
+
+    async getMessage(id) {
+      return messages.get(id)
     },
-    async getMessagesForContentDay() {
-      throw new Error('not implemented yet — Task 4')
+
+    async getMessagesForContentDay(dayNumber) {
+      return [...messages.values()]
+        .filter((m) => m.content_day_number === dayNumber)
+        .sort((a, b) => a.order_in_day - b.order_in_day)
     },
-    async createDailyTrigger() {
-      throw new Error('not implemented yet — Task 4')
+
+    async createDailyTrigger(input) {
+      const row: DailyTriggerRow = {
+        id: randomUUID(),
+        participant_id: input.participantId,
+        calendar_date: input.calendarDate,
+        content_day_number: input.contentDayNumber,
+        trigger_sent_at: null,
+        clicked_at: null,
+      }
+      dailyTriggers.set(row.id, row)
+      return row
     },
-    async findDailyTrigger() {
-      throw new Error('not implemented yet — Task 4')
+
+    async findDailyTrigger(participantId, calendarDate) {
+      return [...dailyTriggers.values()].find(
+        (t) => t.participant_id === participantId && t.calendar_date === calendarDate,
+      )
     },
-    async getDailyTrigger() {
-      throw new Error('not implemented yet — Task 4')
+
+    async getDailyTrigger(id) {
+      return dailyTriggers.get(id)
     },
-    async getUnsentDailyTriggers() {
-      throw new Error('not implemented yet — Task 4')
+
+    async getUnsentDailyTriggers(calendarDate) {
+      return [...dailyTriggers.values()].filter((t) => t.calendar_date === calendarDate && !t.trigger_sent_at)
     },
-    async markDailyTriggerSent() {
-      throw new Error('not implemented yet — Task 4')
+
+    async markDailyTriggerSent(id, sentAt) {
+      const row = dailyTriggers.get(id)
+      if (row) dailyTriggers.set(id, { ...row, trigger_sent_at: sentAt })
     },
-    async markDailyTriggerClicked() {
-      throw new Error('not implemented yet — Task 4')
+
+    async markDailyTriggerClicked(id, clickedAt) {
+      const row = dailyTriggers.get(id)
+      if (row) dailyTriggers.set(id, { ...row, clicked_at: clickedAt })
     },
-    async createMessageDelivery() {
-      throw new Error('not implemented yet — Task 4')
+
+    async createMessageDelivery(input) {
+      const row: MessageDeliveryRow = {
+        id: randomUUID(),
+        participant_id: input.participantId,
+        message_id: input.messageId,
+        daily_trigger_id: input.dailyTriggerId,
+        scheduled_for: input.scheduledFor,
+        status: 'pending',
+        sent_at: null,
+      }
+      messageDeliveries.set(row.id, row)
+      return row
     },
-    async getPendingDeliveriesForTrigger() {
-      throw new Error('not implemented yet — Task 4')
+
+    async getPendingDeliveriesForTrigger(dailyTriggerId, upTo) {
+      // הערה: השוואת מחרוזות ISO תקינה כרונולוגית רק כי כל התאריכים באותו פורמט UTC (toISOString()).
+      return [...messageDeliveries.values()].filter(
+        (d) => d.daily_trigger_id === dailyTriggerId && d.status === 'pending' && d.scheduled_for <= upTo,
+      )
     },
-    async getDuePendingDeliveriesWithClickedTrigger() {
-      throw new Error('not implemented yet — Task 4')
+
+    async getDuePendingDeliveriesWithClickedTrigger(now) {
+      return [...messageDeliveries.values()].filter((d) => {
+        if (d.status !== 'pending' || d.scheduled_for > now) return false
+        const trigger = dailyTriggers.get(d.daily_trigger_id)
+        return !!trigger?.clicked_at
+      })
     },
-    async markDeliverySent() {
-      throw new Error('not implemented yet — Task 4')
+
+    async markDeliverySent(id, sentAt) {
+      const row = messageDeliveries.get(id)
+      if (row) messageDeliveries.set(id, { ...row, status: 'sent', sent_at: sentAt })
     },
     async openOrExtendSessionWindow() {
       throw new Error('not implemented yet — Task 5')
