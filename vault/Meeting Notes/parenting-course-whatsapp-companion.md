@@ -29,3 +29,9 @@
 - **Notes / Caveats:** קובץ הלוגו עצמו (PNG/SVG) עדיין לא נשמר בדיסק — עלה כתמונה בצ'אט בלי path נגיש. ה-HEX בפלטה הם הערכה חזותית בלבד, טעונים אישור/דיוק לפני שימוש בקוד.
 - **Related:** [[project-overview]]
 
+### 2026-07-31 — דיוק פלטת הצבעים מקובץ הלוגו [planned]
+- **What was done:** המשתמש שמר את `logo.png` בפועל ב-`hachamama-parenting-program/brand/`. הרצתי ניתוח פיקסלים (PowerShell + System.Drawing) על הקובץ במקום הערכת-עין, ועודכן `brand-guidelines.md` עם HEX מדויקים: ירוק כהה `#2F5F47`, ירוק-אפור `#789084`, חום-נחושת `#8B481C`, רקע `#F3F3F3`.
+- **Decisions:** אין.
+- **Notes / Caveats:** הערכים נדגמו מ-PNG (לא מקור וקטורי) — אם יופיע קובץ Figma/SVG מקורי בעתיד, להעדיף את ה-HEX משם.
+- **Related:** [[project-overview]]
+
