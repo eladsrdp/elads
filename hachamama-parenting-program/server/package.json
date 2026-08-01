@@ -7,11 +7,14 @@
     "dev": "node --watch --import tsx src/index.ts",
     "start": "tsx src/index.ts",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "import:participants": "tsx scripts/import-participants.ts",
+    "import:content": "tsx scripts/import-content.ts"
   },
   "dependencies": {
     "@hono/node-server": "^1.13.7",
     "@supabase/supabase-js": "^2.49.8",
+    "csv-parse": "^5.6.0",
     "dotenv": "^16.4.7",
     "hono": "^4.6.14",
     "luxon": "^3.5.0",
