@@ -23,7 +23,7 @@ export function createCronRoutes(ctx: AppContext) {
 
   app.post('/generate-daily', async (c) => {
     if (!isAuthorized(ctx, c.req.header('authorization'))) return c.json({ error: 'לא מורשה' }, 401)
-    const result = await generateDailyDeliveries(ctx.db, getIsraelDateString(new Date()))
+    const result = await generateDailyDeliveries(ctx.db, getIsraelDateString(new Date()), ctx.env.PROGRAM_LENGTH_DAYS)
     return c.json(result)
   })
 

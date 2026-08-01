@@ -44,7 +44,7 @@ describe('generateDailyDeliveries', () => {
       day1Date: '2023-01-08',
     })
 
-    const result = await generateDailyDeliveries(db, '2023-01-08') // היום = day1_date שלו = יום 1
+    const result = await generateDailyDeliveries(db, '2023-01-08', 60) // היום = day1_date שלו = יום 1
 
     expect(result).toEqual({ triggersCreated: 1, deliveriesCreated: 2, participantsCompleted: 0, errors: [] })
     const trigger = await db.findDailyTrigger(participant.id, '2023-01-08')
@@ -64,8 +64,8 @@ describe('generateDailyDeliveries', () => {
       day1Date: '2023-01-08',
     })
 
-    await generateDailyDeliveries(db, '2023-01-08')
-    const second = await generateDailyDeliveries(db, '2023-01-08')
+    await generateDailyDeliveries(db, '2023-01-08', 60)
+    const second = await generateDailyDeliveries(db, '2023-01-08', 60)
 
     expect(second).toEqual({ triggersCreated: 0, deliveriesCreated: 0, participantsCompleted: 0, errors: [] })
   })
@@ -81,7 +81,7 @@ describe('generateDailyDeliveries', () => {
       day1Date: '2023-01-08',
     })
 
-    const result = await generateDailyDeliveries(db, '2023-01-07') // יום לפני day1_date
+    const result = await generateDailyDeliveries(db, '2023-01-07', 60) // יום לפני day1_date
 
     expect(result).toEqual({ triggersCreated: 0, deliveriesCreated: 0, participantsCompleted: 0, errors: [] })
   })
@@ -110,7 +110,7 @@ describe('generateDailyDeliveries', () => {
       return originalCreateDailyTrigger(input)
     }
 
-    const result = await generateDailyDeliveries(db, '2023-01-08')
+    const result = await generateDailyDeliveries(db, '2023-01-08', 60)
 
     expect(result.errors).toEqual([{ participantId: failing.id, error: 'כשל מדומה' }])
     expect(result.triggersCreated).toBe(1) // רק "יצליח" הצליח
@@ -118,9 +118,9 @@ describe('generateDailyDeliveries', () => {
     expect(await db.findDailyTrigger(failing.id, '2023-01-08')).toBeUndefined()
   })
 
-  it('נרשם שעבר את אורך התוכנית מסומן completed ולא מקבל עוד הודעות', async () => {
+  it('נרשם שעבר את programLengthDays מסומן completed ולא מקבל עוד הודעות', async () => {
     const db = createLocalDb()
-    await seedTwoDayProgram(db) // 2 ימים בסך הכל
+    await seedTwoDayProgram(db)
     const participant = await db.createParticipant({
       fullName: 'סיים',
       phone: '+972500000008',
@@ -129,12 +129,37 @@ describe('generateDailyDeliveries', () => {
       day1Date: '2023-01-08',
     })
 
-    const result = await generateDailyDeliveries(db, '2023-01-10') // day1+2 = יום 3, אין יום 3
+    const result = await generateDailyDeliveries(db, '2023-01-10', 2) // day1+2 = יום 3 > programLengthDays=2
 
     expect(result.participantsCompleted).toBe(1)
     const updated = await db.getParticipant(participant.id)
     expect(updated?.status).toBe('completed')
     const active = await db.getActiveParticipants()
     expect(active).toHaveLength(0)
+  })
+
+  it('נרשם שהגיע ליום שאין בו עדיין תוכן מאושר, אבל programLengthDays עדיין לא עבר — נשאר active', async () => {
+    // בדיקת רגרסיה לבאג קריטי שנמצא בסקירה הסופית: completion חושב בעבר לפי
+    // getMaxContentDayNumber() (כמה content_days קיימים ב-DB כרגע) במקום לפי
+    // programLengthDays קבוע — מה שסימן בטעות את כל הקבוצה הפעילה כ-completed
+    // בפריסה טרייה, לפני שהתוכן אושר במלואו דרך Plan B.
+    const db = createLocalDb()
+    await seedTwoDayProgram(db) // תוכן אושר רק לימים 1-2
+    const participant = await db.createParticipant({
+      fullName: 'ממתין לתוכן',
+      phone: '+972500000005',
+      signupSourceRef: null,
+      signupAt: '2023-01-05T10:00:00.000Z',
+      day1Date: '2023-01-08',
+    })
+
+    // יום 5 בתוכנית (day1 + 4 ימים) — הרבה לפני programLengthDays=60, אבל אין
+    // עדיין content_day מאושר עבורו.
+    const result = await generateDailyDeliveries(db, '2023-01-12', 60)
+
+    expect(result).toEqual({ triggersCreated: 0, deliveriesCreated: 0, participantsCompleted: 0, errors: [] })
+    const updated = await db.getParticipant(participant.id)
+    expect(updated?.status).toBe('active') // לא completed בטעות
+    expect(await db.findDailyTrigger(participant.id, '2023-01-12')).toBeUndefined()
   })
 })

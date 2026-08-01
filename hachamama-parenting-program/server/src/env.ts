@@ -11,6 +11,11 @@ const schema = z.object({
   SIGNUP_WEBHOOK_SECRET: z.string().default('dev-secret-change-me'),
   MAKE_WEBHOOK_SECRET: z.string().default('dev-secret-change-me'),
   CRON_SECRET: z.string().default('dev-secret-change-me'),
+  // אורך התוכנית הקבוע, מיום 1 ועד הסוף — 64 שבועות. תוקן ב-code review: קודם
+  // לכן "סוף התוכנית" חושב לפי כמה content_days קיימים ב-DB כרגע, מה שהיה גורם
+  // ל-generate-daily לסמן כל הקבוצה הפעילה כ-completed בטעות בכל פריסה טרייה
+  // (לפני שהתוכן אושר במלואו דרך Plan B). ראו server/README.md.
+  PROGRAM_LENGTH_DAYS: z.coerce.number().default(64 * 7),
 })
 
 export type Env = z.infer<typeof schema>

@@ -11,9 +11,12 @@ export interface GenerateDailyResult {
   errors: Array<{ participantId: string; error: string }>
 }
 
-export async function generateDailyDeliveries(db: AppDB, todayDate: string): Promise<GenerateDailyResult> {
+export async function generateDailyDeliveries(
+  db: AppDB,
+  todayDate: string,
+  programLengthDays: number,
+): Promise<GenerateDailyResult> {
   const participants = await db.getActiveParticipants()
-  const maxDay = await db.getMaxContentDayNumber()
 
   let triggersCreated = 0
   let deliveriesCreated = 0
@@ -26,7 +29,12 @@ export async function generateDailyDeliveries(db: AppDB, todayDate: string): Pro
     try {
       const dayNumber = calculateProgramDayNumber(participant.day1_date, todayDate)
 
-      if (dayNumber > maxDay) {
+      // completion נגזר מ-programLengthDays (משך קבוע וידוע מראש, ראו design doc),
+      // לא ממספר content_days הקיימים כרגע ב-DB. תוקן ב-code review: הגרסה הקודמת
+      // השתמשה ב-getMaxContentDayNumber() כתחליף ל"סוף התוכנית" — כשהתוכן נוצר
+      // בהדרגה (Plan B, לא קיים עדיין), זה סימן כל הקבוצה הפעילה כ-completed
+      // בפריסה טרייה שבה עדיין אין הרבה תוכן מאושר.
+      if (dayNumber > programLengthDays) {
         await db.markParticipantCompleted(participant.id)
         participantsCompleted++
         continue
