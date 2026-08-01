@@ -1,13 +1,19 @@
 # תוכנית ליווי דיגיטלית — קורס הנחיית הורים (WhatsApp Companion)
 
 ## Overview
-פרויקט עצמאי (לא קשור לצוות הסוכנים יעל/יובל/חן/נועה) — מערכת ליווי דיגיטלית לנרשמים לקורס הנחיית הורים, מחליפה Airtable קיים. כל נרשם מתקדם בקצב אישי (day1_date מחושב מתאריך הרשמה, תמיד יום ראשון), מקבל הודעות WhatsApp יומיות במספר משתנה לפי תוכן מוגדר מראש ("content_days"). השליחה עוברת דרך Make.com שמחובר ל-WhatsApp Business Platform הרשמי — האתגר המרכזי הוא ניהול חלון שירות 24 שעות שנפתח בלחיצת כפתור בוקר, כולל "קאצ'-אפ" של הודעות שהצטברו מימים שלא נפתחו. כולל גם שאלונים/טפסים (לינק בתוך הודעה) ודשבורד קריאה-בלבד למנחות מנטוריות. ארכיטקטורה מומלצת: Next.js + Supabase (Postgres+Auth). שלב נוכחי: spec אושר, טרם התחיל מימוש.
+פרויקט עצמאי (לא קשור לצוות הסוכנים יעל/יובל/חן/נועה) — מערכת ליווי דיגיטלית לנרשמים לקורס הנחיית הורים, מחליפה Airtable קיים. כל נרשם מתקדם בקצב אישי (day1_date מחושב מתאריך הרשמה, תמיד יום ראשון), מקבל הודעות WhatsApp יומיות במספר משתנה לפי תוכן מוגדר מראש ("content_days"). השליחה עוברת דרך Make.com שמחובר ל-WhatsApp Business Platform הרשמי — האתגר המרכזי הוא ניהול חלון שירות 24 שעות שנפתח בלחיצת כפתור בוקר, כולל "קאצ'-אפ" של הודעות שהצטברו מימים שלא נפתחו. כולל גם שאלונים/טפסים (לינק בתוך הודעה) ודשבורד קריאה-בלבד למנחות מנטוריות. ארכיטקטורה בפועל: Hono (לא Next.js כמומלץ בהתחלה — הוחלף במימוש בפועל) + Supabase (Postgres). שלב נוכחי: Plan A מומש ומוזג ל-main (ראו session log).
 
-כל קבצי הפרויקט (design doc, ובעתיד הקוד) מאורגנים בתיקייה עצמאית בשורש הריפו: `hachamama-parenting-program/` — מבודד בכוונה משאר הפרויקטים בריפו (בקשת המשתמש: "לא רוצה שזה יהיה מעורבב עם דברים אחרים").
+כל קבצי הפרויקט (design doc, קוד) מאורגנים בתיקייה עצמאית בשורש הריפו: `hachamama-parenting-program/` — מבודד בכוונה משאר הפרויקטים בריפו (בקשת המשתמש: "לא רוצה שזה יהיה מעורבב עם דברים אחרים").
+
+**Plan A (הליבה: DB + מנוע תזמון JIT + שילוב Make.com/WhatsApp) מומש, נבדק (58 טסטים + 1 smoke test מדולג ללא Supabase, typecheck נקי), נסקר סקירה סופית הוליסטית, ומוזג ל-main + נדחף ל-origin** (`hachamama-parenting-program/server/`, Hono+TypeScript). טרם נפרס לשום hosting אמיתי — אין עדיין פרויקט Supabase אמיתי, אין scenario ב-Make.com, אין חשבון hosting מחובר. Plans B (ניהול תוכן), C (שאלונים), D (דשבורד מנחות) טרם התחילו.
 
 ## Open Questions
-- פרטי הזדהות/webhook URL מדויקים בין המערכת ל-Make.com — יוגדרו במימוש.
-- ניסוח מדויק של WhatsApp Template להודעת הבוקר (טעון אישור Meta).
+- **פריסה:** לאיזה hosting לפרוס (Railway/Render/Fly.io מומלץ — תואם את הקוד כמו שהוא; Vercel ידרוש עיבוד ל-serverless functions). המשתמש ביקש "קישור לבורסל" ספציפית — טרם הוברר אם זו דרישה קשיחה ל-Vercel או רק "משהו שאפשר לתת קישור אליו".
+- **חגים / ימים שלא שולחים בהם:** המשתמש ציין בכוונה שיש להתייחס לחגים (להשהות שליחה, או לשלוח מרוכז אחרי כן) — לא הוחלט, לא מומש. נדרשת שיחת מעקב.
+- **PROGRAM_LENGTH_DAYS = 448 (64 שבועות)** נקבע ע"י המשתמש כערך אמיתי (לא placeholder) — env var עם default זה, אבל שווה לאשר מול המשתמש כשמגיעים לפריסה בפועל.
+- הזדהות/webhook URL מדויקים בין המערכת ל-Make.com — לא הוגדרו עדיין (אין scenario אמיתי).
+- ניסוח מדויק של WhatsApp Template להודעת הבוקר (טעון אישור Meta) — לא נכתב.
+- Plan B (ניהול תוכן) חסום את יבוא טבלת התוכן שהמשתמש רוצה להביא — אין עדיין UI/מסלול להזין content_days/messages. אפשר סקריפט ייבוא חד-פעמי כפתרון ביניים.
 
 ## Session Log
 
@@ -41,3 +47,15 @@
 - **Notes / Caveats:** תוכנית המימוש עברה self-review ותוקן bug שהתגלה: בדיקת "הודעה עתידית לא משתחררת" ב-webhook הלחיצה השתמשה בתאריכים קבועים מ-2023 שהיו נופלים תמיד בעבר יחסית לשעון האמיתי (2026) — תוקן לתאריכים יחסיים ל-`Date.now()`.
 - **Related:** [[project-overview]]
 
+### 2026-08-01 — מימוש Plan A מלא (14 משימות), סקירה סופית, merge ל-main [shipped]
+- **What was done:** מימוש כל 14 המשימות מ-`core-engine-plan.md` בעבודה עצמאית (worktree מבודד + `subagent-driven-development`): implementer subagent + spec-review subagent + code-quality-review subagent לכל משימה, לפי superpowers:subagent-driven-development. בסיום, סקירה סופית הוליסטית (opus) על כל 33 הקומיטים. אחרי תיקונים אחרונים: **58 טסטים עוברים, 1 smoke test מדולג כצפוי (ללא Supabase אמיתי), typecheck נקי לגמרי.** מוזג fast-forward ל-main ונדחף ל-origin (commit `2f2cf62`). ה-worktree נמחק.
+- **Decisions:** (1) Hono + TypeScript, בהתאם למוסכמות `priority-lite/server`. (2) `AppDB` עם שתי מימושים (in-memory ל-dev/test, Supabase אמיתי) — נבחר factory pattern. (3) שלושת ה-jobs (generate-daily/send-triggers/drip) מבודדים שגיאות פר-item ומחזירים `errors[]` — לא כשל אחד עוצר ריצה שלמה. (4) RLS מופעל בלי policies על כל 6 הטבלאות (PII) — service role בלבד עוקף. (5) **PROGRAM_LENGTH_DAYS=448 (64 שבועות)**, env var, קבוע מפורש — לא נגזר מכמה content_days קיימים ב-DB (ראה בעיה קריטית למטה).
+- **Bugs קריטיים שנמצאו ותוקנו ע"י code review, לפני שהגיעו ל-production:**
+  1. **הכי חשוב:** `generate-daily` חישב "סוף התוכנית" לפי `getMaxContentDayNumber()` (כמה content_days קיימים כרגע), לא לפי אורך קבוע — בפריסה טרייה (לפני ש-Plan B מזין תוכן מלא) הריצה הראשונה הייתה מסמנת את כל הקבוצה הפעילה כ-`completed` בלי דרך חזרה. תוקן ע"י `PROGRAM_LENGTH_DAYS` מפורש (המשתמש אישר 448 יום = 64 שבועות).
+  2. שני jobs (`generate-daily`, `send-triggers`) לא בודדו שגיאות פר-item — כשל בפריט אחד עוצר את כל הריצה. `drip` נבנה עם בידוד מההתחלה לאחר שהתבנית זוהתה.
+  3. השוואת טלפון ב-`/make/button-click` הייתה string רגילה — Meta/WhatsApp שולח `wa_id` בלי `+`, מה שהיה דוחה כל לחיצת כפתור אמיתית ב-403. תוקן עם נרמול ספרות.
+  4. 8 מתודות ב-`supabase-impl.ts` בלעו שגיאת Supabase בשקט (כולל `getMaxContentDayNumber` — הקשר ישיר לבאג #1). תוקן עם helper משותף שזורק.
+  5. הרשמה כפולה (retry מהמערכת החיצונית) הייתה נכשלת/יוצרת כפילות — `findParticipantByPhone` היה dead code. תוקן ל-idempotent.
+  6. חסר `.order()` בשתי שאילתות Supabase — הודעות היום עלולות להגיע מעורבבות (הוסתר ע"י local-impl ששומר סדר הוספה).
+- **Notes / Caveats (מגבלות שנשארו פתוחות בכוונה, מתועדות ב-`server/README.md` "מגבלות ידועות"):** at-least-once delivery ב-drip (כפל הודעה אפשרי אם `markDeliverySent` נכשל אחרי שליחה מוצלחת); at-most-once עם סיכון אובדן ב-`/make/button-click` (סמנטיקה הפוכה, לא אוחדה); אין run-overlap guard ל-drip; אין generated types ל-Supabase; אין טסט אוטומטי למסלול השגיאה של Supabase (רק smoke test אמיתי, לא רץ כאן). **חגים/ימים-לא-שולחים — המשתמש ציין בכוונה שצריך התייחסות, לא מומש, "נדבר בהמשך".** טרם נפרס לשום hosting — המשתמש ביקש "קישור לבורסל" אבל הקוד כתוב כ-`@hono/node-server` (שרת Node רגיל), לא כ-Vercel serverless function; Railway/Render/Fly.io יתאימו בלי שינוי קוד.
+- **Related:** [[project-overview]]
