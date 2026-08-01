@@ -7,10 +7,10 @@
 // (למשל cron-job.org או GitHub Actions scheduled workflow) שקורא ל-3 ה-endpoints
 // תחת /api/cron/* עם ה-CRON_SECRET, במקום Cron המובנה של Vercel. ראו README.
 import { handle } from 'hono/vercel'
-import { createApp } from '../src/app'
-import { env } from '../src/env'
-import { createMakeClient } from '../src/make/client'
-import { createDb } from '../src/repository/db'
+import { createApp } from '../src/app.js'
+import { env } from '../src/env.js'
+import { createMakeClient } from '../src/make/client.js'
+import { createDb } from '../src/repository/db.js'
 
 export const config = { runtime: 'nodejs' }
 

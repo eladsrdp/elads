@@ -4,8 +4,8 @@
 // או "ללחוץ כפתורים" בשם נרשמים אחרים.
 import { Hono } from 'hono'
 import { z } from 'zod'
-import type { AppContext } from '../context'
-import { calculateDay1Date } from '../domain/scheduling'
+import type { AppContext } from '../context.js'
+import { calculateDay1Date } from '../domain/scheduling.js'
 
 const SignupSchema = z.object({
   fullName: z.string().min(1).max(200),

@@ -8,7 +8,7 @@ import type {
   MessageRow,
   ParticipantRow,
   SessionWindowRow,
-} from './interface'
+} from './interface.js'
 
 export function createLocalDb(): AppDB {
   const participants = new Map<string, ParticipantRow>()

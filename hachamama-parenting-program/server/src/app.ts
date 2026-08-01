@@ -1,8 +1,8 @@
 // הרכבת אפליקציית ה-Hono — מופרד מ-index.ts כדי שבדיקות יוכלו להרכיב app עם תלויות מדומות.
 import { Hono } from 'hono'
-import type { AppContext } from './context'
-import { createCronRoutes } from './routes/cron'
-import { createWebhookRoutes } from './routes/webhooks'
+import type { AppContext } from './context.js'
+import { createCronRoutes } from './routes/cron.js'
+import { createWebhookRoutes } from './routes/webhooks.js'
 
 export function createApp(ctx: AppContext) {
   const app = new Hono()

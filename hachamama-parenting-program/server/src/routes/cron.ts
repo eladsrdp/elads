@@ -8,11 +8,11 @@
 // גישה ל-env הזה כבר יכול לגרום נזק שווה או גדול יותר דרך SUPABASE_SERVICE_KEY/
 // MAKE_WEBHOOK_URL ישירות. פיצול לסודות נפרדים לפי סיכון הוא שיפור אפשרי, לא חסימה.
 import { Hono } from 'hono'
-import type { AppContext } from '../context'
-import { getIsraelDateString } from '../domain/scheduling'
-import { runDrip } from '../jobs/drip'
-import { generateDailyDeliveries } from '../jobs/generate-daily'
-import { sendMorningTriggers } from '../jobs/send-triggers'
+import type { AppContext } from '../context.js'
+import { getIsraelDateString } from '../domain/scheduling.js'
+import { runDrip } from '../jobs/drip.js'
+import { generateDailyDeliveries } from '../jobs/generate-daily.js'
+import { sendMorningTriggers } from '../jobs/send-triggers.js'
 
 function isAuthorized(ctx: AppContext, authHeader: string | undefined): boolean {
   return authHeader === `Bearer ${ctx.env.CRON_SECRET}`
