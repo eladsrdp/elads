@@ -19,6 +19,31 @@ npm run dev
 npm test
 ```
 
+## פריסה ל-Vercel (חינמי, Hobby plan)
+
+יש שני entrypoints — `src/index.ts` (שרת Node רגיל, ל-Railway/Render/פיתוח מקומי)
+ו-`api/index.ts` (serverless function, ל-Vercel). שניהם עוטפים את אותו `createApp` —
+אין כפילות לוגיקה, רק דרך ההרצה שונה.
+
+1. ב-[vercel.com](https://vercel.com) → New Project → Import מ-GitHub → הריפו `eladsrdp/elads`.
+2. **Root Directory:** `hachamama-parenting-program/server` (חשוב — הריפו מכיל עוד פרויקטים).
+3. Framework Preset: Other (Vercel יזהה את `api/` אוטומטית).
+4. Environment Variables (Project Settings): לכל הפחות `SIGNUP_WEBHOOK_SECRET`,
+   `MAKE_WEBHOOK_SECRET`, `CRON_SECRET` (ערכים אקראיים), `NODE_ENV=production`.
+   בלי `SUPABASE_URL`/`SUPABASE_SERVICE_KEY` השרת ירוץ על in-memory DB —
+   **על serverless זה שקול ל"בלי DB בכלל"**: כל invocation יכול לקבל instance חדש,
+   כך שנתונים לא נשמרים בין בקשות בכלל (בשונה מ-Railway/Render, שם תהליך אחד
+   נשאר חי). לכן ל-Vercel חובה Supabase אמיתי כדי שהמערכת תעשה משהו שימושי.
+5. Deploy — Vercel ייתן URL ציבורי.
+
+**⚠️ מגבלת ה-Cron של Vercel Hobby (חינמי): פעם ביום בלבד.** זה לא מתאים ל-`drip`
+שצריך לרוץ כל כמה דקות. **אל תשתמשו ב-Vercel Cron המובנה** — במקום זה, כל שלושת
+ה-endpoints (`/api/cron/generate-daily`, `/send-triggers`, `/drip`) הם סתם HTTP
+מוגן ב-secret, אז כל scheduler חיצוני יכול לקרוא להם. שירותים חיצוניים חינמיים
+מתאימים: [cron-job.org](https://cron-job.org) (תזמון חופשי, גם כל 5 דקות),
+או GitHub Actions `schedule:` workflow ברפו הזה. יש להגדיר 3 jobs נפרדים עם
+ה-cadence שמתאים לכל אחד (ראו טבלת Endpoints למטה).
+
 ## חיבור ל-Supabase אמיתי
 
 1. ליצור פרויקט Supabase חדש.
@@ -61,7 +86,8 @@ npm test
 - הטבלאות ב-Supabase מוגנות ב-RLS בלי policies — נגישות רק ל-service role
   (היחיד שהשרת מתחבר איתו). ראו `migrations/0001_init.sql`.
 
-תזמון בפועל (Vercel Cron / OS cron / כל scheduler אחר) הוא החלטת פריסה, לא חלק מהקוד הזה.
+תזמון בפועל (scheduler חיצוני / OS cron) הוא החלטת פריסה, לא חלק מהקוד הזה —
+ראו "פריסה ל-Vercel" למעלה לגבי המגבלה על Vercel Cron המובנה.
 
 ## מגבלות ידועות (מהסקירה הסופית)
 
