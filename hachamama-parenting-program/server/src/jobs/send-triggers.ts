@@ -9,7 +9,9 @@ export interface SendTriggersResult {
   errors: Array<{ dailyTriggerId: string; error: string }>
 }
 
-const DAY_OF_WEEK_HE = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת']
+// תואם למינוח בתוכן עצמו: "יום ראשון".."יום שישי", אבל שבת נקראת "מוצ״ש" בתוכן
+// (לא "יום שבת") — ראו הודעות ה-מוצ"ש בטבלת התוכן.
+const DAY_OF_WEEK_HE = ['יום ראשון', 'יום שני', 'יום שלישי', 'יום רביעי', 'יום חמישי', 'יום שישי', 'מוצ"ש']
 
 export async function sendMorningTriggers(
   db: AppDB,
