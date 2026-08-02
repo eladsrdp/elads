@@ -6,12 +6,26 @@ import { createFakeMakeClient } from '../make/client'
 import { createLocalDb } from '../repository/local-impl'
 
 describe('POST /api/cron/*', () => {
-  it('כל שלושת ה-endpoints דוחים בלי CRON_SECRET תקין', async () => {
+  it('כל שלושת ה-endpoints דוחים בלי CRON_SECRET תקין, ב-GET וב-POST', async () => {
     const app = createApp({ db: createLocalDb(), makeClient: createFakeMakeClient(), env })
     for (const path of ['generate-daily', 'send-triggers', 'drip']) {
-      const res = await app.request(`/api/cron/${path}`, { method: 'POST' })
-      expect(res.status).toBe(401)
+      for (const method of ['GET', 'POST']) {
+        const res = await app.request(`/api/cron/${path}`, { method })
+        expect(res.status).toBe(401)
+      }
     }
+  })
+
+  it('GET /generate-daily עובד גם — כך ש-Vercel Cron (שקורא רק ב-GET) יכול להפעיל את זה', async () => {
+    const app = createApp({ db: createLocalDb(), makeClient: createFakeMakeClient(), env })
+
+    const res = await app.request('/api/cron/generate-daily', {
+      method: 'GET',
+      headers: { authorization: `Bearer ${env.CRON_SECRET}` },
+    })
+
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ triggersCreated: 0, deliveriesCreated: 0, participantsCompleted: 0, errors: [] })
   })
 
   it('POST /generate-daily מריץ את הריצה היומית ומחזיר תוצאה', async () => {

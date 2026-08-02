@@ -36,13 +36,23 @@ npm test
    נשאר חי). לכן ל-Vercel חובה Supabase אמיתי כדי שהמערכת תעשה משהו שימושי.
 5. Deploy — Vercel ייתן URL ציבורי.
 
-**⚠️ מגבלת ה-Cron של Vercel Hobby (חינמי): פעם ביום בלבד.** זה לא מתאים ל-`drip`
-שצריך לרוץ כל כמה דקות. **אל תשתמשו ב-Vercel Cron המובנה** — במקום זה, כל שלושת
-ה-endpoints (`/api/cron/generate-daily`, `/send-triggers`, `/drip`) הם סתם HTTP
-מוגן ב-secret, אז כל scheduler חיצוני יכול לקרוא להם. שירותים חיצוניים חינמיים
-מתאימים: [cron-job.org](https://cron-job.org) (תזמון חופשי, גם כל 5 דקות),
-או GitHub Actions `schedule:` workflow ברפו הזה. יש להגדיר 3 jobs נפרדים עם
-ה-cadence שמתאים לכל אחד (ראו טבלת Endpoints למטה).
+**תזמון: משולב — Vercel Cron המובנה + שירות חיצוני אחד.**
+
+`vercel.json` כבר מגדיר `generate-daily` (21:05 UTC = 00:05 שעון ישראל בקיץ) ו-
+`send-triggers` (03:30 UTC = 06:30 שעון ישראל בקיץ) כ-**Vercel Cron מובנה** —
+זמין וחינמי גם ב-Hobby plan (מוגבל לפעם ביום, שזה בדיוק הקצב שלהם). Vercel Cron
+תמיד קורא ב-**GET** (לא POST) ומצרף אוטומטית `Authorization: Bearer $CRON_SECRET`
+מה-env var של הפרויקט עצמו — שני ה-routes תומכים ב-GET+POST בדיוק בשביל זה, בלי
+צורך בשום הגדרה נוספת מעבר להגדרת `CRON_SECRET` כ-env var.
+
+**⚠️ מגבלה: Vercel Cron הוא UTC קבוע, בלי טיימזון ובלי DST אוטומטי.** כשהשעון
+בישראל עובר (מרץ/אוקטובר) צריך לעדכן ידנית את שני ה-schedule ב-`vercel.json`
+ולפרוס מחדש (±1 שעה).
+
+**⚠️ `drip` (כל 5 דקות) חורג ממגבלת "פעם ביום" של Vercel Cron בחינמי** — לכן
+*רק* עבורו צריך שירות חיצוני: [cron-job.org](https://cron-job.org) (חינמי, תזמון
+חופשי, תומך גם ב-Timezone כדי להימנע מבעיית ה-UTC/DST) קורא ל-`/api/cron/drip`
+עם `Authorization: Bearer $CRON_SECRET` כל 5 דקות.
 
 ## חיבור ל-Supabase אמיתי
 
