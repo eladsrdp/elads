@@ -18,4 +18,8 @@ const db = await createDb(env.SUPABASE_URL, env.SUPABASE_SERVICE_KEY)
 const makeClient = createMakeClient(env.MAKE_WEBHOOK_URL ?? '')
 const app = createApp({ db, makeClient, env })
 
-export default handle(app)
+// Vercel's newer Functions runtime expects a named `fetch` export for the
+// Web-standard Request/Response API, not a default export returning a
+// Response — a default export is silently ignored and the runtime hangs
+// waiting for a Node-style res.end() that never comes (300s timeout).
+export const fetch = handle(app)
