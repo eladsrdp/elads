@@ -5,15 +5,14 @@
 
 כל קבצי הפרויקט (design doc, קוד) מאורגנים בתיקייה עצמאית בשורש הריפו: `hachamama-parenting-program/` — מבודד בכוונה משאר הפרויקטים בריפו (בקשת המשתמש: "לא רוצה שזה יהיה מעורבב עם דברים אחרים").
 
-**Plan A (הליבה: DB + מנוע תזמון JIT + שילוב Make.com/WhatsApp) מומש, נבדק (58 טסטים + 1 smoke test מדולג ללא Supabase, typecheck נקי), נסקר סקירה סופית הוליסטית, ומוזג ל-main + נדחף ל-origin** (`hachamama-parenting-program/server/`, Hono+TypeScript). טרם נפרס לשום hosting אמיתי — אין עדיין פרויקט Supabase אמיתי, אין scenario ב-Make.com, אין חשבון hosting מחובר. Plans B (ניהול תוכן), C (שאלונים), D (דשבורד מנחות) טרם התחילו.
+**Plan A (הליבה: DB + מנוע תזמון JIT + שילוב Make.com/WhatsApp) מומש, פרוס ב-Production על Vercel + Supabase אמיתיים, ושולח בפועל הודעות WhatsApp אמיתיות ל-11 מנויים אמיתיים** (`hachamama-parenting-program/server/`, Hono+TypeScript, `https://hahamama.vercel.app`). Plans B (ניהול תוכן), C (שאלונים), D (דשבורד מנחות) טרם התחילו — המשתמש עורך תוכן ישירות ב-Supabase Table Editor בינתיים.
 
 ## Open Questions
-- **פריסה:** לאיזה hosting לפרוס (Railway/Render/Fly.io מומלץ — תואם את הקוד כמו שהוא; Vercel ידרוש עיבוד ל-serverless functions). המשתמש ביקש "קישור לבורסל" ספציפית — טרם הוברר אם זו דרישה קשיחה ל-Vercel או רק "משהו שאפשר לתת קישור אליו".
 - **חגים / ימים שלא שולחים בהם:** המשתמש ציין בכוונה שיש להתייחס לחגים (להשהות שליחה, או לשלוח מרוכז אחרי כן) — לא הוחלט, לא מומש. נדרשת שיחת מעקב.
-- **PROGRAM_LENGTH_DAYS = 448 (64 שבועות)** נקבע ע"י המשתמש כערך אמיתי (לא placeholder) — env var עם default זה, אבל שווה לאשר מול המשתמש כשמגיעים לפריסה בפועל.
-- הזדהות/webhook URL מדויקים בין המערכת ל-Make.com — לא הוגדרו עדיין (אין scenario אמיתי).
-- ניסוח מדויק של WhatsApp Template להודעת הבוקר (טעון אישור Meta) — לא נכתב.
-- Plan B (ניהול תוכן) חסום את יבוא טבלת התוכן שהמשתמש רוצה להביא — אין עדיין UI/מסלול להזין content_days/messages. אפשר סקריפט ייבוא חד-פעמי כפתרון ביניים.
+- **3 cron jobs ב-cron-job.org** (generate-daily/send-triggers פעם ביום, drip כל 5 דקות) — טרם הוגדרו; בלעדיהם המערכת רצה רק בהרצות ידניות.
+- **Plan B (ניהול תוכן)** — עדיין לא נבנה; המשתמש עורך תוכן ישירות ב-Supabase Table Editor. שאל על שיתוף גישה לעוד אנשים — נענה עם Supabase org invite (גישה לכל הפרויקט, לא רק לתוכן) כפתרון זמני.
+- **Plan C (שאלונים) ו-Plan D (דשבורד מנחות)** — לא התחילו.
+- קובץ סיכום שבוע 1 (`סיכום_שבוע_ראשון_ויסות.pdf`) נשאר בלי הודעה לחבר אליו — אין הודעת 20:00 קיימת ליום 5 בתוכן שיובא. לא נפתר.
 
 ## Session Log
 
@@ -58,4 +57,17 @@
   5. הרשמה כפולה (retry מהמערכת החיצונית) הייתה נכשלת/יוצרת כפילות — `findParticipantByPhone` היה dead code. תוקן ל-idempotent.
   6. חסר `.order()` בשתי שאילתות Supabase — הודעות היום עלולות להגיע מעורבבות (הוסתר ע"י local-impl ששומר סדר הוספה).
 - **Notes / Caveats (מגבלות שנשארו פתוחות בכוונה, מתועדות ב-`server/README.md` "מגבלות ידועות"):** at-least-once delivery ב-drip (כפל הודעה אפשרי אם `markDeliverySent` נכשל אחרי שליחה מוצלחת); at-most-once עם סיכון אובדן ב-`/make/button-click` (סמנטיקה הפוכה, לא אוחדה); אין run-overlap guard ל-drip; אין generated types ל-Supabase; אין טסט אוטומטי למסלול השגיאה של Supabase (רק smoke test אמיתי, לא רץ כאן). **חגים/ימים-לא-שולחים — המשתמש ציין בכוונה שצריך התייחסות, לא מומש, "נדבר בהמשך".** טרם נפרס לשום hosting — המשתמש ביקש "קישור לבורסל" אבל הקוד כתוב כ-`@hono/node-server` (שרת Node רגיל), לא כ-Vercel serverless function; Railway/Render/Fly.io יתאימו בלי שינוי קוד.
+- **Related:** [[project-overview]]
+
+### 2026-08-02 — פריסה אמיתית ל-Vercel + שליחה אמיתית ראשונה ל-11 מנויים [shipped]
+- **What was done:** המשתמש חיבר Supabase אמיתי (`lqhpfrhiiboshsoqnfdz.supabase.co`) והריץ את המיגרציה בעצמו. ייבאתי 11 מנויים אמיתיים (Airtable CSV) עם override ל-day1_date (כולם מתחילים ביום 15 ב-2026-08-02, לא מתאריך ההרשמה האמיתי — בקשה מפורשת). ייבאתי 102 הודעות/28 ימי תוכן מ-Airtable export אמיתי (parser נכתב מאפס לפורמט האמיתי — "מתי" הוא טקסט חופשי שמערבב יום+סוג+שעה בסדר לא אחיד; זוהתה וסוננה הודעה מותנית-שאלון שהייתה נבלעת בטעות ליום קבוע). פרסתי ל-Vercel (בקשת המשתמש: "בורסל, חינמי") ותיקנתי **5 בעיות ייצור נפרדות** שגילו רק בפריסה אמיתית (ראו למטה). לבסוף הרצתי בפועל `generate-daily`+`send-triggers` על ה-11 מנויים האמיתיים — **11/11 הודעות בוקר עם כפתור נשלחו בהצלחה ל-WhatsApp אמיתי דרך Make**, באישור מפורש של המשתמש לפני ההרצה.
+- **Decisions:** (1) לא הרצתי שום job אמיתי לפני שהמשתמש אישר מפורשות (השהיתי בכוונה, כי זה יום 14 באותו רגע — יום שהמשתמש רצה לדלג עליו — וחיכיתי לחצות כדי ש-JIT יחשב יום 15 נכון). (2) ייבוא מדיה: קבצי Airtable attachment URLs (`v5.airtableusercontent.com`) התבררו כ**כבר פגי-תוקף (410)**, לא "יפוגו בקרוב" — המשתמש שלח את 2 תיקיות ה-ZIP המקוריות (יומי+שבועי), ו-19 קבצים הועלו ל-**Supabase Storage bucket ציבורי בשם `media`** (נוצר דרך קוד, לא dashboard) ועודכנו ב-DB ללינקים קבועים.
+- **5 בעיות production שתוקנו ברצף (Vercel, לא נתפסו ב-CI/טסטים כי דורשות סביבת serverless אמיתית):**
+  1. **Root Directory** ב-Vercel היה `hachamama-parenting-program` בלי `/server` — 404 על הכל. תוקן ע"י המשתמש ב-Settings.
+  2. **`ERR_MODULE_NOT_FOUND`** — Vercel פרסה את קוד ה-TS המתורגם *בלי bundling*, ו-Node's native ESM loader (בשונה מ-tsx/vitest) דורש סיומת `.js` מפורשת בimports יחסיים. תוקן ב-12 קבצים (כל גרף ה-imports שנגיש מ-`api/index.ts`).
+  3. **`FUNCTION_INVOCATION_TIMEOUT` (300s)** — ה-runtime החדש של Vercel Functions מתעלם ב-warning מ-default export שמחזיר `Response` (סגנון hono/vercel הישן) ומצפה ל-named export `fetch`. תוקן: `export default handle(app)` → `export const fetch = handle(app)`.
+  4. **Deployment Protection** (Standard Protection) חסם גישה חיצונית — לא היה הגורם ל-timeout בפועל, אבל היה חוסם את cron-job.org/Make גם אחרי שהכל אחר יתוקן. כובה ע"י המשתמש.
+  5. **שני env vars הודבקו לא נכון** (`CRON_SECRET` ואז `MAKE_WEBHOOK_SECRET`) — כל אחד גרם ל-401 עד שהמשתמש בדק/הדביק מחדש והריץ Redeploy. תבנית חוזרת: אחרי כל שינוי env var ב-Vercel **חובה Redeploy**, לא מספיק Save.
+- **תיקוני אינטגרציה עם Make (מבוססי משוב אמיתי מה-scenario):** (1) שם יום-בשבוע צריך להכיל את המילה "יום" ("יום ראשון" לא "ראשון"), חוץ משבת שהיא "מוצ\"ש" בלי "יום" — תואם למינוח בתוכן עצמו. (2) הטלפון הנשלח ל-Make צריך להיות **בלי** `+` מוביל (פורמט wa_id) — האחסון הפנימי נשאר E.164 מלא, ההסרה קורית רק בשכבת השליחה ל-Make.
+- **Notes / Caveats:** נשארו 3 קבצי "סיכום שבועי" (שבוע 1/3/4) בלי הודעה מתאימה לחבר אליהם ביום 5 (אין הודעת 20:00 בכלל בתוכן שיובא) — המשתמש בחר לחבר רק את ימים 19+26 (יש הודעת 20:00 קיימת עם `[קישור]` placeholder), ולא ליום 5. **חגים עדיין לא מטופלים** (open question קיים). דשבורד המנחות/Plan B/C עדיין לא נבנו — המשתמש מנהל תוכן ישירות ב-Supabase Table Editor בינתיים, ושואל על שיתוף גישה לעוד אנשים (Supabase org invite, לא Plan B). **הבא בתור: הגדרת 3 cron jobs ב-cron-job.org** (generate-daily/send-triggers פעם ביום, drip כל 5 דקות) כדי שהמערכת תרוץ אוטומטית בלי הרצות ידניות.
 - **Related:** [[project-overview]]
