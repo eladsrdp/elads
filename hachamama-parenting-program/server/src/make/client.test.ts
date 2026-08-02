@@ -20,12 +20,23 @@ describe('createMakeClient', () => {
         method: 'POST',
         body: JSON.stringify({
           kind: 'morning_trigger',
-          phone: '+972501234567',
+          phone: '972501234567', // בלי '+' — Make/WhatsApp מצפים לפורמט הזה
           dayOfWeekName: 'שלישי',
           buttonPayload: 'trigger-1',
         }),
       }),
     )
+  })
+
+  it('שולח את הטלפון בלי + מוביל, גם כש-input.phone כולל אותו', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200 })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const client = createMakeClient('https://hook.make.com/abc')
+    await client.sendSessionMessage({ phone: '+972501234567', bodyText: 'הי', mediaUrl: null, mediaType: null })
+
+    const [, options] = fetchMock.mock.calls[0]
+    expect(JSON.parse(options.body).phone).toBe('972501234567')
   })
 
   it('sendSessionMessage שולח POST עם kind=session_message', async () => {

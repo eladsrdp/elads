@@ -9,13 +9,19 @@ export interface MakeClient {
   }): Promise<void>
 }
 
+// Make/WhatsApp מצפים למספר בלי '+' מוביל (כמו wa_id של Meta) — האחסון הפנימי
+// שלנו נשאר E.164 מלא ("+972...") לכל דבר אחר; זה רק בשכבת השליחה ל-Make.
+function stripLeadingPlus(phone: string): string {
+  return phone.startsWith('+') ? phone.slice(1) : phone
+}
+
 export function createMakeClient(webhookUrl: string): MakeClient {
   return {
     async sendMorningTrigger(input) {
-      await postToMake(webhookUrl, { kind: 'morning_trigger', ...input })
+      await postToMake(webhookUrl, { kind: 'morning_trigger', ...input, phone: stripLeadingPlus(input.phone) })
     },
     async sendSessionMessage(input) {
-      await postToMake(webhookUrl, { kind: 'session_message', ...input })
+      await postToMake(webhookUrl, { kind: 'session_message', ...input, phone: stripLeadingPlus(input.phone) })
     },
   }
 }
