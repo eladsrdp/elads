@@ -7,12 +7,17 @@ describe('createMakeClient', () => {
     vi.unstubAllGlobals()
   })
 
-  it('sendMorningTrigger שולח POST עם kind=morning_trigger ל-webhook URL', async () => {
+  it('sendMorningTrigger שולח POST עם kind=morning_trigger, isTemplate=true ו-fullName ל-webhook URL', async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200 })
     vi.stubGlobal('fetch', fetchMock)
 
     const client = createMakeClient('https://hook.make.com/abc')
-    await client.sendMorningTrigger({ phone: '+972501234567', dayOfWeekName: 'שלישי', buttonPayload: 'trigger-1' })
+    await client.sendMorningTrigger({
+      phone: '+972501234567',
+      fullName: 'דנה כהן',
+      dayOfWeekName: 'שלישי',
+      buttonPayload: 'trigger-1',
+    })
 
     expect(fetchMock).toHaveBeenCalledWith(
       'https://hook.make.com/abc',
@@ -20,7 +25,9 @@ describe('createMakeClient', () => {
         method: 'POST',
         body: JSON.stringify({
           kind: 'morning_trigger',
+          isTemplate: true,
           phone: '972501234567', // בלי '+' — Make/WhatsApp מצפים לפורמט הזה
+          fullName: 'דנה כהן',
           dayOfWeekName: 'שלישי',
           buttonPayload: 'trigger-1',
         }),
@@ -74,7 +81,7 @@ describe('createMakeClient', () => {
 describe('createFakeMakeClient', () => {
   it('רושם קריאות בלי לבצע HTTP אמיתי — לשימוש בבדיקות jobs', async () => {
     const fake = createFakeMakeClient()
-    await fake.sendMorningTrigger({ phone: '+972501234567', dayOfWeekName: 'שני', buttonPayload: 't1' })
+    await fake.sendMorningTrigger({ phone: '+972501234567', fullName: 'דנה כהן', dayOfWeekName: 'שני', buttonPayload: 't1' })
     expect(fake.morningTriggersSent).toHaveLength(1)
     expect(fake.morningTriggersSent[0].buttonPayload).toBe('t1')
   })

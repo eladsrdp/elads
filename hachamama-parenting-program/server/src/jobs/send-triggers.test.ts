@@ -25,7 +25,7 @@ describe('sendMorningTriggers', () => {
 
     expect(result.sent).toBe(1)
     expect(makeClient.morningTriggersSent).toEqual([
-      { phone: '+972501234567', dayOfWeekName: 'יום שלישי', buttonPayload: trigger.id },
+      { phone: '+972501234567', fullName: 'ישראל ישראלי', dayOfWeekName: 'יום שלישי', buttonPayload: trigger.id },
     ])
     const updated = await db.getDailyTrigger(trigger.id)
     expect(updated?.trigger_sent_at).toBeTruthy()
@@ -50,7 +50,7 @@ describe('sendMorningTriggers', () => {
     await sendMorningTriggers(db, makeClient, '2023-01-07')
 
     expect(makeClient.morningTriggersSent).toEqual([
-      { phone: '+972501234567', dayOfWeekName: 'מוצ"ש', buttonPayload: trigger.id },
+      { phone: '+972501234567', fullName: 'ישראל', dayOfWeekName: 'מוצ"ש', buttonPayload: trigger.id },
     ])
   })
 

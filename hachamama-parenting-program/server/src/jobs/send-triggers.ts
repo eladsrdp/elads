@@ -34,6 +34,7 @@ export async function sendMorningTriggers(
 
       await makeClient.sendMorningTrigger({
         phone: participant.phone,
+        fullName: participant.full_name,
         dayOfWeekName,
         buttonPayload: trigger.id,
       })
