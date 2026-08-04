@@ -78,12 +78,18 @@ export function createSupabaseDb(url: string, serviceKey: string): AppDB {
     },
 
     async findUserByUsername(username) {
-      const { data } = await client.from('users').select('*').eq('username', username).maybeSingle()
+      const { data, error } = await client
+        .from('users')
+        .select('*')
+        .eq('username', username)
+        .maybeSingle()
+      if (error) throw new Error(`findUserByUsername failed: ${error.message}`)
       return data ? toUserRow(data) : undefined
     },
 
     async findUserById(id) {
-      const { data } = await client.from('users').select('*').eq('id', id).maybeSingle()
+      const { data, error } = await client.from('users').select('*').eq('id', id).maybeSingle()
+      if (error) throw new Error(`findUserById failed: ${error.message}`)
       return data ? toUserRow(data) : undefined
     },
 
