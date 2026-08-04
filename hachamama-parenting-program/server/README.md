@@ -36,23 +36,25 @@ npm test
    נשאר חי). לכן ל-Vercel חובה Supabase אמיתי כדי שהמערכת תעשה משהו שימושי.
 5. Deploy — Vercel ייתן URL ציבורי.
 
-**תזמון: משולב — Vercel Cron המובנה + שירות חיצוני אחד.**
+**תזמון: משולב — Vercel Cron המובנה (עבודת DB שקטה) + cron-job.org (כל דבר עם תזמון גלוי-למשתמש).**
 
-`vercel.json` כבר מגדיר `generate-daily` (21:05 UTC = 00:05 שעון ישראל בקיץ) ו-
-`send-triggers` (03:30 UTC = 06:30 שעון ישראל בקיץ) כ-**Vercel Cron מובנה** —
-זמין וחינמי גם ב-Hobby plan (מוגבל לפעם ביום, שזה בדיוק הקצב שלהם). Vercel Cron
-תמיד קורא ב-**GET** (לא POST) ומצרף אוטומטית `Authorization: Bearer $CRON_SECRET`
-מה-env var של הפרויקט עצמו — שני ה-routes תומכים ב-GET+POST בדיוק בשביל זה, בלי
-צורך בשום הגדרה נוספת מעבר להגדרת `CRON_SECRET` כ-env var.
+`vercel.json` מגדיר רק את `generate-daily` (21:05 UTC = 00:05 שעון ישראל בקיץ) כ-**Vercel
+Cron מובנה** — זמין וחינמי גם ב-Hobby plan. Vercel Cron תמיד קורא ב-**GET** (לא POST)
+ומצרף אוטומטית `Authorization: Bearer $CRON_SECRET` מה-env var של הפרויקט עצמו.
 
 **⚠️ מגבלה: Vercel Cron הוא UTC קבוע, בלי טיימזון ובלי DST אוטומטי.** כשהשעון
-בישראל עובר (מרץ/אוקטובר) צריך לעדכן ידנית את שני ה-schedule ב-`vercel.json`
-ולפרוס מחדש (±1 שעה).
+בישראל עובר (מרץ/אוקטובר) צריך לעדכן ידנית את ה-schedule ב-`vercel.json` ולפרוס מחדש (±1 שעה).
 
-**⚠️ `drip` (כל 5 דקות) חורג ממגבלת "פעם ביום" של Vercel Cron בחינמי** — לכן
-*רק* עבורו צריך שירות חיצוני: [cron-job.org](https://cron-job.org) (חינמי, תזמון
-חופשי, תומך גם ב-Timezone כדי להימנע מבעיית ה-UTC/DST) קורא ל-`/api/cron/drip`
-עם `Authorization: Bearer $CRON_SECRET` כל 5 דקות.
+**⚠️ מגבלה נוספת, קריטית יותר: Vercel Cron ב-Hobby plan לא מתחייב לדקה המדויקת —
+נצפה בפועל ~10 דקות איחור (הרצה שהוגדרה ל-06:30 הגיעה בפועל ל-06:40).** בשביל
+`generate-daily` זה לא משנה (עבודת DB שקטה, אף אחד לא רואה מתי היא רצה). אבל
+`send-triggers` שולח הודעת WhatsApp אמיתית שמשתתפות רואות — שם דיוק בשעה חשוב,
+אז הוא **לא** על Vercel Cron.
+
+**`send-triggers` ו-`drip` שניהם על [cron-job.org](https://cron-job.org)** (חינמי, תזמון
+חופשי לכל דקה, תומך ב-Timezone כדי להימנע מבעיית ה-UTC/DST, ונצפה כנכבד בדיוק בפועל):
+- `POST /api/cron/send-triggers` עם `Authorization: Bearer $CRON_SECRET`, יומי ב-06:45 שעון ישראל.
+- `POST /api/cron/drip` עם `Authorization: Bearer $CRON_SECRET`, כל 5 דקות.
 
 ## חיבור ל-Supabase אמיתי
 
