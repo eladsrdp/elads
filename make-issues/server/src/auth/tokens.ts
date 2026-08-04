@@ -10,6 +10,9 @@ const REFRESH_SALT_ROUNDS = 12
 export const ACCESS_TOKEN_COOKIE = 'mi_access'
 export const REFRESH_TOKEN_COOKIE = 'mi_refresh'
 export const ACCESS_TOKEN_TTL_SEC = 60 * 60 // שעה
+// הערה מדעת: אין אכיפת תוקף בצד השרת ל-refresh token (רק maxAge של העוגייה בדפדפן) — טוקן
+// גולמי שדלף ומשוחזר דרך Cookie מזויף (לא דרך הדפדפן עצמו) יישאר תקף עד רוטציה/logout הבאים.
+// התקבל כפשרה סבירה לכלי פנימי ל-3-4 משתמשים; לשקול issued_at/expires_at ב-users אם ההיקף יגדל.
 export const REFRESH_TOKEN_TTL_SEC = 30 * 24 * 60 * 60 // 30 יום
 
 export async function createAccessToken(username: string, secret: string): Promise<string> {
