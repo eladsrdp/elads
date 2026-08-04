@@ -2,6 +2,7 @@ node_modules/
 dist/
 .env
 accounts.json
+server/data/
 *.tsbuildinfo
 api/index.js
 .vercel/output/
