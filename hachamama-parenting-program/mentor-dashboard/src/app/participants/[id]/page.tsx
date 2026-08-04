@@ -41,6 +41,22 @@ export default async function ParticipantDetailPage({
           ))}
         </tbody>
       </table>
+      {detail.videoSubmissions.length > 0 && (
+        <>
+          <h2>סרטונים שהועלו</h2>
+          <ul>
+            {detail.videoSubmissions.map((v) => (
+              <li key={v.id}>
+                <a href={v.videoUrl} target="_blank" rel="noreferrer">
+                  צפייה בסרטון
+                </a>
+                {' — '}
+                {v.submittedAt}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </main>
   )
 }

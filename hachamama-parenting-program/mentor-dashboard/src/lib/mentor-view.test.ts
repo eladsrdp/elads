@@ -8,6 +8,7 @@ function fakeDataSource(overrides: Partial<MentorDataSource> = {}): MentorDataSo
     getTriggersForDate: async () => [],
     getParticipant: async () => null,
     getDeliveriesForParticipant: async () => [],
+    getVideoSubmissionsForParticipant: async () => [],
     ...overrides,
   }
 }
@@ -80,6 +81,9 @@ describe('buildParticipantDetail', () => {
           body_text: longBody,
         },
       ],
+      getVideoSubmissionsForParticipant: async () => [
+        { id: 'v1', video_url: 'https://example.com/v1.mp4', submitted_at: '2026-08-16T09:00:00Z' },
+      ],
     })
 
     const result = await buildParticipantDetail(dataSource, 'p1')
@@ -88,5 +92,8 @@ describe('buildParticipantDetail', () => {
     expect(result?.deliveries.map((d) => d.messageId)).toEqual(['m1', 'm2'])
     expect(result?.deliveries[0].bodyPreview).toBe(`${longBody.slice(0, 60)}…`)
     expect(result?.deliveries[1].bodyPreview).toBe('קצר')
+    expect(result?.videoSubmissions).toEqual([
+      { id: 'v1', videoUrl: 'https://example.com/v1.mp4', submittedAt: '2026-08-16T09:00:00Z' },
+    ])
   })
 })

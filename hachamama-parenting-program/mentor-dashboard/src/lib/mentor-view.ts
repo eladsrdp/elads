@@ -42,6 +42,12 @@ export interface DeliveryHistoryItem {
   sentAt: string | null
 }
 
+export interface VideoSubmissionItem {
+  id: string
+  videoUrl: string
+  submittedAt: string
+}
+
 export interface ParticipantDetailView {
   id: string
   fullName: string
@@ -49,6 +55,7 @@ export interface ParticipantDetailView {
   status: string
   day1Date: string
   deliveries: DeliveryHistoryItem[]
+  videoSubmissions: VideoSubmissionItem[]
 }
 
 const BODY_PREVIEW_LENGTH = 60
@@ -60,7 +67,10 @@ export async function buildParticipantDetail(
   const participant = await dataSource.getParticipant(participantId)
   if (!participant) return null
 
-  const deliveries = await dataSource.getDeliveriesForParticipant(participantId)
+  const [deliveries, videoSubmissions] = await Promise.all([
+    dataSource.getDeliveriesForParticipant(participantId),
+    dataSource.getVideoSubmissionsForParticipant(participantId),
+  ])
 
   return {
     id: participant.id,
@@ -79,5 +89,10 @@ export async function buildParticipantDetail(
         status: d.status,
         sentAt: d.sent_at,
       })),
+    videoSubmissions: videoSubmissions.map((v) => ({
+      id: v.id,
+      videoUrl: v.video_url,
+      submittedAt: v.submitted_at,
+    })),
   }
 }

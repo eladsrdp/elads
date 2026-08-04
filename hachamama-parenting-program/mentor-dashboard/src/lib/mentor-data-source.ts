@@ -26,11 +26,18 @@ export interface DeliveryRecord {
   body_text: string
 }
 
+export interface VideoSubmissionRecord {
+  id: string
+  video_url: string
+  submitted_at: string
+}
+
 export interface MentorDataSource {
   listParticipants(): Promise<ParticipantRecord[]>
   getTriggersForDate(calendarDate: string): Promise<DailyTriggerRecord[]>
   getParticipant(id: string): Promise<ParticipantRecord | null>
   getDeliveriesForParticipant(participantId: string): Promise<DeliveryRecord[]>
+  getVideoSubmissionsForParticipant(participantId: string): Promise<VideoSubmissionRecord[]>
 }
 
 // אין generated types ל-Supabase בפרויקט הזה (מגבלה ידועה, תואמת ל-server) — cast מפורש
@@ -89,6 +96,16 @@ export function createSupabaseMentorDataSource(supabase: SupabaseClient): Mentor
         send_offset_time: row.messages.send_offset_time,
         body_text: row.messages.body_text,
       }))
+    },
+
+    async getVideoSubmissionsForParticipant(participantId) {
+      const { data, error } = await supabase
+        .from('video_submissions')
+        .select('id, video_url, submitted_at')
+        .eq('participant_id', participantId)
+        .order('submitted_at', { ascending: false })
+      if (error) throw error
+      return data as VideoSubmissionRecord[]
     },
   }
 }
