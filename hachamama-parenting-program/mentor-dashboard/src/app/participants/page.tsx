@@ -13,9 +13,12 @@ export default async function ParticipantsPage() {
     <main style={{ maxWidth: 720, margin: '40px auto', fontFamily: 'sans-serif' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h1>נרשמים</h1>
-        <form action={signOut}>
-          <button type="submit">התנתקות</button>
-        </form>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <Link href="/content">תכנים</Link>
+          <form action={signOut}>
+            <button type="submit">התנתקות</button>
+          </form>
+        </div>
       </div>
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>

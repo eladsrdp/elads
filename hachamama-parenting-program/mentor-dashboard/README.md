@@ -37,6 +37,12 @@ insert into mentors (user_id, full_name) values ('<uuid מהשלב הקודם>',
 בלי השורה הזו ב-`mentors`, המשתמשת יכולה להתחבר (Auth מצליח) אבל תראה טבלה ריקה —
 ה-RLS policies (migration 0002) דורשות שורה תואמת ב-`mentors`.
 
+## מסך תכנים (`/content`)
+
+אותה כניסת מנחה משמשת גם לעריכת תכנים — לא רק לצפייה בנרשמים. גריד רציף של כל 448 הימים,
+עריכת טקסט inline, פאנל צד להעלאת מדיה (drag-and-drop, נשמר ל-Supabase Storage bucket `media`).
+דורש migration `0003_mentor_content_write.sql` (RLS write על content_days/messages + bucket policies).
+
 ## פריסה ל-Vercel (חינמי, Hobby plan)
 
 פרויקט Vercel **נפרד** מ-`server/` (אפליקציה עצמאית):
