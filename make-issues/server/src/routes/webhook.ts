@@ -1,21 +1,29 @@
 // POST /api/webhook/issues — מקבל התראות כשל סנריו מ-Make.com.
 import { Hono } from 'hono'
+import { bodyLimit } from 'hono/body-limit'
 import { z } from 'zod'
 import { ISSUE_TYPES } from '@make-issues/shared'
 import type { AppContext } from '../context'
 import { requireWebhookSecret } from '../auth/webhookAuth'
+
+// SECURITY: מגבילים לסכימת https בלבד — הקישורים מוצגים כ-<a href> קליקבילי
+// בדשבורד, וסכימות כמו javascript:/data: הן וקטור XSS מאוחסן נגד המפעיל המחובר.
+const httpsUrl = z.string().url().refine((u) => u.startsWith('https://'), { message: 'הקישור חייב להיות https' })
 
 const webhookSchema = z.object({
   clientName: z.string().min(1).max(200),
   scenarioName: z.string().min(1).max(200),
   description: z.string().min(1).max(2000),
   issueType: z.enum(ISSUE_TYPES),
-  scenarioLink: z.string().url(),
-  runLink: z.string().url(),
+  scenarioLink: httpsUrl,
+  runLink: httpsUrl,
 })
 
 export function createWebhookRoutes(ctx: AppContext) {
   const app = new Hono()
+  // SECURITY: הגבלת גודל בקשה לפני בדיקת הסוד — דוחה payload ענק בזול,
+  // עוד לפני שמפענחים JSON או בודקים auth.
+  app.use('*', bodyLimit({ maxSize: 16 * 1024, onError: (c) => c.json({ error: 'הבקשה גדולה מדי' }, 413) }))
   app.use('*', requireWebhookSecret(ctx.env.WEBHOOK_SECRET))
 
   app.post('/issues', async (c) => {

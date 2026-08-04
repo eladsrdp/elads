@@ -89,4 +89,48 @@ describe('POST /issues', () => {
     })
     expect(res.status).toBe(400)
   })
+
+  it('400 כש-scenarioLink אינו https (וקטור XSS מאוחסן דרך javascript:)', async () => {
+    const ctx = makeCtx()
+    const app = createWebhookRoutes(ctx)
+    const res = await app.request('/issues', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer the-secret', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...validBody, scenarioLink: 'javascript:alert(1)' }),
+    })
+    expect(res.status).toBe(400)
+  })
+
+  it('400 כש-scenarioLink הוא http רגיל (לא https)', async () => {
+    const ctx = makeCtx()
+    const app = createWebhookRoutes(ctx)
+    const res = await app.request('/issues', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer the-secret', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...validBody, scenarioLink: 'http://example.com' }),
+    })
+    expect(res.status).toBe(400)
+  })
+
+  it('400 כש-description חורג מ-max(2000) — גבול שדה, גוף בקשה קטן מהמגבלה הכללית', async () => {
+    const ctx = makeCtx()
+    const app = createWebhookRoutes(ctx)
+    const res = await app.request('/issues', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer the-secret', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...validBody, description: 'א'.repeat(2001) }),
+    })
+    expect(res.status).toBe(400)
+  })
+
+  it('413 כשגוף הבקשה חורג מ-16KB (גם עם secret תקין)', async () => {
+    const ctx = makeCtx()
+    const app = createWebhookRoutes(ctx)
+    const res = await app.request('/issues', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer the-secret', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...validBody, description: 'x'.repeat(20 * 1024) }),
+    })
+    expect(res.status).toBe(413)
+  })
 })
