@@ -57,6 +57,13 @@ export interface SessionWindowRow {
   expires_at: string
 }
 
+export interface VideoSubmissionRow {
+  id: string
+  participant_id: string
+  video_url: string
+  submitted_at: string
+}
+
 export interface AppDB {
   ping(): Promise<void>
 
@@ -72,6 +79,7 @@ export interface AppDB {
   findParticipantByPhone(phone: string): Promise<ParticipantRow | undefined>
   getActiveParticipants(): Promise<ParticipantRow[]>
   markParticipantCompleted(id: string): Promise<void>
+  createVideoSubmission(input: { participantId: string; videoUrl: string }): Promise<VideoSubmissionRow>
 
   // content
   createContentDay(input: { dayNumber: number; title: string | null }): Promise<ContentDayRow>

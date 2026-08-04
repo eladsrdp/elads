@@ -8,6 +8,7 @@ import type {
   MessageRow,
   ParticipantRow,
   SessionWindowRow,
+  VideoSubmissionRow,
 } from './interface.js'
 
 export function createLocalDb(): AppDB {
@@ -17,6 +18,7 @@ export function createLocalDb(): AppDB {
   const dailyTriggers = new Map<string, DailyTriggerRow>()
   const messageDeliveries = new Map<string, MessageDeliveryRow>()
   const sessionWindows = new Map<string, SessionWindowRow>()
+  const videoSubmissions = new Map<string, VideoSubmissionRow>()
 
   return {
     async ping() {},
@@ -50,6 +52,17 @@ export function createLocalDb(): AppDB {
     async markParticipantCompleted(id) {
       const row = participants.get(id)
       if (row) participants.set(id, { ...row, status: 'completed' })
+    },
+
+    async createVideoSubmission(input) {
+      const row: VideoSubmissionRow = {
+        id: randomUUID(),
+        participant_id: input.participantId,
+        video_url: input.videoUrl,
+        submitted_at: new Date().toISOString(),
+      }
+      videoSubmissions.set(row.id, row)
+      return row
     },
 
     async createContentDay(input) {

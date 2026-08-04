@@ -9,6 +9,7 @@ import type {
   MessageDeliveryRow,
   MessageRow,
   ParticipantRow,
+  VideoSubmissionRow,
 } from './interface.js'
 
 export function createSupabaseDb(url: string, key: string): AppDB {
@@ -75,6 +76,13 @@ export function createSupabaseDb(url: string, key: string): AppDB {
 
     async markParticipantCompleted(id) {
       await updateRow('participants', id, { status: 'completed' })
+    },
+
+    async createVideoSubmission(input) {
+      return insertAndReturn<VideoSubmissionRow>('video_submissions', {
+        participant_id: input.participantId,
+        video_url: input.videoUrl,
+      })
     },
 
     async createContentDay(input) {
