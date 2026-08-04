@@ -1,6 +1,7 @@
 {
   "rewrites": [{ "source": "/(.*)", "destination": "/api" }],
   "crons": [
-    { "path": "/api/cron/generate-daily", "schedule": "5 21 * * *" }
+    { "path": "/api/cron/generate-daily", "schedule": "5 21 * * *" },
+    { "path": "/api/cron/send-triggers", "schedule": "45 3 * * *" }
   ]
 }
