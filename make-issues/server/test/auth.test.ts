@@ -124,6 +124,22 @@ describe('POST /logout', () => {
     await app.request('/logout', { method: 'POST', headers: { Cookie: `mi_refresh=${refreshCookie}` } })
     expect((await db.findUserById('u1'))?.refreshTokenHash).toBeNull()
   })
+
+  it('cookie מזויף (userId אמיתי + secret שגוי) לא מנקה את ה-refresh token האמיתי', async () => {
+    const app = createAuthRoutes(ctx)
+    await app.request('/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: 'elad', password: 'secret123' }),
+    })
+    const hashAfterLogin = (await db.findUserById('u1'))?.refreshTokenHash
+    expect(hashAfterLogin).toBeTruthy()
+
+    const forgedCookie = 'u1.wrong-secret-value'
+    const res = await app.request('/logout', { method: 'POST', headers: { Cookie: `mi_refresh=${forgedCookie}` } })
+    expect(res.status).toBe(200)
+    expect((await db.findUserById('u1'))?.refreshTokenHash).toBe(hashAfterLogin)
+  })
 })
 
 describe('GET /me', () => {
@@ -144,5 +160,26 @@ describe('GET /me', () => {
     const res = await app.request('/me', { headers: { Cookie: `mi_access=${accessCookie}` } })
     expect(res.status).toBe(200)
     expect(await res.json()).toEqual({ username: 'elad' })
+  })
+
+  it('401 עם access token מזויף (חתימה לא תקינה)', async () => {
+    const app = createAuthRoutes(ctx)
+    const res = await app.request('/me', { headers: { Cookie: 'mi_access=a.b.c' } })
+    expect(res.status).toBe(401)
+  })
+})
+
+describe('POST /login — cookies מאובטחים בפרודקשן', () => {
+  it('מגדיר Secure ב-set-cookie כש-NODE_ENV=production', async () => {
+    const prodCtx: AppContext = { db, env: { ...env, JWT_SECRET: 'test-jwt-secret', NODE_ENV: 'production' } }
+    const app = createAuthRoutes(prodCtx)
+    const res = await app.request('/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: 'elad', password: 'secret123' }),
+    })
+    expect(res.status).toBe(200)
+    const setCookies = res.headers.get('set-cookie') ?? ''
+    expect(setCookies).toContain('Secure')
   })
 })

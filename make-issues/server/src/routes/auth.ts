@@ -1,6 +1,7 @@
 // /api/auth — login (username+password), refresh (רוטציית refresh token), logout, me.
 import { Context, Hono } from 'hono'
 import { z } from 'zod'
+import { bodyLimit } from 'hono/body-limit'
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
 import type { AppContext } from '../context'
 import { isLoginRateLimited } from '../auth/rateLimit'
@@ -20,8 +21,15 @@ import {
 
 const loginSchema = z.object({ username: z.string().min(1), password: z.string().min(1) })
 
+// SECURITY: hash בדוי קבוע (bcrypt של מחרוזת אקראית שלעולם לא תתאים לסיסמה אמיתית) —
+// משמש להרצת bcrypt.compare גם כשלא נמצא משתמש, כדי שזמן התגובה לא יחשוף אם שם המשתמש קיים.
+const DUMMY_HASH = '$2a$12$CwTycUXWue0Thq9StjUM0uJ8iVOxNXWXm7q7c72dOA1E6JHDL5.5S'
+
 export function createAuthRoutes(ctx: AppContext) {
   const app = new Hono<AuthVars>()
+
+  // SECURITY: הגבלת גודל בקשה — שם משתמש/סיסמה קצרים מטבעם, 4KB נדיב יותר מספיק.
+  app.use('*', bodyLimit({ maxSize: 4 * 1024, onError: (c) => c.json({ error: 'הבקשה גדולה מדי' }, 413) }))
 
   const cookieOpts = (maxAgeSec: number) => ({
     httpOnly: true,
@@ -49,10 +57,13 @@ export function createAuthRoutes(ctx: AppContext) {
       return c.json({ error: 'יותר מדי ניסיונות — נסה שוב מאוחר יותר' }, 429)
     }
 
+    // SECURITY: תמיד מריצים bcrypt.compare (נגד hash בדוי כשאין משתמש) כדי לנטרל
+    // side-channel של תזמון שהיה חושף אילו שמות משתמש קיימים במערכת.
     const user = await ctx.db.findUserByUsername(username)
-    const ok = user ? await verifyPassword(password, user.passwordHash) : false
-    await ctx.db.recordLoginAttempt(username, ok)
-    if (!user || !ok) return c.json({ error: 'שם משתמש או סיסמה שגויים' }, 401)
+    const ok = await verifyPassword(password, user?.passwordHash ?? DUMMY_HASH)
+    const success = !!user && ok
+    await ctx.db.recordLoginAttempt(username, success)
+    if (!success) return c.json({ error: 'שם משתמש או סיסמה שגויים' }, 401)
 
     await issueSession(c, user.id, user.username)
     return c.json({ username: user.username })
@@ -78,7 +89,13 @@ export function createAuthRoutes(ctx: AppContext) {
   app.post('/logout', async (c) => {
     const raw = getCookie(c, REFRESH_TOKEN_COOKIE)
     const parsed = raw ? parseRefreshToken(raw) : null
-    if (parsed) await ctx.db.setRefreshTokenHash(parsed.userId, null)
+    // SECURITY: מאמתים את ה-secret מול ה-hash השמור לפני שנוגעים ב-DB —
+    // אחרת cookie מזויף (userId אמיתי + secret כלשהו) יכול לאלץ logout על חשבון של מישהו אחר
+    // בלי שום הוכחה שהתוקף אכן מחזיק refresh token תקף.
+    const user = parsed ? await ctx.db.findUserById(parsed.userId) : undefined
+    if (parsed && user?.refreshTokenHash && (await verifyRefreshToken(parsed.secret, user.refreshTokenHash))) {
+      await ctx.db.setRefreshTokenHash(parsed.userId, null)
+    }
     deleteCookie(c, ACCESS_TOKEN_COOKIE, { path: '/' })
     deleteCookie(c, REFRESH_TOKEN_COOKIE, { path: '/' })
     return c.json({ ok: true })
