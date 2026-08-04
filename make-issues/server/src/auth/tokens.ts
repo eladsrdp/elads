@@ -22,7 +22,7 @@ export async function createAccessToken(username: string, secret: string): Promi
 
 export async function verifyAccessToken(token: string, secret: string): Promise<string | null> {
   try {
-    const { payload } = await jwtVerify(token, new TextEncoder().encode(secret))
+    const { payload } = await jwtVerify(token, new TextEncoder().encode(secret), { algorithms: [ALG] })
     return typeof payload.username === 'string' ? payload.username : null
   } catch {
     return null
@@ -36,7 +36,7 @@ export function generateRefreshToken(userId: string): { token: string; secret: s
 
 export function parseRefreshToken(token: string): { userId: string; secret: string } | null {
   const idx = token.indexOf('.')
-  if (idx <= 0) return null
+  if (idx <= 0 || idx === token.length - 1) return null
   return { userId: token.slice(0, idx), secret: token.slice(idx + 1) }
 }
 

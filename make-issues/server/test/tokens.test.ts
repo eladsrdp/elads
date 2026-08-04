@@ -60,4 +60,8 @@ describe('refresh token', () => {
   it('parseRefreshToken דוחה טוקן בלי נקודה מפרידה', () => {
     expect(parseRefreshToken('no-dot-here')).toBeNull()
   })
+
+  it('parseRefreshToken דוחה טוקן עם secret ריק (נקודה בסוף)', () => {
+    expect(parseRefreshToken('user-123.')).toBeNull()
+  })
 })
