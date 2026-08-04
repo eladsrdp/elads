@@ -4,11 +4,12 @@ import { createApp } from '../app'
 import { env } from '../env'
 import { createFakeMakeClient } from '../make/client'
 import { createLocalDb } from '../repository/local-impl'
+import { createFakeVideoStorage } from '../storage/video-storage'
 
 function buildApp() {
   const db = createLocalDb()
   const makeClient = createFakeMakeClient()
-  const app = createApp({ db, makeClient, env })
+  const app = createApp({ db, makeClient, videoStorage: createFakeVideoStorage(), env })
   return { app, db, makeClient }
 }
 

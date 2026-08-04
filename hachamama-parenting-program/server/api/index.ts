@@ -11,12 +11,17 @@ import { createApp } from '../src/app.js'
 import { env } from '../src/env.js'
 import { createMakeClient } from '../src/make/client.js'
 import { createDb } from '../src/repository/db.js'
+import { createFakeVideoStorage, createSupabaseVideoStorage } from '../src/storage/video-storage.js'
 
 export const config = { runtime: 'nodejs' }
 
 const db = await createDb(env.SUPABASE_URL, env.SUPABASE_SERVICE_KEY)
 const makeClient = createMakeClient(env.MAKE_WEBHOOK_URL ?? '')
-const app = createApp({ db, makeClient, env })
+const videoStorage =
+  env.SUPABASE_URL && env.SUPABASE_SERVICE_KEY
+    ? createSupabaseVideoStorage(env.SUPABASE_URL, env.SUPABASE_SERVICE_KEY)
+    : createFakeVideoStorage()
+const app = createApp({ db, makeClient, videoStorage, env })
 
 // Vercel's newer Functions runtime expects a named `fetch` export for the
 // Web-standard Request/Response API, not a default export returning a

@@ -2,6 +2,7 @@
 import { Hono } from 'hono'
 import type { AppContext } from './context.js'
 import { createCronRoutes } from './routes/cron.js'
+import { createVideoSubmissionRoutes } from './routes/video-submission.js'
 import { createWebhookRoutes } from './routes/webhooks.js'
 
 export function createApp(ctx: AppContext) {
@@ -10,6 +11,7 @@ export function createApp(ctx: AppContext) {
   app.get('/api/health', (c) => c.json({ ok: true }))
   app.route('/api/webhooks', createWebhookRoutes(ctx))
   app.route('/api/cron', createCronRoutes(ctx))
+  app.route('/', createVideoSubmissionRoutes(ctx))
 
   app.onError((err, c) => {
     // SECURITY: לא חושפים stack trace/פרטי שגיאה פנימיים ללקוח — רק ללוג השרת.
