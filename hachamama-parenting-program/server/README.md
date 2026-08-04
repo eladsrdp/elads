@@ -93,6 +93,16 @@ npm test
 | POST | `/api/cron/generate-daily` | `Authorization: Bearer $CRON_SECRET` | ריצה יומית — ליצור בסביבת production ב-00:05 שעון ישראל |
 | POST | `/api/cron/send-triggers` | `Authorization: Bearer $CRON_SECRET` | שליחת הודעות טריגר בוקר — לתזמן קצת אחרי generate-daily |
 | POST | `/api/cron/drip` | `Authorization: Bearer $CRON_SECRET` | שליחה בזמן אמת — לתזמן כל 5 דקות |
+| GET/POST | `/video-submit` | — (ציבורי, ללא הגנה — אימות רק לפי התאמת טלפון) | לינק להעלאת סרטון ע"י נרשם |
+
+## לינק העלאת סרטון (`/video-submit`)
+
+לינק ציבורי רב-פעמי — לשלוח לכל הנרשמים. נרשם מקליד טלפון ומעלה סרטון; אם הטלפון
+תואם נרשם פעיל, הסרטון נשמר ל-Supabase Storage (`media` bucket) ונרשם ב-`video_submissions`.
+מנחות רואות את הסרטונים במסך פרטי הנרשם ב-`mentor-dashboard/` (`/participants/[id]`).
+
+**⚠️ אין הגנה חוץ מהתאמת טלפון** — כל מי שיודע טלפון נרשם קיים יכול "להעלות בשמו".
+מתאים לקהילה סגורה קטנה; לא מיועד לפרסום ציבורי רחב.
 
 ## אמינות (הרחבות שנוספו ב-code review)
 
