@@ -7,6 +7,8 @@ const schema = z.object({
   NODE_ENV: z.string().default('development'),
   JWT_SECRET: z.string().default('dev-secret-change-me'),
   WEBHOOK_SECRET: z.string().default('dev-webhook-secret-change-me'),
+  // Neon (Postgres serverless) — מחרוזת חיבור אחת. עדיפות ראשונה אם קיימת (ראו db.ts).
+  DATABASE_URL: z.string().optional(),
   SUPABASE_URL: z.string().optional(),
   SUPABASE_SERVICE_KEY: z.string().optional(),
 })
