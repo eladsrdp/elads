@@ -1,16 +1,20 @@
-import Link from 'next/link'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { createSupabaseMentorDataSource } from '@/lib/mentor-data-source'
 import { buildParticipantList } from '@/lib/mentor-view'
 import { signOut } from '../login/actions'
+import { ParticipantsTable } from './participants-table'
+import Link from 'next/link'
 
 export default async function ParticipantsPage() {
   const supabase = await createSupabaseServerClient()
   const dataSource = createSupabaseMentorDataSource(supabase)
-  const participants = await buildParticipantList(dataSource, new Date())
+  const [participants, mentors] = await Promise.all([
+    buildParticipantList(dataSource, new Date()),
+    dataSource.listMentors(),
+  ])
 
   return (
-    <main style={{ maxWidth: 720, margin: '40px auto', fontFamily: 'sans-serif' }}>
+    <main style={{ maxWidth: 900, margin: '40px auto', fontFamily: 'sans-serif' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h1>נרשמים</h1>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
@@ -20,28 +24,7 @@ export default async function ParticipantsPage() {
           </form>
         </div>
       </div>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr>
-            <th style={{ textAlign: 'right' }}>שם</th>
-            <th style={{ textAlign: 'right' }}>יום בתוכנית</th>
-            <th style={{ textAlign: 'right' }}>לחץ היום?</th>
-            <th style={{ textAlign: 'right' }}>סטטוס</th>
-          </tr>
-        </thead>
-        <tbody>
-          {participants.map((p) => (
-            <tr key={p.id} style={{ borderTop: '1px solid #ddd' }}>
-              <td>
-                <Link href={`/participants/${p.id}`}>{p.fullName}</Link>
-              </td>
-              <td>{p.programDay}</td>
-              <td>{p.clickedToday ? '✅' : '❌'}</td>
-              <td>{p.status}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <ParticipantsTable initialParticipants={participants} mentors={mentors} />
     </main>
   )
 }
