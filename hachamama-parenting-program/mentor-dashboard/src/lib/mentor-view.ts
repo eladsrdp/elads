@@ -10,6 +10,8 @@ export interface ParticipantListItem {
   status: string
   programDay: number
   clickedToday: boolean
+  assignedMentorId: string | null
+  assignedMentorName: string | null
 }
 
 export async function buildParticipantList(
@@ -17,11 +19,13 @@ export async function buildParticipantList(
   now: Date,
 ): Promise<ParticipantListItem[]> {
   const todayDate = getIsraelDateString(now)
-  const [participants, triggers] = await Promise.all([
+  const [participants, triggers, mentors] = await Promise.all([
     dataSource.listParticipants(),
     dataSource.getTriggersForDate(todayDate),
+    dataSource.listMentors(),
   ])
   const clickedByParticipant = new Map(triggers.map((t) => [t.participant_id, t.clicked_at !== null]))
+  const mentorNameById = new Map(mentors.map((m) => [m.user_id, m.full_name]))
 
   return participants.map((p) => ({
     id: p.id,
@@ -30,6 +34,8 @@ export async function buildParticipantList(
     status: p.status,
     programDay: calculateProgramDayNumber(p.day1_date, todayDate),
     clickedToday: clickedByParticipant.get(p.id) ?? false,
+    assignedMentorId: p.assigned_mentor_id,
+    assignedMentorName: p.assigned_mentor_id ? (mentorNameById.get(p.assigned_mentor_id) ?? null) : null,
   }))
 }
 
@@ -95,4 +101,8 @@ export async function buildParticipantDetail(
       submittedAt: v.submitted_at,
     })),
   }
+}
+
+export function canDeleteParticipant(counts: { triggers: number; deliveries: number; videoSubmissions: number }): boolean {
+  return counts.triggers === 0 && counts.deliveries === 0 && counts.videoSubmissions === 0
 }

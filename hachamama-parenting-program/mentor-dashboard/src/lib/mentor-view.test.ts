@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { MentorDataSource } from './mentor-data-source'
-import { buildParticipantDetail, buildParticipantList } from './mentor-view'
+import { buildParticipantDetail, buildParticipantList, canDeleteParticipant } from './mentor-view'
 
 function fakeDataSource(overrides: Partial<MentorDataSource> = {}): MentorDataSource {
   return {
@@ -9,6 +9,13 @@ function fakeDataSource(overrides: Partial<MentorDataSource> = {}): MentorDataSo
     getParticipant: async () => null,
     getDeliveriesForParticipant: async () => [],
     getVideoSubmissionsForParticipant: async () => [],
+    listMentors: async () => [],
+    createParticipant: async () => {
+      throw new Error('not implemented in this fake')
+    },
+    updateParticipant: async () => {},
+    deleteParticipant: async () => {},
+    getParticipantHistoryCounts: async () => ({ triggers: 0, deliveries: 0, videoSubmissions: 0 }),
     ...overrides,
   }
 }
@@ -17,8 +24,22 @@ describe('buildParticipantList', () => {
   it('מחשב יום-תוכנית נכון ומסמן מי לחץ היום לפי daily_triggers', async () => {
     const dataSource = fakeDataSource({
       listParticipants: async () => [
-        { id: 'p1', full_name: 'דנה כהן', phone: '+972500000001', status: 'active', day1_date: '2026-08-02' },
-        { id: 'p2', full_name: 'אבי לוי', phone: '+972500000002', status: 'active', day1_date: '2026-08-02' },
+        {
+          id: 'p1',
+          full_name: 'דנה כהן',
+          phone: '+972500000001',
+          status: 'active',
+          day1_date: '2026-08-02',
+          assigned_mentor_id: null,
+        },
+        {
+          id: 'p2',
+          full_name: 'אבי לוי',
+          phone: '+972500000002',
+          status: 'active',
+          day1_date: '2026-08-02',
+          assigned_mentor_id: null,
+        },
       ],
       getTriggersForDate: async () => [{ participant_id: 'p1', clicked_at: '2026-08-16T06:00:00Z' }],
     })
@@ -26,15 +47,40 @@ describe('buildParticipantList', () => {
     const result = await buildParticipantList(dataSource, new Date('2026-08-16T10:00:00Z'))
 
     expect(result).toEqual([
-      { id: 'p1', fullName: 'דנה כהן', phone: '+972500000001', status: 'active', programDay: 15, clickedToday: true },
-      { id: 'p2', fullName: 'אבי לוי', phone: '+972500000002', status: 'active', programDay: 15, clickedToday: false },
+      {
+        id: 'p1',
+        fullName: 'דנה כהן',
+        phone: '+972500000001',
+        status: 'active',
+        programDay: 15,
+        clickedToday: true,
+        assignedMentorId: null,
+        assignedMentorName: null,
+      },
+      {
+        id: 'p2',
+        fullName: 'אבי לוי',
+        phone: '+972500000002',
+        status: 'active',
+        programDay: 15,
+        clickedToday: false,
+        assignedMentorId: null,
+        assignedMentorName: null,
+      },
     ])
   })
 
   it('מנוי בלי daily_trigger היום מסומן כלא-לחץ, לא זורק שגיאה', async () => {
     const dataSource = fakeDataSource({
       listParticipants: async () => [
-        { id: 'p1', full_name: 'דנה כהן', phone: '+972500000001', status: 'active', day1_date: '2026-08-02' },
+        {
+          id: 'p1',
+          full_name: 'דנה כהן',
+          phone: '+972500000001',
+          status: 'active',
+          day1_date: '2026-08-02',
+          assigned_mentor_id: null,
+        },
       ],
       getTriggersForDate: async () => [],
     })
@@ -60,6 +106,7 @@ describe('buildParticipantDetail', () => {
         phone: '+972500000001',
         status: 'active',
         day1_date: '2026-08-02',
+        assigned_mentor_id: null,
       }),
       getDeliveriesForParticipant: async () => [
         {
@@ -95,5 +142,17 @@ describe('buildParticipantDetail', () => {
     expect(result?.videoSubmissions).toEqual([
       { id: 'v1', videoUrl: 'https://example.com/v1.mp4', submittedAt: '2026-08-16T09:00:00Z' },
     ])
+  })
+})
+
+describe('canDeleteParticipant', () => {
+  it('מאפשר מחיקה כשאין שום היסטוריה', () => {
+    expect(canDeleteParticipant({ triggers: 0, deliveries: 0, videoSubmissions: 0 })).toBe(true)
+  })
+
+  it('חוסם מחיקה אם יש ולו רשומת היסטוריה אחת, מכל סוג', () => {
+    expect(canDeleteParticipant({ triggers: 1, deliveries: 0, videoSubmissions: 0 })).toBe(false)
+    expect(canDeleteParticipant({ triggers: 0, deliveries: 1, videoSubmissions: 0 })).toBe(false)
+    expect(canDeleteParticipant({ triggers: 0, deliveries: 0, videoSubmissions: 1 })).toBe(false)
   })
 })
