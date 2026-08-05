@@ -43,6 +43,13 @@ insert into mentors (user_id, full_name) values ('<uuid מהשלב הקודם>',
 עריכת טקסט inline, פאנל צד להעלאת מדיה (drag-and-drop, נשמר ל-Supabase Storage bucket `media`).
 דורש migration `0003_mentor_content_write.sql` (RLS write על content_days/messages + bucket policies).
 
+## ניהול נרשמים (`/participants`)
+
+מסך הנרשמים כולל גם הוספה/עריכה/מחיקה, לא רק צפייה — כולל הצמדת "מנחה אחראית"
+(תגית ארגונית בלבד, לא מגבילה מי רואה מה — כל מנחה עדיין רואה את כל הנרשמים).
+מחיקה חסומה אם לנרשם כבר יש היסטוריית הודעות/סרטונים — יש להשהות (`paused`) במקום.
+דורש migration `0005_participant_management.sql`.
+
 ## פריסה ל-Vercel (חינמי, Hobby plan)
 
 פרויקט Vercel **נפרד** מ-`server/` (אפליקציה עצמאית):
