@@ -16,3 +16,14 @@ export function calculateProgramDayNumber(day1Date: string, todayDate: string): 
   const diffDays = today.diff(d1, 'days').days
   return Math.round(diffDays) + 1
 }
+
+/**
+ * יום 1 = יום ראשון הראשון שאחרי תאריך ההרשמה (לפי הזמן המקומי בישראל),
+ * לעולם לא אותו יום ראשון עצמו — נרשם ביום ראשון מתחיל בראשון של השבוע הבא.
+ */
+export function calculateDay1Date(signupAt: Date): string {
+  const israelSignup = DateTime.fromJSDate(signupAt).setZone(ISRAEL_ZONE)
+  const dayOfWeek = israelSignup.weekday % 7 // luxon: 1=שני..7=ראשון → הופך ל-0=ראשון..6=שבת
+  const daysUntilNextSunday = dayOfWeek === 0 ? 7 : 7 - dayOfWeek
+  return israelSignup.plus({ days: daysUntilNextSunday }).toISODate() as string
+}
