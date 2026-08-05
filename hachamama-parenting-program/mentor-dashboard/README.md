@@ -1,5 +1,40 @@
 # Hachamama Mentor Dashboard (Plan D)
 
+## ⚠️ זו האפליקציה המאוחדת (2026-08-05)
+
+`hachamama-parenting-program/server/` (הישן) ו-`mentor-dashboard/` (הזו) מוזגו לאפליקציה
+אחת — הכל (webhooks, cron jobs, לינק הסרטון הציבורי, דשבורד המנחות) רץ כאן, ב-Vercel
+project אחד. `server/` נשאר בריפו בלי להימחק (בכוונה, לצורך השוואה/rollback), אבל
+**אחרי שהמעבר יאושר בפועל הוא לא צריך להיפרס יותר**. ראו
+`docs/plans/2026-08-05-unify-into-single-app-plan.md` לתוכנית המלאה ולצ'קליסט המעבר
+(עדכון URLs ב-Make.com וב-cron-job.org).
+
+## Endpoints (מאוחד)
+
+| Method | Path | הגנה | תפקיד |
+|---|---|---|---|
+| POST | `/api/webhooks/signup` | `Authorization: Bearer $SIGNUP_WEBHOOK_SECRET` | יוצר נרשם חדש |
+| POST | `/api/webhooks/make/button-click` | `Authorization: Bearer $MAKE_WEBHOOK_SECRET` | Make מעביר לחיצת כפתור |
+| GET/POST | `/api/cron/generate-daily` | `Authorization: Bearer $CRON_SECRET` | ריצה יומית — Vercel Cron מובנה, 00:05 |
+| GET/POST | `/api/cron/send-triggers` | `Authorization: Bearer $CRON_SECRET` | טריגר בוקר — cron-job.org, 06:45 מדויק |
+| GET/POST | `/api/cron/drip` | `Authorization: Bearer $CRON_SECRET` | שליחה בזמן אמת — cron-job.org, כל 5 דקות |
+| GET/POST | `/video-submit` | — (ציבורי) | לינק להעלאת סרטון ע"י נרשם |
+| — | `/participants`, `/content` | Supabase Auth (מנחה) | הדשבורד |
+
+## Env vars נוספים (חדש — לא היו כאן קודם, הגיעו מ-server/)
+
+בנוסף ל-`NEXT_PUBLIC_SUPABASE_URL`/`NEXT_PUBLIC_SUPABASE_ANON_KEY` הקיימים, האפליקציה
+המאוחדת צריכה גם (כולם **בלי** `NEXT_PUBLIC_` — סודות server-only):
+
+- `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` — אותו פרויקט Supabase, מפתח service role.
+- `MAKE_WEBHOOK_URL` — ה-webhook URL של Make.com (לא משתנה, זה ה-URL של Make עצמו).
+- `SIGNUP_WEBHOOK_SECRET`, `MAKE_WEBHOOK_SECRET`, `CRON_SECRET` — אפשר להשתמש באותם
+  ערכים שהיו מוגדרים ב-Vercel project הישן (`server/`), כדי לא לצטרך לעדכן secrets
+  בצד Make/cron-job.org — רק את ה-URL (host) צריך לעדכן שם, לא את הטוקנים.
+- `PROGRAM_LENGTH_DAYS` — `448` (64 שבועות), כמו קודם.
+
+---
+
 דשבורד קריאה-בלבד למנחות. מתחבר ישירות ל-Supabase (לא דרך `server/`), עם auth
 של Supabase (email+password) ו-RLS שמגביל גישה לקריאה בלבד (ראו
 `server/migrations/0002_mentor_rls.sql`). ראו `hachamama-parenting-program/docs/2026-07-31-design.md`
@@ -52,14 +87,19 @@ insert into mentors (user_id, full_name) values ('<uuid מהשלב הקודם>',
 
 ## פריסה ל-Vercel (חינמי, Hobby plan)
 
-פרויקט Vercel **נפרד** מ-`server/` (אפליקציה עצמאית):
+זהו כעת פרויקט Vercel **היחיד** של המערכת (ראו "זו האפליקציה המאוחדת" למעלה):
 
 1. New Project → Import מ-GitHub → `eladsrdp/elads`.
 2. **Root Directory:** `hachamama-parenting-program/mentor-dashboard`.
 3. Framework Preset: Next.js (מזוהה אוטומטית).
 4. Environment Variables: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   (אותם ערכים מ-`.env` המקומי — אלה מיועדים להיות ציבוריים, זה מה ש-`NEXT_PUBLIC_` מסמן).
+   (אותם ערכים מ-`.env` המקומי — אלה מיועדים להיות ציבוריים, זה מה ש-`NEXT_PUBLIC_` מסמן)
+   **וגם** את כל משתני הסביבה ברשימת "Env vars נוספים" למעלה.
 5. Deploy.
+6. לפני שמעדכנים את Make.com/cron-job.org לכתוב ל-URL החדש — לאמת ידנית שכל
+   ה-endpoints שברשימה למעלה עובדים על הפריסה החדשה. ראו את צ'קליסט המעבר
+   ב-`docs/plans/2026-08-05-unify-into-single-app-plan.md` (Task 9) לפני כל שינוי
+   בהגדרות Make.com/cron-job.org — המערכת הקיימת שולחת הודעות אמיתיות ל-14 נרשמים.
 
 ## מגבלות ידועות (בכוונה, ראו design doc)
 
