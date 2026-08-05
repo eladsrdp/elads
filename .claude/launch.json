@@ -26,6 +26,12 @@
       "port": 8788
     },
     {
+      "name": "mentor-dashboard",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "hachamama-parenting-program/mentor-dashboard", "run", "dev", "--", "-p", "3001"],
+      "port": 3001
+    },
+    {
       "name": "Brainstorm Visualization Server",
       "runtimeExecutable": "node",
       "runtimeArgs": [".claude/skills/brainstorming/scripts/server.cjs"],
