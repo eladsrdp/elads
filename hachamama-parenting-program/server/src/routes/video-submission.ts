@@ -14,36 +14,115 @@ function significantPhoneDigits(phone: string): string {
   return phone.replace(/\D/g, '').slice(-9)
 }
 
-const FORM_PAGE_HTML = `<!doctype html>
+// עיצוב לפי brand/brand-guidelines.md — פלטה נדגמה בפיקסלים מ-logo.png, לא הערכת עין.
+// הלוגו מאוחסן ב-Supabase Storage (bucket 'media', ציבורי לקריאה) — הועלה פעם אחת
+// דרך script חד-פעמי, לא חלק מקוד הריצה. אם הלוגו יתעדכן, יש להעלות מחדש לאותו path.
+const LOGO_URL = 'https://lqhpfrhiiboshsoqnfdz.supabase.co/storage/v1/object/public/media/branding/logo-full.jpg'
+const COLOR_GREEN_DARK = '#2F5F47'
+const COLOR_GREEN_MUTED = '#789084'
+const COLOR_COPPER = '#8B481C'
+const COLOR_PAPER = '#F3F3F3'
+
+function pageShell(title: string, bodyHtml: string): string {
+  return `<!doctype html>
 <html lang="he" dir="rtl">
-<head><meta charset="utf-8"><title>העלאת סרטון</title></head>
-<body style="font-family: sans-serif; max-width: 400px; margin: 60px auto;">
-  <h1>העלאת סרטון</h1>
-  <form method="post" enctype="multipart/form-data">
-    <label>מספר טלפון<br>
-      <input type="tel" name="phone" required style="width: 100%; margin: 8px 0;">
-    </label>
-    <br>
-    <label>קובץ סרטון<br>
-      <input type="file" name="video" accept="video/*" required style="margin: 8px 0;">
-    </label>
-    <br>
-    <button type="submit">שלח</button>
-  </form>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${title}</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, "Segoe UI", Arial, sans-serif;
+      background: ${COLOR_PAPER};
+      color: ${COLOR_GREEN_DARK};
+      margin: 0;
+      padding: 24px 16px;
+      display: flex;
+      justify-content: center;
+    }
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 2px 12px rgba(47, 95, 71, 0.12);
+      padding: 32px 24px;
+      max-width: 360px;
+      width: 100%;
+      text-align: center;
+    }
+    .logo { width: 100%; max-width: 280px; height: auto; margin-bottom: 16px; }
+    h1 { font-size: 20px; margin: 0 0 6px; color: ${COLOR_GREEN_DARK}; }
+    .tagline { font-size: 13px; color: ${COLOR_GREEN_MUTED}; margin: 0 0 20px; }
+    label { display: block; text-align: right; font-size: 14px; margin: 16px 0 6px; color: ${COLOR_GREEN_DARK}; }
+    input[type="tel"], input[type="file"] {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid ${COLOR_GREEN_MUTED};
+      border-radius: 10px;
+      font-size: 15px;
+      background: ${COLOR_PAPER};
+    }
+    input[type="tel"]:focus { outline: 2px solid ${COLOR_GREEN_DARK}; }
+    button {
+      width: 100%;
+      margin-top: 24px;
+      padding: 12px;
+      background: ${COLOR_GREEN_DARK};
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:active { opacity: 0.85; }
+    .icon { font-size: 40px; margin-bottom: 8px; }
+    .error-text { color: ${COLOR_COPPER}; font-size: 15px; }
+    .success-text { color: ${COLOR_GREEN_DARK}; font-size: 15px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <img class="logo" src="${LOGO_URL}" alt="החממה">
+    ${bodyHtml}
+  </div>
 </body>
 </html>`
-
-function errorPage(message: string): string {
-  return `<!doctype html>
-<html lang="he" dir="rtl"><body style="font-family: sans-serif; max-width: 400px; margin: 60px auto;">
-<h1>שגיאה</h1><p>${message}</p>
-</body></html>`
 }
 
-const SUCCESS_PAGE_HTML = `<!doctype html>
-<html lang="he" dir="rtl"><body style="font-family: sans-serif; max-width: 400px; margin: 60px auto;">
-<h1>התקבל!</h1><p>הסרטון הועלה בהצלחה.</p>
-</body></html>`
+const FORM_PAGE_HTML = pageShell(
+  'העלאת סרטון — החממה',
+  `
+    <h1>העלאת סרטון</h1>
+    <p class="tagline">הדרך לגדול עם שרה גוטליב</p>
+    <form method="post" enctype="multipart/form-data">
+      <label for="phone">מספר טלפון</label>
+      <input type="tel" id="phone" name="phone" placeholder="050-1234567" required>
+      <label for="video">קובץ סרטון</label>
+      <input type="file" id="video" name="video" accept="video/*" required>
+      <button type="submit">שלח</button>
+    </form>
+  `,
+)
+
+function errorPage(message: string): string {
+  return pageShell(
+    'שגיאה — החממה',
+    `
+      <div class="icon">⚠️</div>
+      <h1>לא הצלחנו לקבל את הסרטון</h1>
+      <p class="error-text">${message}</p>
+    `,
+  )
+}
+
+const SUCCESS_PAGE_HTML = pageShell(
+  'התקבל — החממה',
+  `
+    <div class="icon">🌱</div>
+    <h1>התקבל בהצלחה!</h1>
+    <p class="success-text">הסרטון שלך הועלה. תודה ששלחת!</p>
+  `,
+)
 
 export function createVideoSubmissionRoutes(ctx: AppContext) {
   const app = new Hono()
