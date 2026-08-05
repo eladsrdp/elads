@@ -1,0 +1,18 @@
+{
+  "name": "make-issues",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "workspaces": ["shared", "server", "client"],
+  "scripts": {
+    "dev": "concurrently -n srv,web -c blue,green \"npm run dev -w server\" \"npm run dev -w client\"",
+    "build": "node scripts/vercel-build.mjs",
+    "test": "npm run test -w server && npm run test -w client",
+    "start": "npm run start -w server",
+    "seed": "npm run seed -w server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "esbuild": "^0.28.0"
+  }
+}

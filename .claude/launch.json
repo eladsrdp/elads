@@ -32,6 +32,12 @@
       "port": 3001
     },
     {
+      "name": "make-issues",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "make-issues", "run", "dev"],
+      "port": 5173
+    },
+    {
       "name": "Brainstorm Visualization Server",
       "runtimeExecutable": "node",
       "runtimeArgs": [".claude/skills/brainstorming/scripts/server.cjs"],
