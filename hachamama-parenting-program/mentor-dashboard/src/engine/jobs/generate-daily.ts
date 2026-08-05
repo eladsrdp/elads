@@ -1,8 +1,8 @@
 // ריצה יומית (JIT) — לא בזמן ההרשמה. ראו design doc: "מנוע התזמון — Just-In-Time".
 // תוכן שנערך היום חל אוטומטית על מי שעדיין לא הגיע לאותו יום, כי קוראים את התוכן
 // העדכני כאן, לא בזמן ההרשמה.
-import type { AppDB } from '../repository/interface.js'
-import { calculateProgramDayNumber, combineDateAndTimeInIsrael } from '../domain/scheduling.js'
+import type { AppDB } from '../repository/interface'
+import { calculateProgramDayNumber, combineDateAndTimeInIsrael } from '../domain/scheduling'
 
 export interface GenerateDailyResult {
   triggersCreated: number

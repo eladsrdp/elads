@@ -10,7 +10,7 @@ import type {
   MessageRow,
   ParticipantRow,
   VideoSubmissionRow,
-} from './interface.js'
+} from './interface'
 
 export function createSupabaseDb(url: string, key: string): AppDB {
   const supabase = createClient(url, key)

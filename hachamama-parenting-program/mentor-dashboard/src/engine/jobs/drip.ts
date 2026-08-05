@@ -1,7 +1,7 @@
 // ריצה בתדירות גבוהה (כל כמה דקות) — שולחת הודעות שהגיע זמנן, רק אם ה-daily_trigger
 // שלהן נלחץ (שחרור per-day, ראו design doc) וגם קיים חלון-שירות טכני פתוח.
-import type { AppDB } from '../repository/interface.js'
-import type { MakeClient } from '../make/client.js'
+import type { AppDB } from '../repository/interface'
+import type { MakeClient } from '../make/client'
 
 export interface DripResult {
   sent: number

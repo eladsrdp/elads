@@ -9,7 +9,7 @@ import type {
   ParticipantRow,
   SessionWindowRow,
   VideoSubmissionRow,
-} from './interface.js'
+} from './interface'
 
 export function createLocalDb(): AppDB {
   const participants = new Map<string, ParticipantRow>()

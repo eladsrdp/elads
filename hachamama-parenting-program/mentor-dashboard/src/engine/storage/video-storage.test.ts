@@ -1,6 +1,6 @@
 // hachamama-parenting-program/mentor-dashboard/src/engine/storage/video-storage.test.ts
 import { describe, expect, it } from 'vitest'
-import { createFakeVideoStorage } from './video-storage.js'
+import { createFakeVideoStorage } from './video-storage'
 
 describe('createFakeVideoStorage', () => {
   it('רושם קבצים שהועלו ומחזיר URL ציבורי מדומה, בלי HTTP אמיתי', async () => {

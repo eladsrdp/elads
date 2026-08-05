@@ -1,8 +1,8 @@
 // ריצת בוקר — שולחת ל-Make את הודעת הטריגר (תבנית מאושרת + כפתור) לכל daily_trigger
 // שנוצר היום ועדיין לא נשלח. ה-button_payload הוא ה-id של ה-trigger עצמו — ראו design doc
 // "עקרון מרכזי": לחיצה על הכפתור הזה תשחרר בעתיד רק את היום הספציפי הזה.
-import type { AppDB } from '../repository/interface.js'
-import type { MakeClient } from '../make/client.js'
+import type { AppDB } from '../repository/interface'
+import type { MakeClient } from '../make/client'
 
 export interface SendTriggersResult {
   sent: number
