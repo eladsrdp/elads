@@ -26,3 +26,4 @@
 - [[hargal-ors-ws]] — ממשק SOAP למערכת שכר הרגל ORS — קליטה/עדכון/שליפת עובדים
 - [[priority-yoman-ws]] — ממשק REST לפקודות יומן Priority כולל שדות PCN874 (מע"מ)
 - [[parenting-course-whatsapp-companion]] — תוכנית ליווי דיגיטלית לקורס הנחיית הורים, WhatsApp+Make.com, מחליף Airtable
+- [[make-issues-dashboard]] — webhook receiver + לוח בקרה לתקלות סנריו מ-Make.com (make-issues/) — Hono+React+Neon, בפרודקשן

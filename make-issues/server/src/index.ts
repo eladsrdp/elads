@@ -6,7 +6,7 @@ import { createApp } from './app'
 import { createDb } from './db/db'
 import { env, isProd } from './env'
 
-const db = createDb(env.SUPABASE_URL, env.SUPABASE_SERVICE_KEY)
+const db = createDb(env.DATABASE_URL, env.SUPABASE_URL, env.SUPABASE_SERVICE_KEY)
 const app = createApp({ db, env })
 
 const clientDist = '../client/dist'
