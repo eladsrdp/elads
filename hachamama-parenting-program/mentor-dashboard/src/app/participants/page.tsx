@@ -19,6 +19,7 @@ export default async function ParticipantsPage() {
         <h1>נרשמים</h1>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
           <Link href="/content">תכנים</Link>
+          <Link href="/mentors/new">מנחות</Link>
           <form action={signOut}>
             <button type="submit">התנתקות</button>
           </form>
