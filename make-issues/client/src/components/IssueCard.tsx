@@ -14,14 +14,16 @@ export function IssueCard({ issue, onResolve }: Props) {
         <IssueBadge type={issue.issueType} />
       </div>
       <div className="mt-1 text-sm text-slate-400">סנריו: {issue.scenarioName}</div>
-      <p className="mt-2 text-sm text-slate-200">{issue.description}</p>
+      {issue.description && <p className="mt-2 text-sm text-slate-200">{issue.description}</p>}
       <div className="mt-2 flex gap-3 text-xs">
         <a className="text-sky-400 hover:underline" href={issue.scenarioLink} target="_blank" rel="noreferrer">
           🔗 סנריו
         </a>
-        <a className="text-sky-400 hover:underline" href={issue.runLink} target="_blank" rel="noreferrer">
-          🔗 ריצה ספציפית
-        </a>
+        {issue.runLink && (
+          <a className="text-sky-400 hover:underline" href={issue.runLink} target="_blank" rel="noreferrer">
+            🔗 ריצה ספציפית
+          </a>
+        )}
       </div>
       <div className="mt-2 text-xs text-slate-500">
         {onResolve

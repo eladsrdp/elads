@@ -13,11 +13,11 @@ export function createNeonDb(connectionString: string): AppDB {
       id: row.id as string,
       clientName: row.client_name as string,
       scenarioName: row.scenario_name as string,
-      description: row.description as string,
+      description: (row.description as string | null) ?? null,
       issueType: row.issue_type as Issue['issueType'],
       status: row.status as IssueStatus,
       scenarioLink: row.scenario_link as string,
-      runLink: row.run_link as string,
+      runLink: (row.run_link as string | null) ?? null,
       createdAt: (row.created_at as Date).toISOString?.() ?? String(row.created_at),
       resolvedAt: row.resolved_at ? ((row.resolved_at as Date).toISOString?.() ?? String(row.resolved_at)) : null,
       resolvedBy: (row.resolved_by as string | null) ?? null,
@@ -37,7 +37,7 @@ export function createNeonDb(connectionString: string): AppDB {
     async insertIssue(input) {
       const rows = await sql`
         insert into issues (client_name, scenario_name, description, issue_type, scenario_link, run_link)
-        values (${input.clientName}, ${input.scenarioName}, ${input.description}, ${input.issueType}, ${input.scenarioLink}, ${input.runLink})
+        values (${input.clientName}, ${input.scenarioName}, ${input.description ?? null}, ${input.issueType}, ${input.scenarioLink}, ${input.runLink ?? null})
         returning *
       `
       return toIssue(rows[0] as Record<string, unknown>)
