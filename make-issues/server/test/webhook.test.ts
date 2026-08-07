@@ -123,6 +123,21 @@ describe('POST /issues', () => {
     expect(res.status).toBe(400)
   })
 
+  it('200 כש-description ו-runLink מושמטים (שדות אופציונליים)', async () => {
+    const ctx = makeCtx()
+    const app = createWebhookRoutes(ctx)
+    const { description: _description, runLink: _runLink, ...withoutOptionalFields } = validBody
+    const res = await app.request('/issues', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer the-secret', 'Content-Type': 'application/json' },
+      body: JSON.stringify(withoutOptionalFields),
+    })
+    expect(res.status).toBe(200)
+    const [issue] = await ctx.db.listIssues(['open'])
+    expect(issue.description).toBeNull()
+    expect(issue.runLink).toBeNull()
+  })
+
   it('413 כשגוף הבקשה חורג מ-16KB (גם עם secret תקין)', async () => {
     const ctx = makeCtx()
     const app = createWebhookRoutes(ctx)

@@ -22,11 +22,11 @@ export function createSupabaseDb(url: string, serviceKey: string): AppDB {
       id: row.id as string,
       clientName: row.client_name as string,
       scenarioName: row.scenario_name as string,
-      description: row.description as string,
+      description: (row.description as string | null) ?? null,
       issueType: row.issue_type as Issue['issueType'],
       status: row.status as IssueStatus,
       scenarioLink: row.scenario_link as string,
-      runLink: row.run_link as string,
+      runLink: (row.run_link as string | null) ?? null,
       createdAt: row.created_at as string,
       resolvedAt: (row.resolved_at as string | null) ?? null,
       resolvedBy: (row.resolved_by as string | null) ?? null,
@@ -49,10 +49,10 @@ export function createSupabaseDb(url: string, serviceKey: string): AppDB {
         .insert({
           client_name: input.clientName,
           scenario_name: input.scenarioName,
-          description: input.description,
+          description: input.description ?? null,
           issue_type: input.issueType,
           scenario_link: input.scenarioLink,
-          run_link: input.runLink,
+          run_link: input.runLink ?? null,
         })
         .select()
         .single()

@@ -31,11 +31,16 @@ export function IssueTable({ issues, onResolve }: Props) {
             <td className="p-2">
               <a className="text-sky-400 hover:underline" href={issue.scenarioLink} target="_blank" rel="noreferrer">
                 סנריו
-              </a>{' '}
-              /{' '}
-              <a className="text-sky-400 hover:underline" href={issue.runLink} target="_blank" rel="noreferrer">
-                ריצה
               </a>
+              {issue.runLink && (
+                <>
+                  {' '}
+                  /{' '}
+                  <a className="text-sky-400 hover:underline" href={issue.runLink} target="_blank" rel="noreferrer">
+                    ריצה
+                  </a>
+                </>
+              )}
             </td>
             {onResolve ? (
               <td className="p-2">

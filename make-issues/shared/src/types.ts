@@ -17,24 +17,24 @@ export interface Issue {
   id: string
   clientName: string
   scenarioName: string
-  description: string
+  description: string | null
   issueType: IssueType
   status: IssueStatus
   scenarioLink: string
-  runLink: string
+  runLink: string | null
   createdAt: string // ISO
   resolvedAt: string | null // ISO
   resolvedBy: string | null // username
 }
 
-/** גוף ה-webhook שנשלח מ-Make.com. */
+/** גוף ה-webhook שנשלח מ-Make.com. clientName/scenarioName/issueType/scenarioLink בלבד הם חובה. */
 export interface WebhookIssueInput {
   clientName: string
   scenarioName: string
-  description: string
+  description?: string
   issueType: IssueType
   scenarioLink: string
-  runLink: string
+  runLink?: string
 }
 
 /** המשתמש המחובר. */

@@ -13,6 +13,8 @@ export function createMemoryDb(seedUsers: UserRow[] = []): AppDB {
       const issue: Issue = {
         id: randomUUID(),
         ...input,
+        description: input.description ?? null,
+        runLink: input.runLink ?? null,
         status: 'open',
         createdAt: new Date().toISOString(),
         resolvedAt: null,

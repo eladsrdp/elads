@@ -40,6 +40,8 @@ export function createLocalDb(filePath: string): LocalDb {
       const issue: Issue = {
         id: randomUUID(),
         ...input,
+        description: input.description ?? null,
+        runLink: input.runLink ?? null,
         status: 'open',
         createdAt: new Date().toISOString(),
         resolvedAt: null,

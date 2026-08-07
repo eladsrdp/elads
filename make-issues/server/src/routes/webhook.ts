@@ -13,10 +13,10 @@ const httpsUrl = z.string().url().refine((u) => u.startsWith('https://'), { mess
 const webhookSchema = z.object({
   clientName: z.string().min(1).max(200),
   scenarioName: z.string().min(1).max(200),
-  description: z.string().min(1).max(2000),
+  description: z.string().min(1).max(2000).optional(),
   issueType: z.enum(ISSUE_TYPES),
   scenarioLink: httpsUrl,
-  runLink: httpsUrl,
+  runLink: httpsUrl.optional(),
 })
 
 export function createWebhookRoutes(ctx: AppContext) {
