@@ -4,11 +4,11 @@ create table if not exists issues (
   id uuid primary key default gen_random_uuid(),
   client_name text not null,
   scenario_name text not null,
-  description text not null,
+  description text,
   issue_type text not null,
   status text not null default 'open',
   scenario_link text not null,
-  run_link text not null,
+  run_link text,
   created_at timestamptz not null default now(),
   resolved_at timestamptz,
   resolved_by text
