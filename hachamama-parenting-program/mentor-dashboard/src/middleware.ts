@@ -37,8 +37,10 @@ export async function middleware(request: NextRequest) {
 }
 
 // /api/* ו-/video-submit מוגנים בשכבת אימות אחרת (Bearer secret ל-webhooks/cron,
-// התאמת טלפון ל-video-submit) — לא Supabase session. בלי החרגה מפורשת כאן, ה-middleware
-// היה מפנה כל בקשה בלי session מנחה (כולל Make.com/cron-job.org והלינק הציבורי) ל-/login.
+// התאמת טלפון ל-video-submit) — לא Supabase session. /auth/callback מוחרג כי הוא
+// מבצע את exchangeCodeForSession שיוצר את הסשן — לפני שזה קורה, אין עוד session לבדוק.
+// בלי החרגה מפורשת כאן, ה-middleware היה מפנה כל בקשה בלי session מנחה
+// (כולל Make.com/cron-job.org והלינק הציבורי) ל-/login.
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|api|video-submit).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|api|video-submit|auth/callback).*)'],
 }
