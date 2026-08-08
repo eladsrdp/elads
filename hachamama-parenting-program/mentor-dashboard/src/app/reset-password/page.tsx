@@ -25,6 +25,23 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     const supabase = createSupabaseBrowserClient()
     supabaseRef.current = supabase
+
+    // Supabase Studio שולחת קישור עם טוקנים ב-hash fragment (#access_token=...),
+    // לא PKCE code — detectSessionInUrl של ה-SDK לא תמיד תופס את זה אוטומטית
+    // ב-App Router, אז מפרשים את ה-hash ידנית וקוראים ל-setSession במפורש.
+    const hash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : ''
+    const hashParams = new URLSearchParams(hash)
+    const access_token = hashParams.get('access_token')
+    const refresh_token = hashParams.get('refresh_token')
+
+    if (access_token && refresh_token) {
+      supabase.auth.setSession({ access_token, refresh_token }).then(({ error: sessionError }) => {
+        if (sessionError) setError(sessionError.message)
+        else setReady(true)
+      })
+      return
+    }
+
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) setReady(true)
     })
@@ -53,6 +70,7 @@ export default function ResetPasswordPage() {
       <main style={{ maxWidth: 360, margin: '80px auto', fontFamily: 'sans-serif' }}>
         <h1>קביעת סיסמה חדשה</h1>
         <p style={{ color: '#666' }}>מאתר את קישור האיפוס... אם זה נמשך יותר מכמה שניות, הקישור פג תוקף — יש לבקש קישור חדש.</p>
+        {error && <p style={{ color: 'red' }}>{error}</p>}
       </main>
     )
   }
