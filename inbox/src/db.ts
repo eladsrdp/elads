@@ -1,5 +1,5 @@
 // inbox/src/db.ts
-// שכבת האחסון — SQLite מקומי דרך node:sqlite המובנה (Node 22.5+, בלי תלות ב-native build).
+// שכבת האחסון — SQLite מקומי דרך node:sqlite המובנה (יעד הפרויקט: Node 24+; ה-API עצמו יציב מ-22.5+, בלי תלות ב-native build).
 // path=':memory:' לבדיקות.
 import { DatabaseSync } from 'node:sqlite'
 
@@ -31,9 +31,9 @@ export function createDb(path: string): Db {
       direction TEXT NOT NULL CHECK (direction IN ('incoming', 'outgoing')),
       type TEXT NOT NULL CHECK (type IN ('text', 'voice', 'other')),
       body TEXT,
-      timestamp INTEGER NOT NULL,
+      timestamp INTEGER NOT NULL, -- שניות (Unix epoch), כמו שמגיע מ-WAHA
       raw_json TEXT NOT NULL,
-      received_at INTEGER NOT NULL
+      received_at INTEGER NOT NULL -- מילישניות (Date.now()) — יחידה שונה מ-timestamp בכוונה, זה זמן קליטה שלנו
     )
   `)
 
