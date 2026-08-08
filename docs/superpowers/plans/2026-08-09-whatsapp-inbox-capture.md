@@ -4,9 +4,11 @@
 
 **Goal:** Capture every message (text and voice, no reply logic) sent to/from the user's WhatsApp "Message Yourself" chat into a queryable SQLite store, via a new `inbox` service that receives webhooks from the already-running WAHA instance.
 
-**Architecture:** A small Hono + TypeScript service (`inbox/`), matching the conventions already used in `priority-lite/server` and `hachamama-parenting-program/server`, exposes one route (`POST /webhook`). It filters WAHA's webhook events down to the one dedicated chat, classifies each message as text/voice/other, and writes it to a local SQLite file via `better-sqlite3`. It runs as a second Docker container alongside `waha`, on the Docker-internal network only — no public port.
+**Architecture:** A small Hono + TypeScript service (`inbox/`), matching the conventions already used in `priority-lite/server` and `hachamama-parenting-program/server`, exposes one route (`POST /webhook`). It filters WAHA's webhook events down to the one dedicated chat, classifies each message as text/voice/other, and writes it to a local SQLite file via Node's built-in `node:sqlite` module. It runs as a second Docker container alongside `waha`, on the Docker-internal network only — no public port.
 
-**Tech Stack:** Node.js, TypeScript, Hono, `@hono/node-server`, `better-sqlite3`, `zod`, `tsx`, Vitest, Docker Compose.
+**Tech Stack:** Node.js (24+, for built-in `node:sqlite`), TypeScript, Hono, `@hono/node-server`, `zod`, `tsx`, Vitest, Docker Compose.
+
+**Note:** The plan originally specified `better-sqlite3`. During Task 1, `npm install` failed on the local Windows dev machine — Node 24 has no prebuilt binary for that package yet and the local Python toolchain needed for a native rebuild is broken. Switched to Node's built-in `node:sqlite` (stable, no native compilation, works identically on Windows dev and the Linux deployment target) — verified manually to have matching `INSERT OR IGNORE` / `.changes` / `.get()` semantics before making this change. This removes the `better-sqlite3` and `@types/better-sqlite3` dependencies and the Python/build-tools requirement from the Dockerfile entirely.
 
 **Reference spec:** `docs/superpowers/specs/2026-08-09-whatsapp-inbox-capture-design.md`
 
@@ -35,14 +37,12 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.13.7",
-    "better-sqlite3": "^11.8.1",
     "dotenv": "^16.4.7",
     "hono": "^4.6.14",
     "tsx": "^4.19.2",
     "zod": "^3.25.0"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.12",
     "@types/node": "^24.12.3",
     "typescript": "~6.0.2",
     "vitest": "^4.1.8"
@@ -83,7 +83,7 @@ data
 - [ ] **Step 4: Install dependencies**
 
 Run: `cd inbox && npm install`
-Expected: `node_modules` created, `package-lock.json` written, no errors (may show a native-build step for `better-sqlite3` — that's expected).
+Expected: `node_modules` created, `package-lock.json` written, no errors. (No native modules in this dependency list — SQLite access is via Node's built-in `node:sqlite`, so install should be quick and pure-JS.)
 
 - [ ] **Step 5: Commit**
 
@@ -194,8 +194,9 @@ Create `inbox/src/db.ts`:
 
 ```typescript
 // inbox/src/db.ts
-// שכבת האחסון — SQLite מקומי. path=':memory:' לבדיקות.
-import Database from 'better-sqlite3'
+// שכבת האחסון — SQLite מקומי דרך node:sqlite המובנה (Node 22.5+, בלי תלות ב-native build).
+// path=':memory:' לבדיקות.
+import { DatabaseSync } from 'node:sqlite'
 
 export type MessageDirection = 'incoming' | 'outgoing'
 export type MessageType = 'text' | 'voice' | 'other'
@@ -216,8 +217,8 @@ export interface Db {
 }
 
 export function createDb(path: string): Db {
-  const conn = new Database(path)
-  conn.pragma('journal_mode = WAL')
+  const conn = new DatabaseSync(path)
+  conn.exec('PRAGMA journal_mode = WAL')
   conn.exec(`
     CREATE TABLE IF NOT EXISTS messages (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -583,9 +584,9 @@ git commit -m "feat(inbox): add env config and server entrypoint"
 - [ ] **Step 1: Create `inbox/Dockerfile`**
 
 ```dockerfile
-FROM node:20-alpine
-# better-sqlite3 is a native module — needs build tools; sqlite CLI for manual inspection
-RUN apk add --no-cache python3 make g++ sqlite
+FROM node:24-alpine
+# sqlite CLI package (not the Node module — that's built into Node itself) for manual inspection via docker exec
+RUN apk add --no-cache sqlite
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
@@ -661,7 +662,7 @@ Run:
 ```bash
 scp -r "inbox" root@188.245.198.72:/root/inbox
 ```
-Expected: file listing scrolls by, no errors. This copies `node_modules` too, which is wasteful but harmless — `npm ci` isn't strictly required afterward, but run it anyway on the server to be safe since the local `node_modules` was built for Windows, not Linux (native `better-sqlite3` bindings won't match):
+Expected: file listing scrolls by, no errors. This copies `node_modules` too, which is unnecessary — the Docker build installs deps fresh inside the container. Remove it before building to avoid copying Windows-installed packages into the build context:
 
 Run:
 ```bash

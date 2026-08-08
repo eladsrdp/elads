@@ -27,7 +27,7 @@ WhatsApp (צ'אט לעצמי) → WAHA (מנוע NOWEB) → [POST פנימי ב�
 
 `WHATSAPP_HOOK_URL` ב-WAHA יוגדר ל-`http://inbox:8080/webhook` (שם DNS פנימי של דוקר, לא כתובת ציבורית). `WHATSAPP_HOOK_EVENTS` נשאר `message`.
 
-שירות ה-`inbox` הוא אפליקציית Hono + TypeScript קטנה (תואמת למוסכמות הקיימות בריפו כמו `priority-lite/server` ו-`hachamama-parenting-program/server`), עם `better-sqlite3` לאחסון. הוא חושף נתיב אחד בלבד: `POST /webhook`.
+שירות ה-`inbox` הוא אפליקציית Hono + TypeScript קטנה (תואמת למוסכמות הקיימות בריפו כמו `priority-lite/server` ו-`hachamama-parenting-program/server`), עם המודול המובנה `node:sqlite` של Node (Node 22.5+, בלי תלות בקומפילציה native — הוחלף מ-`better-sqlite3` המקורי בזמן המימוש, ראה תוכנית המימוש) לאחסון. הוא חושף נתיב אחד בלבד: `POST /webhook`.
 
 ## זרימת מידע
 
