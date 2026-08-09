@@ -21,7 +21,8 @@ function textMessagePayload(overrides: Record<string, unknown> = {}) {
       from: SELF_CHAT_ID, // WAHA always puts the chat id here, regardless of direction — no separate 'to' field
       fromMe: false,
       body: 'שלום',
-      type: 'chat',
+      hasMedia: false,
+      media: null,
       ...overrides,
     },
   }
@@ -61,12 +62,35 @@ describe('POST /webhook', () => {
     const { app, db } = buildApp()
     const res = await postWebhook(
       app,
-      textMessagePayload({ id: 'msg-voice', type: 'ptt', body: undefined }),
+      textMessagePayload({
+        id: 'msg-voice',
+        body: undefined,
+        hasMedia: true,
+        media: { mimetype: 'audio/ogg; codecs=opus' },
+      }),
     )
     expect(res.status).toBe(200)
     expect(db.countMessages()).toBe(1)
     const [message] = db.getMessages()
     expect(message.type).toBe('voice')
+    expect(message.body).toBeNull()
+  })
+
+  it('שומר מדיה שאינה קול (למשל תמונה) כ-type=other עם body=NULL', async () => {
+    const { app, db } = buildApp()
+    const res = await postWebhook(
+      app,
+      textMessagePayload({
+        id: 'msg-image',
+        body: undefined,
+        hasMedia: true,
+        media: { mimetype: 'image/jpeg' },
+      }),
+    )
+    expect(res.status).toBe(200)
+    expect(db.countMessages()).toBe(1)
+    const [message] = db.getMessages()
+    expect(message.type).toBe('other')
     expect(message.body).toBeNull()
   })
 

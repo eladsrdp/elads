@@ -11,13 +11,17 @@ interface WahaWebhookPayload {
     from?: string
     fromMe?: boolean
     body?: string
-    type?: string
+    hasMedia?: boolean
+    media?: { mimetype?: string } | null
   }
 }
 
-function toMessageType(wahaType: string | undefined): MessageType {
-  if (wahaType === 'chat') return 'text'
-  if (wahaType === 'ptt') return 'voice'
+// אין שדה 'type' בפיילוד האמיתי של מנוע NOWEB (אומת מול payload חי) — הסיווג נעשה לפי
+// hasMedia/media.mimetype. מיפוי ה-voice (audio/*) עדיין לא אומת מול הקלטה קולית אמיתית —
+// ראה Open Questions ב-vault, נדחה בכוונה לבדיקה מאוחרת יותר.
+function toMessageType(payload: { hasMedia?: boolean; media?: { mimetype?: string } | null }): MessageType {
+  if (!payload.hasMedia) return 'text'
+  if (payload.media?.mimetype?.startsWith('audio/')) return 'voice'
   return 'other'
 }
 
@@ -61,7 +65,7 @@ export function createApp(ctx: AppContext) {
       return c.json({ ok: true, skipped: 'chat not tracked' }, 200)
     }
 
-    const type = toMessageType(payload.type)
+    const type = toMessageType(payload)
 
     try {
       const inserted = ctx.db.insertMessage({
