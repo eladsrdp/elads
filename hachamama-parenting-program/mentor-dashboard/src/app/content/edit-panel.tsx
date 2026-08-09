@@ -6,6 +6,7 @@ import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import { createSupabaseContentDataSource } from '@/lib/content-data-source'
 import { validateMediaFile } from '@/lib/content-view'
 import type { MessageRecord } from '@/lib/content-data-source'
+import { BRAND, buttonSecondaryStyle } from '@/lib/brand'
 
 export function EditPanel({
   message,
@@ -48,14 +49,16 @@ export function EditPanel({
         right: 0,
         width: 360,
         height: '100%',
-        background: 'white',
-        borderLeft: '1px solid #ddd',
+        background: BRAND.white,
+        borderLeft: `1px solid ${BRAND.border}`,
         padding: 16,
         overflowY: 'auto',
       }}
     >
-      <button onClick={onClose}>✕ סגור</button>
-      <h3>
+      <button style={buttonSecondaryStyle} onClick={onClose}>
+        ✕ סגור
+      </button>
+      <h3 style={{ color: BRAND.greenDark }}>
         יום {message.content_day_number}, {message.send_offset_time}
       </h3>
       <textarea
@@ -63,7 +66,7 @@ export function EditPanel({
         onChange={(e) => setBody(e.target.value)}
         onBlur={() => onBodySave(body)}
         rows={8}
-        style={{ width: '100%' }}
+        style={{ width: '100%', border: `1px solid ${BRAND.greenMuted}`, borderRadius: 8, padding: 8, boxSizing: 'border-box' }}
       />
       <div
         onDragOver={(e) => e.preventDefault()}
@@ -72,7 +75,14 @@ export function EditPanel({
           const file = e.dataTransfer.files[0]
           if (file) handleFile(file)
         }}
-        style={{ border: '1px dashed #999', borderRadius: 8, padding: 16, marginTop: 12, textAlign: 'center' }}
+        style={{
+          border: `1px dashed ${BRAND.greenMuted}`,
+          borderRadius: 8,
+          padding: 16,
+          marginTop: 12,
+          textAlign: 'center',
+          color: BRAND.greenDark,
+        }}
       >
         {message.media_url ? (
           <p>מדיה קיימת: {message.media_type}</p>
@@ -87,7 +97,7 @@ export function EditPanel({
           }}
         />
         {uploading && <p>מעלה...</p>}
-        {error && <p style={{ color: 'red' }}>{error}</p>}
+        {error && <p style={{ color: BRAND.copper }}>{error}</p>}
       </div>
     </div>
   )
