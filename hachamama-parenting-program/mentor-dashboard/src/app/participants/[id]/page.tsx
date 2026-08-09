@@ -3,6 +3,9 @@ import { notFound } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { createSupabaseMentorDataSource } from '@/lib/mentor-data-source'
 import { buildParticipantDetail } from '@/lib/mentor-view'
+import { DashboardHeader } from '@/components/dashboard-header'
+import { pageWrapperStyle, BRAND } from '@/lib/brand'
+import { ParticipantDetailContent } from './participant-detail-content'
 
 export default async function ParticipantDetailPage({
   params,
@@ -12,51 +15,55 @@ export default async function ParticipantDetailPage({
   const { id } = await params
   const supabase = await createSupabaseServerClient()
   const dataSource = createSupabaseMentorDataSource(supabase)
-  const detail = await buildParticipantDetail(dataSource, id)
+  const [detail, mentors] = await Promise.all([buildParticipantDetail(dataSource, id), dataSource.listMentors()])
   if (!detail) notFound()
 
   return (
-    <main style={{ maxWidth: 720, margin: '40px auto', fontFamily: 'sans-serif' }}>
-      <h1>{detail.fullName}</h1>
-      <p>
-        טלפון: {detail.phone} | סטטוס: {detail.status} | יום 1: {detail.day1Date}
-      </p>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr>
-            <th style={{ textAlign: 'right' }}>יום</th>
-            <th style={{ textAlign: 'right' }}>שעה</th>
-            <th style={{ textAlign: 'right' }}>תוכן</th>
-            <th style={{ textAlign: 'right' }}>סטטוס</th>
-          </tr>
-        </thead>
-        <tbody>
-          {detail.deliveries.map((d) => (
-            <tr key={d.messageId} style={{ borderTop: '1px solid #ddd' }}>
-              <td>{d.contentDayNumber}</td>
-              <td>{d.sendOffsetTime}</td>
-              <td>{d.bodyPreview}</td>
-              <td>{d.status === 'sent' ? '✅ נשלח' : '⏳ ממתין'}</td>
+    <>
+      <DashboardHeader active="participants" />
+      <main style={pageWrapperStyle}>
+        <h1>{detail.fullName}</h1>
+        <p style={{ color: BRAND.greenMuted }}>
+          טלפון: {detail.phone} | סטטוס: {detail.status} | יום 1: {detail.day1Date}
+        </p>
+        <ParticipantDetailContent detail={detail} mentors={mentors} />
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr style={{ background: BRAND.paper }}>
+              <th style={{ textAlign: 'right', color: BRAND.greenDark, padding: '6px' }}>יום</th>
+              <th style={{ textAlign: 'right', color: BRAND.greenDark, padding: '6px' }}>שעה</th>
+              <th style={{ textAlign: 'right', color: BRAND.greenDark, padding: '6px' }}>תוכן</th>
+              <th style={{ textAlign: 'right', color: BRAND.greenDark, padding: '6px' }}>סטטוס</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-      {detail.videoSubmissions.length > 0 && (
-        <>
-          <h2>סרטונים שהועלו</h2>
-          <ul>
-            {detail.videoSubmissions.map((v) => (
-              <li key={v.id}>
-                <a href={v.videoUrl} target="_blank" rel="noreferrer">
-                  צפייה בסרטון
-                </a>
-                {' — '}
-                {v.submittedAt}
-              </li>
+          </thead>
+          <tbody>
+            {detail.deliveries.map((d) => (
+              <tr key={d.messageId} style={{ borderTop: `1px solid ${BRAND.border}` }}>
+                <td style={{ padding: '6px' }}>{d.contentDayNumber}</td>
+                <td style={{ padding: '6px' }}>{d.sendOffsetTime}</td>
+                <td style={{ padding: '6px' }}>{d.bodyPreview}</td>
+                <td style={{ padding: '6px' }}>{d.status === 'sent' ? '✅ נשלח' : '⏳ ממתין'}</td>
+              </tr>
             ))}
-          </ul>
-        </>
-      )}
-    </main>
+          </tbody>
+        </table>
+        {detail.videoSubmissions.length > 0 && (
+          <>
+            <h2 style={{ marginTop: 24 }}>סרטונים שהועלו</h2>
+            <ul>
+              {detail.videoSubmissions.map((v) => (
+                <li key={v.id}>
+                  <a href={v.videoUrl} target="_blank" rel="noreferrer" style={{ color: BRAND.greenDark }}>
+                    צפייה בסרטון
+                  </a>
+                  {' — '}
+                  {v.submittedAt}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </main>
+    </>
   )
 }
