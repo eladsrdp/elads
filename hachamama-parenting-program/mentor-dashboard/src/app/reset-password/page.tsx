@@ -9,6 +9,8 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { LOGO_URL } from '@/lib/brand'
+import { authCardStyles } from '@/lib/auth-card-styles'
 
 export const dynamic = 'force-dynamic'
 
@@ -67,34 +69,42 @@ export default function ResetPasswordPage() {
 
   if (!ready) {
     return (
-      <main style={{ maxWidth: 360, margin: '80px auto', fontFamily: 'sans-serif' }}>
-        <h1>קביעת סיסמה חדשה</h1>
-        <p style={{ color: '#666' }}>מאתר את קישור האיפוס... אם זה נמשך יותר מכמה שניות, הקישור פג תוקף — יש לבקש קישור חדש.</p>
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-      </main>
+      <div style={authCardStyles.body}>
+        <div style={authCardStyles.card}>
+          <img style={authCardStyles.logo} src={LOGO_URL} alt="החממה" />
+          <h1 style={authCardStyles.h1}>קביעת סיסמה חדשה</h1>
+          <p style={authCardStyles.helperText}>
+            מאתר את קישור האיפוס... אם זה נמשך יותר מכמה שניות, הקישור פג תוקף — יש לבקש קישור חדש.
+          </p>
+          {error && <p style={authCardStyles.errorText}>{error}</p>}
+        </div>
+      </div>
     )
   }
 
   return (
-    <main style={{ maxWidth: 360, margin: '80px auto', fontFamily: 'sans-serif' }}>
-      <h1>קביעת סיסמה חדשה</h1>
-      <form onSubmit={handleSubmit}>
-        <label>
-          סיסמה חדשה
-          <input
-            type="password"
-            required
-            minLength={6}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={{ display: 'block', width: '100%', marginBottom: 12 }}
-          />
-        </label>
-        <button type="submit" disabled={submitting}>
-          שמור סיסמה
-        </button>
-      </form>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-    </main>
+    <div style={authCardStyles.body}>
+      <div style={authCardStyles.card}>
+        <img style={authCardStyles.logo} src={LOGO_URL} alt="החממה" />
+        <h1 style={authCardStyles.h1}>קביעת סיסמה חדשה</h1>
+        <form onSubmit={handleSubmit}>
+          <label style={authCardStyles.label}>
+            סיסמה חדשה
+            <input
+              style={authCardStyles.input}
+              type="password"
+              required
+              minLength={6}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </label>
+          <button style={authCardStyles.button} type="submit" disabled={submitting}>
+            שמור סיסמה
+          </button>
+        </form>
+        {error && <p style={authCardStyles.errorText}>{error}</p>}
+      </div>
+    </div>
   )
 }
