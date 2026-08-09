@@ -4,6 +4,8 @@
 import { useState } from 'react'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import { createSupabaseContentDataSource } from '@/lib/content-data-source'
+import { calculateWeekNumber } from '@/lib/program-day'
+import { BRAND, buttonPrimaryStyle, buttonSecondaryStyle, buttonDangerStyle } from '@/lib/brand'
 import type { DayGroup } from '@/lib/content-view'
 import { EditPanel } from './edit-panel'
 
@@ -63,13 +65,15 @@ export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
             style={{
               position: 'sticky',
               top: 0,
-              background: 'var(--surface-1, #f5f5f5)',
-              fontWeight: 500,
-              padding: '4px 8px',
+              background: BRAND.paper,
+              color: BRAND.greenDark,
+              fontWeight: 600,
+              padding: '6px 8px',
+              borderBottom: `1px solid ${BRAND.border}`,
               zIndex: 1,
             }}
           >
-            יום {group.dayNumber} {group.title ? `— ${group.title}` : ''}
+            יום {group.dayNumber} — שבוע {calculateWeekNumber(group.dayNumber)} {group.title ? `— ${group.title}` : ''}
           </div>
           {group.messages.map((message) => (
             <div
@@ -93,12 +97,18 @@ export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
               )}
               <span>{message.media_url ? '🖼' : '-'}</span>
               <span>
-                <button onClick={() => setPanelMessageId(message.id)}>⤢</button>
-                <button onClick={() => handleDelete(message.id, group.dayNumber)}>🗑</button>
+                <button style={buttonSecondaryStyle} onClick={() => setPanelMessageId(message.id)}>
+                  ⤢
+                </button>
+                <button style={{ ...buttonDangerStyle, marginRight: 4 }} onClick={() => handleDelete(message.id, group.dayNumber)}>
+                  🗑
+                </button>
               </span>
             </div>
           ))}
-          <button onClick={() => handleAddMessage(group.dayNumber)}>+ הודעה</button>
+          <button style={{ ...buttonPrimaryStyle, margin: '4px 8px' }} onClick={() => handleAddMessage(group.dayNumber)}>
+            + הודעה
+          </button>
         </div>
       ))}
 
