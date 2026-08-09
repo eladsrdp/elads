@@ -1,3 +1,4 @@
+// hachamama-parenting-program/mentor-dashboard/src/app/participants/participants-table.tsx
 'use client'
 
 import { useState } from 'react'
@@ -6,6 +7,14 @@ import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import { createSupabaseMentorDataSource, type MentorRecord } from '@/lib/mentor-data-source'
 import { calculateDay1Date } from '@/lib/program-day'
 import { canDeleteParticipant, type ParticipantListItem } from '@/lib/mentor-view'
+import { BRAND, buttonPrimaryStyle, buttonSecondaryStyle, buttonDangerStyle } from '@/lib/brand'
+
+const textInputStyle = {
+  padding: '6px 10px',
+  border: `1px solid ${BRAND.greenMuted}`,
+  borderRadius: 8,
+  fontSize: 14,
+} as const
 
 export function ParticipantsTable({
   initialParticipants,
@@ -83,27 +92,32 @@ export function ParticipantsTable({
   return (
     <div>
       {blockedMessage && (
-        <p style={{ color: 'red' }}>
-          {blockedMessage} <button onClick={() => setBlockedMessage(null)}>סגור</button>
+        <p style={{ color: BRAND.copper }}>
+          {blockedMessage}{' '}
+          <button style={buttonSecondaryStyle} onClick={() => setBlockedMessage(null)}>
+            סגור
+          </button>
         </p>
       )}
 
       <div style={{ display: 'flex', gap: 8, margin: '16px 0' }}>
-        <input placeholder="שם מלא" value={newName} onChange={(e) => setNewName(e.target.value)} />
-        <input placeholder="טלפון" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} />
-        <button onClick={handleAdd}>+ נרשם חדש</button>
+        <input style={textInputStyle} placeholder="שם מלא" value={newName} onChange={(e) => setNewName(e.target.value)} />
+        <input style={textInputStyle} placeholder="טלפון" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} />
+        <button style={buttonPrimaryStyle} onClick={handleAdd}>
+          + נרשם חדש
+        </button>
       </div>
 
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
-          <tr>
-            <th style={{ textAlign: 'right' }}>שם</th>
-            <th style={{ textAlign: 'right' }}>טלפון</th>
-            <th style={{ textAlign: 'right' }}>יום בתוכנית</th>
-            <th style={{ textAlign: 'right' }}>לחץ היום?</th>
-            <th style={{ textAlign: 'right' }}>סטטוס</th>
-            <th style={{ textAlign: 'right' }}>מנחה מוצמדת</th>
-            <th style={{ textAlign: 'right' }}></th>
+          <tr style={{ background: BRAND.paper }}>
+            <th style={{ textAlign: 'right', color: BRAND.greenDark, padding: '8px 6px' }}>שם</th>
+            <th style={{ textAlign: 'right', color: BRAND.greenDark, padding: '8px 6px' }}>טלפון</th>
+            <th style={{ textAlign: 'right', color: BRAND.greenDark, padding: '8px 6px' }}>יום בתוכנית</th>
+            <th style={{ textAlign: 'right', color: BRAND.greenDark, padding: '8px 6px' }}>לחץ היום?</th>
+            <th style={{ textAlign: 'right', color: BRAND.greenDark, padding: '8px 6px' }}>סטטוס</th>
+            <th style={{ textAlign: 'right', color: BRAND.greenDark, padding: '8px 6px' }}>מנחה מוצמדת</th>
+            <th style={{ textAlign: 'right', color: BRAND.greenDark, padding: '8px 6px' }}></th>
           </tr>
         </thead>
         <tbody>
@@ -111,18 +125,24 @@ export function ParticipantsTable({
             editingId === p.id ? (
               <EditRow key={p.id} participant={p} mentors={mentors} onSave={handleFieldSave} onCancel={() => setEditingId(null)} />
             ) : (
-              <tr key={p.id} style={{ borderTop: '1px solid #ddd' }}>
-                <td>
-                  <Link href={`/participants/${p.id}`}>{p.fullName}</Link>
+              <tr key={p.id} style={{ borderTop: `1px solid ${BRAND.border}` }}>
+                <td style={{ padding: '6px' }}>
+                  <Link href={`/participants/${p.id}`} style={{ color: BRAND.greenDark }}>
+                    {p.fullName}
+                  </Link>
                 </td>
-                <td>{p.phone}</td>
-                <td>{p.programDay}</td>
-                <td>{p.clickedToday ? '✅' : '❌'}</td>
-                <td>{p.status}</td>
-                <td>{p.assignedMentorName ?? '—'}</td>
-                <td>
-                  <button onClick={() => setEditingId(p.id)}>✎</button>
-                  <button onClick={() => handleDelete(p.id)}>🗑</button>
+                <td style={{ padding: '6px' }}>{p.phone}</td>
+                <td style={{ padding: '6px' }}>{p.programDay}</td>
+                <td style={{ padding: '6px' }}>{p.clickedToday ? '✅' : '❌'}</td>
+                <td style={{ padding: '6px' }}>{p.status}</td>
+                <td style={{ padding: '6px' }}>{p.assignedMentorName ?? '—'}</td>
+                <td style={{ padding: '6px' }}>
+                  <button style={buttonSecondaryStyle} onClick={() => setEditingId(p.id)}>
+                    ✎
+                  </button>
+                  <button style={{ ...buttonDangerStyle, marginRight: 4 }} onClick={() => handleDelete(p.id)}>
+                    🗑
+                  </button>
                 </td>
               </tr>
             ),
@@ -150,24 +170,24 @@ function EditRow({
   const [assignedMentorId, setAssignedMentorId] = useState(participant.assignedMentorId ?? '')
 
   return (
-    <tr style={{ borderTop: '1px solid #ddd' }}>
-      <td>
-        <input value={fullName} onChange={(e) => setFullName(e.target.value)} />
+    <tr style={{ borderTop: `1px solid ${BRAND.border}` }}>
+      <td style={{ padding: '6px' }}>
+        <input style={textInputStyle} value={fullName} onChange={(e) => setFullName(e.target.value)} />
       </td>
-      <td>
-        <input value={phone} onChange={(e) => setPhone(e.target.value)} />
+      <td style={{ padding: '6px' }}>
+        <input style={textInputStyle} value={phone} onChange={(e) => setPhone(e.target.value)} />
       </td>
-      <td>{participant.programDay}</td>
-      <td>{participant.clickedToday ? '✅' : '❌'}</td>
-      <td>
-        <select value={status} onChange={(e) => setStatus(e.target.value)}>
+      <td style={{ padding: '6px' }}>{participant.programDay}</td>
+      <td style={{ padding: '6px' }}>{participant.clickedToday ? '✅' : '❌'}</td>
+      <td style={{ padding: '6px' }}>
+        <select style={textInputStyle} value={status} onChange={(e) => setStatus(e.target.value)}>
           <option value="active">active</option>
           <option value="paused">paused</option>
           <option value="completed">completed</option>
         </select>
       </td>
-      <td>
-        <select value={assignedMentorId} onChange={(e) => setAssignedMentorId(e.target.value)}>
+      <td style={{ padding: '6px' }}>
+        <select style={textInputStyle} value={assignedMentorId} onChange={(e) => setAssignedMentorId(e.target.value)}>
           <option value="">—</option>
           {mentors.map((m) => (
             <option key={m.user_id} value={m.user_id}>
@@ -176,11 +196,16 @@ function EditRow({
           ))}
         </select>
       </td>
-      <td>
-        <button onClick={() => onSave(participant.id, { fullName, phone, status, assignedMentorId: assignedMentorId || null })}>
+      <td style={{ padding: '6px' }}>
+        <button
+          style={{ ...buttonPrimaryStyle, marginLeft: 4 }}
+          onClick={() => onSave(participant.id, { fullName, phone, status, assignedMentorId: assignedMentorId || null })}
+        >
           שמור
         </button>
-        <button onClick={onCancel}>בטל</button>
+        <button style={buttonSecondaryStyle} onClick={onCancel}>
+          בטל
+        </button>
       </td>
     </tr>
   )
