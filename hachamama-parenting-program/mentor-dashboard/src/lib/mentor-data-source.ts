@@ -17,9 +17,19 @@ export interface MentorRecord {
   full_name: string
 }
 
-export interface DailyTriggerRecord {
+export interface TriggerHistoryRecord {
   participant_id: string
+  calendar_date: string
   clicked_at: string | null
+}
+
+export interface DeliveryCountRecord {
+  participant_id: string
+  status: string
+}
+
+export interface VideoCountRecord {
+  participant_id: string
 }
 
 export interface DeliveryRecord {
@@ -40,7 +50,9 @@ export interface VideoSubmissionRecord {
 
 export interface MentorDataSource {
   listParticipants(): Promise<ParticipantRecord[]>
-  getTriggersForDate(calendarDate: string): Promise<DailyTriggerRecord[]>
+  getTriggersSince(fromDate: string): Promise<TriggerHistoryRecord[]>
+  getDeliveryCountsByParticipant(): Promise<DeliveryCountRecord[]>
+  getVideoSubmissionCountsByParticipant(): Promise<VideoCountRecord[]>
   getParticipant(id: string): Promise<ParticipantRecord | null>
   getDeliveriesForParticipant(participantId: string): Promise<DeliveryRecord[]>
   getVideoSubmissionsForParticipant(participantId: string): Promise<VideoSubmissionRecord[]>
@@ -80,13 +92,25 @@ export function createSupabaseMentorDataSource(supabase: SupabaseClient): Mentor
       return data as ParticipantRecord[]
     },
 
-    async getTriggersForDate(calendarDate) {
+    async getTriggersSince(fromDate) {
       const { data, error } = await supabase
         .from('daily_triggers')
-        .select('participant_id, clicked_at')
-        .eq('calendar_date', calendarDate)
+        .select('participant_id, calendar_date, clicked_at')
+        .gte('calendar_date', fromDate)
       if (error) throw error
-      return data as DailyTriggerRecord[]
+      return data as TriggerHistoryRecord[]
+    },
+
+    async getDeliveryCountsByParticipant() {
+      const { data, error } = await supabase.from('message_deliveries').select('participant_id, status')
+      if (error) throw error
+      return data as DeliveryCountRecord[]
+    },
+
+    async getVideoSubmissionCountsByParticipant() {
+      const { data, error } = await supabase.from('video_submissions').select('participant_id')
+      if (error) throw error
+      return data as VideoCountRecord[]
     },
 
     async getParticipant(id) {

@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import type { MentorDataSource } from './mentor-data-source'
-import { buildParticipantDetail, buildParticipantList, canDeleteParticipant } from './mentor-view'
+import { buildParticipantDetail, buildParticipantList, canDeleteParticipant, sortParticipantsByAttention } from './mentor-view'
 
 function fakeDataSource(overrides: Partial<MentorDataSource> = {}): MentorDataSource {
   return {
     listParticipants: async () => [],
-    getTriggersForDate: async () => [],
+    getTriggersSince: async () => [],
+    getDeliveryCountsByParticipant: async () => [],
+    getVideoSubmissionCountsByParticipant: async () => [],
     getParticipant: async () => null,
     getDeliveriesForParticipant: async () => [],
     getVideoSubmissionsForParticipant: async () => [],
@@ -41,7 +43,7 @@ describe('buildParticipantList', () => {
           assigned_mentor_id: null,
         },
       ],
-      getTriggersForDate: async () => [{ participant_id: 'p1', clicked_at: '2026-08-16T06:00:00Z' }],
+      getTriggersSince: async () => [{ participant_id: 'p1', calendar_date: '2026-08-16', clicked_at: '2026-08-16T06:00:00Z' }],
     })
 
     const result = await buildParticipantList(dataSource, new Date('2026-08-16T10:00:00Z'))
@@ -54,6 +56,10 @@ describe('buildParticipantList', () => {
         status: 'active',
         programDay: 15,
         clickedToday: true,
+        missedStreak: 0,
+        videoCount: 0,
+        deliveriesSent: 0,
+        deliveriesTotal: 0,
         assignedMentorId: null,
         assignedMentorName: null,
       },
@@ -64,6 +70,10 @@ describe('buildParticipantList', () => {
         status: 'active',
         programDay: 15,
         clickedToday: false,
+        missedStreak: 0,
+        videoCount: 0,
+        deliveriesSent: 0,
+        deliveriesTotal: 0,
         assignedMentorId: null,
         assignedMentorName: null,
       },
@@ -82,12 +92,96 @@ describe('buildParticipantList', () => {
           assigned_mentor_id: null,
         },
       ],
-      getTriggersForDate: async () => [],
+      getTriggersSince: async () => [],
     })
 
     const result = await buildParticipantList(dataSource, new Date('2026-08-16T10:00:00Z'))
 
     expect(result[0].clickedToday).toBe(false)
+  })
+
+  it('סופר סרטונים ומשלוחים לכל נרשם בנפרד', async () => {
+    const dataSource = fakeDataSource({
+      listParticipants: async () => [
+        {
+          id: 'p1',
+          full_name: 'דנה כהן',
+          phone: '+972500000001',
+          status: 'active',
+          day1_date: '2026-08-02',
+          assigned_mentor_id: null,
+        },
+      ],
+      getVideoSubmissionCountsByParticipant: async () => [{ participant_id: 'p1' }, { participant_id: 'p1' }],
+      getDeliveryCountsByParticipant: async () => [
+        { participant_id: 'p1', status: 'sent' },
+        { participant_id: 'p1', status: 'sent' },
+        { participant_id: 'p1', status: 'pending' },
+      ],
+    })
+
+    const result = await buildParticipantList(dataSource, new Date('2026-08-16T10:00:00Z'))
+
+    expect(result[0].videoCount).toBe(2)
+    expect(result[0].deliveriesSent).toBe(2)
+    expect(result[0].deliveriesTotal).toBe(3)
+  })
+
+  it('משתמש במנחה מוצמדת מ-listMentors לשם התצוגה', async () => {
+    const dataSource = fakeDataSource({
+      listParticipants: async () => [
+        {
+          id: 'p1',
+          full_name: 'דנה כהן',
+          phone: '+972500000001',
+          status: 'active',
+          day1_date: '2026-08-02',
+          assigned_mentor_id: 'm1',
+        },
+      ],
+      listMentors: async () => [{ user_id: 'm1', full_name: 'רוני מנחה' }],
+    })
+
+    const result = await buildParticipantList(dataSource, new Date('2026-08-16T10:00:00Z'))
+
+    expect(result[0].assignedMentorName).toBe('רוני מנחה')
+  })
+})
+
+describe('sortParticipantsByAttention', () => {
+  const base = {
+    phone: '',
+    programDay: 1,
+    clickedToday: false,
+    videoCount: 0,
+    deliveriesSent: 0,
+    deliveriesTotal: 0,
+    assignedMentorId: null,
+    assignedMentorName: null,
+  }
+
+  it('רצף גבוה יותר קודם', () => {
+    const items = [
+      { ...base, id: 'a', fullName: 'א', status: 'active', missedStreak: 1 },
+      { ...base, id: 'b', fullName: 'ב', status: 'active', missedStreak: 3 },
+    ]
+    expect(sortParticipantsByAttention(items).map((p) => p.id)).toEqual(['b', 'a'])
+  })
+
+  it('מי שהרצף לא רלוונטי לו (null) שוקע לתחתית', () => {
+    const items = [
+      { ...base, id: 'a', fullName: 'א', status: 'paused', missedStreak: null },
+      { ...base, id: 'b', fullName: 'ב', status: 'active', missedStreak: 0 },
+    ]
+    expect(sortParticipantsByAttention(items).map((p) => p.id)).toEqual(['b', 'a'])
+  })
+
+  it('רצף שווה — מיון אלפביתי לפי שם', () => {
+    const items = [
+      { ...base, id: 'a', fullName: 'תמר', status: 'active', missedStreak: 0 },
+      { ...base, id: 'b', fullName: 'אבי', status: 'active', missedStreak: 0 },
+    ]
+    expect(sortParticipantsByAttention(items).map((p) => p.id)).toEqual(['b', 'a'])
   })
 })
 
@@ -106,7 +200,7 @@ describe('buildParticipantDetail', () => {
         phone: '+972500000001',
         status: 'active',
         day1_date: '2026-08-02',
-        assigned_mentor_id: null,
+        assigned_mentor_id: 'm1',
       }),
       getDeliveriesForParticipant: async () => [
         {
@@ -136,6 +230,7 @@ describe('buildParticipantDetail', () => {
     const result = await buildParticipantDetail(dataSource, 'p1')
 
     expect(result?.fullName).toBe('דנה כהן')
+    expect(result?.assignedMentorId).toBe('m1')
     expect(result?.deliveries.map((d) => d.messageId)).toEqual(['m1', 'm2'])
     expect(result?.deliveries[0].bodyPreview).toBe(`${longBody.slice(0, 60)}…`)
     expect(result?.deliveries[1].bodyPreview).toBe('קצר')
