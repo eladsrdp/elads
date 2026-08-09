@@ -18,8 +18,7 @@ function textMessagePayload(overrides: Record<string, unknown> = {}) {
     payload: {
       id: 'msg-1',
       timestamp: 1700000000,
-      from: SELF_CHAT_ID,
-      to: SELF_CHAT_ID,
+      from: SELF_CHAT_ID, // WAHA always puts the chat id here, regardless of direction — no separate 'to' field
       fromMe: false,
       body: 'שלום',
       type: 'chat',
@@ -46,10 +45,7 @@ describe('POST /webhook', () => {
 
   it('מתעלם מהודעה מצ׳אט אחר, עדיין מחזיר 200', async () => {
     const { app, db } = buildApp()
-    const res = await postWebhook(
-      app,
-      textMessagePayload({ from: 'someone-else@c.us', to: 'someone-else@c.us' }),
-    )
+    const res = await postWebhook(app, textMessagePayload({ from: 'someone-else@c.us' }))
     expect(res.status).toBe(200)
     expect(db.countMessages()).toBe(0)
   })

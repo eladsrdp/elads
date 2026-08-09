@@ -9,7 +9,6 @@ interface WahaWebhookPayload {
     id?: string
     timestamp?: number
     from?: string
-    to?: string
     fromMe?: boolean
     body?: string
     type?: string
@@ -55,8 +54,9 @@ export function createApp(ctx: AppContext) {
       return c.json({ ok: true, skipped: 'not a message event' }, 200)
     }
 
-    // בצ'אט לעצמי from/to שווים, אבל בכללי: chat id הוא from כשההודעה נכנסת, to כשהיא יוצאת.
-    const chatId = payload.fromMe ? payload.to : payload.from
+    // payload.from הוא ה-chat (remoteJid) שההודעה משויכת אליו, בלי קשר לכיוון —
+    // payload.to לא קיים בכלל בפועל כשfromMe=true (אומת מול פיילוד אמיתי מ-WAHA), אז אין להסתמך עליו.
+    const chatId = payload.from
     if (chatId !== ctx.selfChatId) {
       return c.json({ ok: true, skipped: 'chat not tracked' }, 200)
     }
