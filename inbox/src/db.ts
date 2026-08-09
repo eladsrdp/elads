@@ -15,10 +15,20 @@ export interface MessageRow {
   rawJson: string
 }
 
+export interface StoredMessage {
+  wahaMessageId: string
+  direction: MessageDirection
+  type: MessageType
+  body: string | null
+  timestamp: number
+}
+
 export interface Db {
   /** true אם נכתבה שורה חדשה, false אם התעלם מכפילות (waha_message_id קיים) */
   insertMessage(row: MessageRow): boolean
   countMessages(): number
+  /** לבדיקות/דיבוג — כל ההודעות בסדר הכנסה (id עולה). */
+  getMessages(): StoredMessage[]
 }
 
 export function createDb(path: string): Db {
@@ -44,6 +54,9 @@ export function createDb(path: string): Db {
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `)
   const countStmt = conn.prepare('SELECT COUNT(*) as count FROM messages')
+  const selectAllStmt = conn.prepare(
+    'SELECT waha_message_id, direction, type, body, timestamp FROM messages ORDER BY id',
+  )
 
   return {
     insertMessage(row) {
@@ -61,6 +74,22 @@ export function createDb(path: string): Db {
     countMessages() {
       const result = countStmt.get() as { count: number }
       return result.count
+    },
+    getMessages() {
+      const rows = selectAllStmt.all() as Array<{
+        waha_message_id: string
+        direction: MessageDirection
+        type: MessageType
+        body: string | null
+        timestamp: number
+      }>
+      return rows.map((row) => ({
+        wahaMessageId: row.waha_message_id,
+        direction: row.direction,
+        type: row.type,
+        body: row.body,
+        timestamp: row.timestamp,
+      }))
     },
   }
 }

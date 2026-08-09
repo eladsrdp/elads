@@ -42,6 +42,12 @@ export function createApp(ctx: AppContext) {
       return c.json({ ok: true, skipped: 'invalid json' }, 200)
     }
 
+    // JSON.parse מצליח על ערכים תקינים שאינם object (למשל "null", "42", "true") —
+    // ה-catch שלמעלה לא תופס את זה, אז בודקים במפורש כדי לא לקרוס ב-body.payload למטה.
+    if (body === null || typeof body !== 'object') {
+      return c.json({ ok: true, skipped: 'unexpected payload shape' }, 200)
+    }
+
     const payload = body.payload
     if (body.event !== 'message' || !payload?.id) {
       return c.json({ ok: true, skipped: 'not a message event' }, 200)

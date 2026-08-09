@@ -69,6 +69,9 @@ describe('POST /webhook', () => {
     )
     expect(res.status).toBe(200)
     expect(db.countMessages()).toBe(1)
+    const [message] = db.getMessages()
+    expect(message.type).toBe('voice')
+    expect(message.body).toBeNull()
   })
 
   it('אותו waha_message_id פעמיים — נשארת שורה אחת', async () => {
@@ -90,6 +93,17 @@ describe('POST /webhook', () => {
     expect(db.countMessages()).toBe(0)
   })
 
+  it('פיילוד שהוא JSON תקין אבל לא object (למשל null) לא קורס, מחזיר 200', async () => {
+    const { app, db } = buildApp()
+    const res = await app.request('/webhook', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: 'null',
+    })
+    expect(res.status).toBe(200)
+    expect(db.countMessages()).toBe(0)
+  })
+
   it('הודעה יוצאת (fromMe=true) נשמרת עם direction=outgoing', async () => {
     const { app, db } = buildApp()
     const res = await postWebhook(
@@ -98,5 +112,7 @@ describe('POST /webhook', () => {
     )
     expect(res.status).toBe(200)
     expect(db.countMessages()).toBe(1)
+    const [message] = db.getMessages()
+    expect(message.direction).toBe('outgoing')
   })
 })

@@ -73,4 +73,57 @@ describe('createDb', () => {
     })
     expect(db.countMessages()).toBe(2)
   })
+
+  it('getMessages מחזיר את כל ההודעות בסדר הכנסה עם מיפוי שדות נכון', () => {
+    const db = createDb(':memory:')
+    db.insertMessage({
+      wahaMessageId: 'msg-in',
+      direction: 'incoming',
+      type: 'text',
+      body: 'נכנס',
+      timestamp: 1700000000,
+      rawJson: '{}',
+    })
+    db.insertMessage({
+      wahaMessageId: 'msg-voice',
+      direction: 'incoming',
+      type: 'voice',
+      body: null,
+      timestamp: 1700000001,
+      rawJson: '{}',
+    })
+    db.insertMessage({
+      wahaMessageId: 'msg-out',
+      direction: 'outgoing',
+      type: 'text',
+      body: 'יוצא',
+      timestamp: 1700000002,
+      rawJson: '{}',
+    })
+
+    const messages = db.getMessages()
+    expect(messages).toEqual([
+      {
+        wahaMessageId: 'msg-in',
+        direction: 'incoming',
+        type: 'text',
+        body: 'נכנס',
+        timestamp: 1700000000,
+      },
+      {
+        wahaMessageId: 'msg-voice',
+        direction: 'incoming',
+        type: 'voice',
+        body: null,
+        timestamp: 1700000001,
+      },
+      {
+        wahaMessageId: 'msg-out',
+        direction: 'outgoing',
+        type: 'text',
+        body: 'יוצא',
+        timestamp: 1700000002,
+      },
+    ])
+  })
 })
