@@ -27,3 +27,8 @@ export function calculateDay1Date(signupAt: Date): string {
   const daysUntilNextSunday = dayOfWeek === 0 ? 7 : 7 - dayOfWeek
   return israelSignup.plus({ days: daysUntilNextSunday }).toISODate() as string
 }
+
+/** באיזה שבוע בתוכנית (1-based) נמצא יום נתון — כל שבוע הוא 7 ימים, יום 1 הוא תמיד יום ראשון. */
+export function calculateWeekNumber(dayNumber: number): number {
+  return Math.ceil(dayNumber / 7)
+}
