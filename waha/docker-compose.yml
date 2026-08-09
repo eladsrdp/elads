@@ -10,10 +10,21 @@ services:
     environment:
       WHATSAPP_DEFAULT_ENGINE: NOWEB
       WHATSAPP_API_KEY: ${WHATSAPP_API_KEY}
-      WHATSAPP_HOOK_URL: ${WHATSAPP_HOOK_URL:-}
+      WHATSAPP_HOOK_URL: ${WHATSAPP_HOOK_URL:-http://inbox:8080/webhook}
       WHATSAPP_HOOK_EVENTS: message
     volumes:
       - waha_sessions:/app/.sessions
 
+  inbox:
+    build: ../inbox
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      SELF_CHAT_ID: ${SELF_CHAT_ID}
+    volumes:
+      - inbox_data:/app/data
+
 volumes:
   waha_sessions:
+  inbox_data:
