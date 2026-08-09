@@ -13,7 +13,7 @@ function buildApp() {
 
 function textMessagePayload(overrides: Record<string, unknown> = {}) {
   return {
-    event: 'message',
+    event: 'message.any',
     session: 'default',
     payload: {
       id: 'msg-1',

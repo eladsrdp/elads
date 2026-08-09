@@ -48,8 +48,10 @@ export function createApp(ctx: AppContext) {
       return c.json({ ok: true, skipped: 'unexpected payload shape' }, 200)
     }
 
+    // WAHA's 'message' event fires only for incoming messages; 'message.any' fires for both
+    // directions (including our own fromMe=true sends) — נדרש כי אנחנו קולטים גם הודעות יוצאות.
     const payload = body.payload
-    if (body.event !== 'message' || !payload?.id) {
+    if (body.event !== 'message.any' || !payload?.id) {
       return c.json({ ok: true, skipped: 'not a message event' }, 200)
     }
 
