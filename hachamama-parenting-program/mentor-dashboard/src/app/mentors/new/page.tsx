@@ -1,6 +1,7 @@
 // hachamama-parenting-program/mentor-dashboard/src/app/mentors/new/page.tsx
-import Link from 'next/link'
 import { createMentor } from '../actions'
+import { DashboardHeader } from '@/components/dashboard-header'
+import { authCardStyles } from '@/lib/auth-card-styles'
 
 const ERROR_MESSAGES: Record<string, string> = {
   'missing-fields': 'יש למלא שם, אימייל וטלפון',
@@ -16,31 +17,33 @@ export default async function NewMentorPage({
 }) {
   const { error, success } = await searchParams
   return (
-    <main style={{ maxWidth: 360, margin: '80px auto', fontFamily: 'sans-serif' }}>
-      <h1>מנחה חדשה</h1>
-      <p style={{ color: '#666', fontSize: 14 }}>
-        סיסמת ההתחברות של המנחה תהיה מספר הטלפון שלה, כפי שמוזן כאן.
-      </p>
-      <form action={createMentor}>
-        <label>
-          שם מלא
-          <input name="fullName" type="text" required style={{ display: 'block', width: '100%', marginBottom: 12 }} />
-        </label>
-        <label>
-          אימייל
-          <input name="email" type="email" required style={{ display: 'block', width: '100%', marginBottom: 12 }} />
-        </label>
-        <label>
-          טלפון (יהיה גם הסיסמה)
-          <input name="phone" type="tel" required style={{ display: 'block', width: '100%', marginBottom: 12 }} />
-        </label>
-        <button type="submit">הוסף מנחה</button>
-      </form>
-      {error && <p style={{ color: 'red' }}>{ERROR_MESSAGES[error] ?? 'שגיאה'}</p>}
-      {success && <p style={{ color: 'green' }}>המנחה נוצרה בהצלחה!</p>}
-      <p style={{ marginTop: 24 }}>
-        <Link href="/participants">← חזרה לנרשמים</Link>
-      </p>
-    </main>
+    <>
+      <DashboardHeader active="mentors" />
+      <div style={authCardStyles.body}>
+        <div style={authCardStyles.card}>
+          <h1 style={authCardStyles.h1}>מנחה חדשה</h1>
+          <p style={authCardStyles.helperText}>סיסמת ההתחברות של המנחה תהיה מספר הטלפון שלה, כפי שמוזן כאן.</p>
+          <form action={createMentor}>
+            <label style={authCardStyles.label}>
+              שם מלא
+              <input style={authCardStyles.input} name="fullName" type="text" required />
+            </label>
+            <label style={authCardStyles.label}>
+              אימייל
+              <input style={authCardStyles.input} name="email" type="email" required />
+            </label>
+            <label style={authCardStyles.label}>
+              טלפון (יהיה גם הסיסמה)
+              <input style={authCardStyles.input} name="phone" type="tel" required />
+            </label>
+            <button style={authCardStyles.button} type="submit">
+              הוסף מנחה
+            </button>
+          </form>
+          {error && <p style={authCardStyles.errorText}>{ERROR_MESSAGES[error] ?? 'שגיאה'}</p>}
+          {success && <p style={authCardStyles.successText}>המנחה נוצרה בהצלחה!</p>}
+        </div>
+      </div>
+    </>
   )
 }
