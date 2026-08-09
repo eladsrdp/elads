@@ -12,7 +12,9 @@ export const BRAND = {
   border: 'rgba(120, 144, 132, 0.3)', // גרסה שקופה של greenMuted, למסגרות עדינות בטבלאות
 } as const
 
-export const FONT_FAMILY = '-apple-system, "Segoe UI", Arial, sans-serif'
+// Rubik+Assistant נטענים ב-root layout.tsx (Google Fonts stylesheet); הפולבקים נשארים
+// כרשת ביטחון אם הטעינה איטית/נכשלת.
+export const FONT_FAMILY = '"Rubik", "Assistant", -apple-system, "Segoe UI", Arial, sans-serif'
 
 export const pageWrapperStyle = {
   maxWidth: 900,
