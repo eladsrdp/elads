@@ -1,9 +1,10 @@
+// hachamama-parenting-program/mentor-dashboard/src/app/participants/page.tsx
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { createSupabaseMentorDataSource } from '@/lib/mentor-data-source'
 import { buildParticipantList } from '@/lib/mentor-view'
-import { signOut } from '../login/actions'
+import { DashboardHeader } from '@/components/dashboard-header'
+import { pageWrapperStyle } from '@/lib/brand'
 import { ParticipantsTable } from './participants-table'
-import Link from 'next/link'
 
 export default async function ParticipantsPage() {
   const supabase = await createSupabaseServerClient()
@@ -14,18 +15,12 @@ export default async function ParticipantsPage() {
   ])
 
   return (
-    <main style={{ maxWidth: 900, margin: '40px auto', fontFamily: 'sans-serif' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <>
+      <DashboardHeader active="participants" />
+      <main style={pageWrapperStyle}>
         <h1>נרשמים</h1>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-          <Link href="/content">תכנים</Link>
-          <Link href="/mentors/new">מנחות</Link>
-          <form action={signOut}>
-            <button type="submit">התנתקות</button>
-          </form>
-        </div>
-      </div>
-      <ParticipantsTable initialParticipants={participants} mentors={mentors} />
-    </main>
+        <ParticipantsTable initialParticipants={participants} mentors={mentors} />
+      </main>
+    </>
   )
 }
