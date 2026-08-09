@@ -32,3 +32,37 @@ export function calculateDay1Date(signupAt: Date): string {
 export function calculateWeekNumber(dayNumber: number): number {
   return Math.ceil(dayNumber / 7)
 }
+
+export interface DailyTriggerHistoryEntry {
+  calendarDate: string
+  clickedAt: string | null
+}
+
+/**
+ * כמה ימים ברצף (מהיום אחורה) שהנרשם לא לחץ על כפתור הבוקר. `null` אם הנרשם לא
+ * פעיל (paused/completed) — הרצף לא רלוונטי עבורו. "היום" נספר כ"לא לחץ" רק אם
+ * כבר קיים לו daily_trigger להיום (אחרת ה-cron היומי עוד לא רץ, ומוקדם לתייג
+ * "פספס"). העצירה קורית גם בפער (אין trigger לאותו תאריך) — סימן שהתוכנית עדיין
+ * לא התחילה עבורו באותו תאריך, אין למה להמשיך אחורה.
+ */
+export function calculateMissedStreak(
+  history: DailyTriggerHistoryEntry[],
+  todayDate: string,
+  participantStatus: string,
+): number | null {
+  if (participantStatus !== 'active') return null
+
+  const clickedAtByDate = new Map(history.map((h) => [h.calendarDate, h.clickedAt]))
+  let cursor = DateTime.fromISO(todayDate, { zone: 'utc' })
+  if (!clickedAtByDate.has(cursor.toISODate() as string)) {
+    cursor = cursor.minus({ days: 1 })
+  }
+
+  let streak = 0
+  while (clickedAtByDate.has(cursor.toISODate() as string)) {
+    if (clickedAtByDate.get(cursor.toISODate() as string) !== null) break
+    streak++
+    cursor = cursor.minus({ days: 1 })
+  }
+  return streak
+}

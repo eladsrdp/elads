@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { calculateDay1Date, calculateProgramDayNumber, calculateWeekNumber, getIsraelDateString } from './program-day'
+import { calculateDay1Date, calculateMissedStreak, calculateProgramDayNumber, calculateWeekNumber, getIsraelDateString } from './program-day'
 
 describe('calculateProgramDayNumber', () => {
   it('מחזיר 1 ביום ה-day1_date עצמו', () => {
@@ -42,5 +42,45 @@ describe('calculateDay1Date', () => {
   it('נרשם ביום ראשון עצמו מתחיל ביום ראשון הבא, לא באותו יום', () => {
     // 2026-08-02 הוא יום ראשון
     expect(calculateDay1Date(new Date('2026-08-02T10:00:00Z'))).toBe('2026-08-09')
+  })
+})
+
+describe('calculateMissedStreak', () => {
+  it('מחזיר null לנרשם לא-פעיל, בלי קשר להיסטוריה', () => {
+    expect(calculateMissedStreak([{ calendarDate: '2026-08-16', clickedAt: null }], '2026-08-16', 'paused')).toBeNull()
+    expect(calculateMissedStreak([], '2026-08-16', 'completed')).toBeNull()
+  })
+
+  it('לחץ היום → רצף 0', () => {
+    const history = [{ calendarDate: '2026-08-16', clickedAt: '2026-08-16T06:10:00Z' }]
+    expect(calculateMissedStreak(history, '2026-08-16', 'active')).toBe(0)
+  })
+
+  it('לא לחץ היום (יש לו trigger) ולחץ אתמול → רצף 1', () => {
+    const history = [
+      { calendarDate: '2026-08-16', clickedAt: null },
+      { calendarDate: '2026-08-15', clickedAt: '2026-08-15T06:10:00Z' },
+    ]
+    expect(calculateMissedStreak(history, '2026-08-16', 'active')).toBe(1)
+  })
+
+  it('3 ימים ברצף בלי לחיצה, יום רביעי אחורה לחץ → רצף 3', () => {
+    const history = [
+      { calendarDate: '2026-08-16', clickedAt: null },
+      { calendarDate: '2026-08-15', clickedAt: null },
+      { calendarDate: '2026-08-14', clickedAt: null },
+      { calendarDate: '2026-08-13', clickedAt: '2026-08-13T06:10:00Z' },
+    ]
+    expect(calculateMissedStreak(history, '2026-08-16', 'active')).toBe(3)
+  })
+
+  it('אין עדיין trigger להיום (ה-cron היומי לא רץ) — לא נספר כ"פספס"', () => {
+    const history = [{ calendarDate: '2026-08-15', clickedAt: '2026-08-15T06:10:00Z' }]
+    expect(calculateMissedStreak(history, '2026-08-16', 'active')).toBe(0)
+  })
+
+  it('יום 1 בתוכנית, עדיין לא לחץ, אין היסטוריה קודמת → רצף 1, לא ממשיך לפני day1', () => {
+    const history = [{ calendarDate: '2026-08-16', clickedAt: null }]
+    expect(calculateMissedStreak(history, '2026-08-16', 'active')).toBe(1)
   })
 })
