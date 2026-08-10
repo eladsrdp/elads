@@ -36,6 +36,8 @@ export function EditPanel({
       const { url } = await dataSource.uploadMedia(file, message.content_day_number)
       await dataSource.updateMessageMedia(message.id, url, validation.mediaType)
       onMediaSaved(url, validation.mediaType)
+    } catch (err) {
+      setError(`העלאת הקובץ נכשלה: ${err instanceof Error ? err.message : String(err)}`)
     } finally {
       setUploading(false)
     }
