@@ -26,6 +26,7 @@ export interface ContentDataSource {
   createMessage(input: { contentDayNumber: number; sendOffsetTime: string; orderInDay: number }): Promise<MessageRecord>
   updateMessageBody(id: string, bodyText: string): Promise<void>
   updateMessageTime(id: string, sendOffsetTime: string): Promise<void>
+  updateMessageOrder(id: string, orderInDay: number): Promise<void>
   updateMessageMedia(id: string, mediaUrl: string | null, mediaType: MediaType | null): Promise<void>
   deleteMessage(id: string): Promise<void>
   hasDeliveries(messageId: string): Promise<boolean>
@@ -79,6 +80,11 @@ export function createSupabaseContentDataSource(supabase: SupabaseClient): Conte
 
     async updateMessageTime(id, sendOffsetTime) {
       const { error } = await supabase.from('messages').update({ send_offset_time: sendOffsetTime }).eq('id', id)
+      if (error) throw error
+    },
+
+    async updateMessageOrder(id, orderInDay) {
+      const { error } = await supabase.from('messages').update({ order_in_day: orderInDay }).eq('id', id)
       if (error) throw error
     },
 

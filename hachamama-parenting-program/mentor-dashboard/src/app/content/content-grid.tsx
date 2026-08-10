@@ -1,10 +1,10 @@
 // hachamama-parenting-program/mentor-dashboard/src/app/content/content-grid.tsx
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import { createSupabaseContentDataSource } from '@/lib/content-data-source'
-import { calculateWeekNumber } from '@/lib/program-day'
+import { calculateWeekdayName, calculateWeekNumber } from '@/lib/program-day'
 import { BRAND, buttonPrimaryStyle, buttonSecondaryStyle, buttonDangerStyle } from '@/lib/brand'
 import type { DayGroup } from '@/lib/content-view'
 import { EditPanel } from './edit-panel'
@@ -15,12 +15,56 @@ const MEDIA_TYPE_ICON: Record<string, string> = {
   document: '📄',
 }
 
+const HEADER_ROW_HEIGHT = 34
+const DEFAULT_COL_WIDTHS = { time: 70, media: 44, actions: 108 }
+
+type ResizableColumn = keyof typeof DEFAULT_COL_WIDTHS
+
+function ResizeHandle({ onMouseDown }: { onMouseDown: (e: React.MouseEvent) => void }) {
+  return (
+    <span
+      onMouseDown={onMouseDown}
+      style={{
+        cursor: 'col-resize',
+        width: 8,
+        marginInlineStart: 'auto',
+        alignSelf: 'stretch',
+        borderInlineStart: `2px solid ${BRAND.border}`,
+      }}
+    />
+  )
+}
+
 export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
   const [groups, setGroups] = useState(initialGroups)
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
   const [editingTimeMessageId, setEditingTimeMessageId] = useState<string | null>(null)
   const [panelMessageId, setPanelMessageId] = useState<string | null>(null)
+  const [colWidths, setColWidths] = useState(DEFAULT_COL_WIDTHS)
+  const dragState = useRef<{ col: ResizableColumn; startX: number; startWidth: number } | null>(null)
   const dataSource = createSupabaseContentDataSource(createSupabaseBrowserClient())
+
+  function handleResizeMove(e: MouseEvent) {
+    if (!dragState.current) return
+    const delta = e.clientX - dragState.current.startX
+    const newWidth = Math.max(30, dragState.current.startWidth - delta)
+    setColWidths((prev) => ({ ...prev, [dragState.current!.col]: newWidth }))
+  }
+
+  function handleResizeEnd() {
+    dragState.current = null
+    window.removeEventListener('mousemove', handleResizeMove)
+    window.removeEventListener('mouseup', handleResizeEnd)
+  }
+
+  function startResize(col: ResizableColumn, e: React.MouseEvent) {
+    e.preventDefault()
+    dragState.current = { col, startX: e.clientX, startWidth: colWidths[col] }
+    window.addEventListener('mousemove', handleResizeMove)
+    window.addEventListener('mouseup', handleResizeEnd)
+  }
+
+  const rowGridColumns = `${colWidths.time}px 1fr ${colWidths.media}px ${colWidths.actions}px`
 
   async function handleBodySave(messageId: string, dayNumber: number, newBody: string) {
     await dataSource.updateMessageBody(messageId, newBody)
@@ -47,11 +91,17 @@ export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
     )
   }
 
-  async function handleAddMessage(dayNumber: number) {
+  async function handleInsertMessage(dayNumber: number, afterMessageId: string | null) {
     await dataSource.ensureContentDay(dayNumber)
-    const orderInDay = groups.find((g) => g.dayNumber === dayNumber)?.messages.length ?? 0
-    const created = await dataSource.createMessage({ contentDayNumber: dayNumber, sendOffsetTime: '06:45', orderInDay })
-    setGroups((prev) => prev.map((g) => (g.dayNumber !== dayNumber ? g : { ...g, messages: [...g.messages, created] })))
+    const existing = groups.find((g) => g.dayNumber === dayNumber)?.messages ?? []
+    const insertIndex = afterMessageId ? existing.findIndex((m) => m.id === afterMessageId) + 1 : existing.length
+    const created = await dataSource.createMessage({ contentDayNumber: dayNumber, sendOffsetTime: '06:45', orderInDay: insertIndex })
+    const combined = [...existing.slice(0, insertIndex), created, ...existing.slice(insertIndex)]
+    const reindexed = combined.map((m, i) => ({ ...m, order_in_day: i }))
+    await Promise.all(
+      reindexed.filter((m, i) => combined[i].order_in_day !== i).map((m) => dataSource.updateMessageOrder(m.id, m.order_in_day)),
+    )
+    setGroups((prev) => prev.map((g) => (g.dayNumber !== dayNumber ? g : { ...g, messages: reindexed })))
   }
 
   async function handleDelete(messageId: string, dayNumber: number) {
@@ -79,12 +129,42 @@ export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
 
   return (
     <div>
+      <div
+        style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 2,
+          display: 'grid',
+          gridTemplateColumns: rowGridColumns,
+          gap: 8,
+          height: HEADER_ROW_HEIGHT,
+          alignItems: 'center',
+          padding: '0 8px',
+          background: BRAND.white,
+          borderBottom: `2px solid ${BRAND.greenDark}`,
+          fontSize: 12,
+          fontWeight: 600,
+          color: BRAND.greenMuted,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+          שעה
+          <ResizeHandle onMouseDown={(e) => startResize('time', e)} />
+        </div>
+        <span>תוכן</span>
+        <div style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+          מדיה
+          <ResizeHandle onMouseDown={(e) => startResize('media', e)} />
+        </div>
+        <span>פעולות</span>
+      </div>
+
       {groups.map((group) => (
         <div key={group.dayNumber}>
           <div
             style={{
               position: 'sticky',
-              top: 0,
+              top: HEADER_ROW_HEIGHT,
               background: BRAND.paper,
               color: BRAND.greenDark,
               fontWeight: 600,
@@ -93,12 +173,20 @@ export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
               zIndex: 1,
             }}
           >
-            יום {group.dayNumber} — שבוע {calculateWeekNumber(group.dayNumber)} {group.title ? `— ${group.title}` : ''}
+            יום {calculateWeekdayName(group.dayNumber)} — שבוע {calculateWeekNumber(group.dayNumber)} — יום {group.dayNumber}{' '}
+            {group.title ? `— ${group.title}` : ''}
           </div>
           {group.messages.map((message) => (
             <div
               key={message.id}
-              style={{ display: 'grid', gridTemplateColumns: '70px 1fr 44px 90px', gap: 8, padding: '4px 8px', alignItems: 'center' }}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: rowGridColumns,
+                gap: 8,
+                padding: '6px 8px',
+                alignItems: 'center',
+                borderBottom: `1px solid ${BRAND.border}`,
+              }}
             >
               {editingTimeMessageId === message.id ? (
                 <input
@@ -123,6 +211,7 @@ export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
                   }}
+                  style={{ width: '100%', boxSizing: 'border-box' }}
                 />
               ) : (
                 <span onClick={() => setEditingMessageId(message.id)} style={{ cursor: 'text' }}>
@@ -145,7 +234,10 @@ export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
                 <span>-</span>
               )}
               <span>
-                <button style={buttonSecondaryStyle} onClick={() => setPanelMessageId(message.id)}>
+                <button style={buttonSecondaryStyle} title="הוסף הודעה אחרי זו" onClick={() => handleInsertMessage(group.dayNumber, message.id)}>
+                  +
+                </button>
+                <button style={{ ...buttonSecondaryStyle, marginRight: 4 }} onClick={() => setPanelMessageId(message.id)}>
                   ⤢
                 </button>
                 <button style={{ ...buttonDangerStyle, marginRight: 4 }} onClick={() => handleDelete(message.id, group.dayNumber)}>
@@ -154,7 +246,7 @@ export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
               </span>
             </div>
           ))}
-          <button style={{ ...buttonPrimaryStyle, margin: '4px 8px' }} onClick={() => handleAddMessage(group.dayNumber)}>
+          <button style={{ ...buttonPrimaryStyle, margin: '4px 8px' }} onClick={() => handleInsertMessage(group.dayNumber, null)}>
             + הודעה
           </button>
         </div>

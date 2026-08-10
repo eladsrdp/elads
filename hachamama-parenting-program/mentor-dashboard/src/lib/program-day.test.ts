@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { calculateDay1Date, calculateMissedStreak, calculateProgramDayNumber, calculateWeekNumber, getIsraelDateString } from './program-day'
+import {
+  calculateDay1Date,
+  calculateMissedStreak,
+  calculateProgramDayNumber,
+  calculateWeekdayName,
+  calculateWeekNumber,
+  getIsraelDateString,
+} from './program-day'
 
 describe('calculateProgramDayNumber', () => {
   it('מחזיר 1 ביום ה-day1_date עצמו', () => {
@@ -30,6 +37,21 @@ describe('calculateWeekNumber', () => {
 
   it('יום 26 (סוף שבוע 4) הוא שבוע 4', () => {
     expect(calculateWeekNumber(26)).toBe(4)
+  })
+})
+
+describe('calculateWeekdayName', () => {
+  it('יום 1 הוא תמיד ראשון', () => {
+    expect(calculateWeekdayName(1)).toBe('ראשון')
+  })
+
+  it('יום 9 (תחילת שבוע 2 + יום אחד) הוא שני', () => {
+    expect(calculateWeekdayName(9)).toBe('שני')
+  })
+
+  it('יום 7 (סוף שבוע 1) הוא שבת, יום 8 (תחילת שבוע 2) חוזר לראשון', () => {
+    expect(calculateWeekdayName(7)).toBe('שבת')
+    expect(calculateWeekdayName(8)).toBe('ראשון')
   })
 })
 

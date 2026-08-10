@@ -33,6 +33,14 @@ export function calculateWeekNumber(dayNumber: number): number {
   return Math.ceil(dayNumber / 7)
 }
 
+const HEBREW_WEEKDAY_NAMES = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת']
+
+/** שם היום בשבוע (בעברית) של יום נתון בתוכנית — יום 1 הוא תמיד יום ראשון, אז החזרה מחזורית כל 7. */
+export function calculateWeekdayName(dayNumber: number): string {
+  const offset = ((dayNumber - 1) % 7 + 7) % 7
+  return HEBREW_WEEKDAY_NAMES[offset]
+}
+
 export interface DailyTriggerHistoryEntry {
   calendarDate: string
   clickedAt: string | null
