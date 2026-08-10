@@ -91,6 +91,17 @@ export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
     )
   }
 
+  function handleAddToDayPrompt() {
+    const input = window.prompt('להוסיף הודעה חדשה — לאיזה יום בתוכנית?')
+    if (!input) return
+    const dayNumber = Number(input)
+    if (!Number.isInteger(dayNumber) || dayNumber < 1) {
+      window.alert('יש להזין מספר יום תקין (1 ומעלה)')
+      return
+    }
+    handleInsertMessage(dayNumber, null)
+  }
+
   async function handleInsertMessage(dayNumber: number, afterMessageId: string | null) {
     await dataSource.ensureContentDay(dayNumber)
     const existing = groups.find((g) => g.dayNumber === dayNumber)?.messages ?? []
@@ -246,11 +257,27 @@ export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
               </span>
             </div>
           ))}
-          <button style={{ ...buttonPrimaryStyle, margin: '4px 8px' }} onClick={() => handleInsertMessage(group.dayNumber, null)}>
-            + הודעה
-          </button>
         </div>
       ))}
+
+      <button
+        style={{
+          ...buttonPrimaryStyle,
+          position: 'fixed',
+          bottom: 24,
+          left: 24,
+          borderRadius: '50%',
+          width: 52,
+          height: 52,
+          fontSize: 26,
+          boxShadow: '0 2px 10px rgba(47, 95, 71, 0.35)',
+          zIndex: 3,
+        }}
+        title="הוסף הודעה חדשה"
+        onClick={handleAddToDayPrompt}
+      >
+        +
+      </button>
 
       {panelMessage && (
         <EditPanel
