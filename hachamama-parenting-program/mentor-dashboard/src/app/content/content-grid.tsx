@@ -184,7 +184,7 @@ export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
               zIndex: 1,
             }}
           >
-            יום {calculateWeekdayName(group.dayNumber)} — שבוע {calculateWeekNumber(group.dayNumber)} — יום {group.dayNumber}{' '}
+            שבוע {calculateWeekNumber(group.dayNumber)} — יום {calculateWeekdayName(group.dayNumber)} — יום {group.dayNumber}{' '}
             {group.title ? `— ${group.title}` : ''}
           </div>
           {group.messages.map((message) => (
