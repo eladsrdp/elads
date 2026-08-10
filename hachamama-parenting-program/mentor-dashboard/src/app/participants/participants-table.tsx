@@ -28,73 +28,101 @@ export function ParticipantsTable({
   const [newName, setNewName] = useState('')
   const [newPhone, setNewPhone] = useState('')
   const [blockedMessage, setBlockedMessage] = useState<string | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [adding, setAdding] = useState(false)
   const dataSource = createSupabaseMentorDataSource(createSupabaseBrowserClient())
 
   async function handleAdd() {
     if (!newName || !newPhone) return
-    const day1Date = calculateDay1Date(new Date())
-    const created = await dataSource.createParticipant({
-      fullName: newName,
-      phone: newPhone,
-      day1Date,
-      assignedMentorId: null,
-    })
-    setParticipants((prev) => [
-      ...prev,
-      {
-        id: created.id,
-        fullName: created.full_name,
-        phone: created.phone,
-        status: created.status,
-        programDay: 1,
-        clickedToday: false,
-        missedStreak: 0,
-        videoCount: 0,
-        deliveriesSent: 0,
-        deliveriesTotal: 0,
+    setErrorMessage(null)
+    setAdding(true)
+    try {
+      const day1Date = calculateDay1Date(new Date())
+      const created = await dataSource.createParticipant({
+        fullName: newName,
+        phone: newPhone,
+        day1Date,
         assignedMentorId: null,
-        assignedMentorName: null,
-      },
-    ])
-    setNewName('')
-    setNewPhone('')
+      })
+      setParticipants((prev) => [
+        ...prev,
+        {
+          id: created.id,
+          fullName: created.full_name,
+          phone: created.phone,
+          status: created.status,
+          programDay: 1,
+          clickedToday: false,
+          missedStreak: 0,
+          videoCount: 0,
+          deliveriesSent: 0,
+          deliveriesTotal: 0,
+          assignedMentorId: null,
+          assignedMentorName: null,
+        },
+      ])
+      setNewName('')
+      setNewPhone('')
+    } catch (error) {
+      setErrorMessage(`הוספת הנרשם נכשלה: ${error instanceof Error ? error.message : String(error)}`)
+    } finally {
+      setAdding(false)
+    }
   }
 
   async function handleFieldSave(
     id: string,
     fields: { fullName: string; phone: string; status: string; assignedMentorId: string | null },
   ) {
-    await dataSource.updateParticipant(id, fields)
-    setParticipants((prev) =>
-      prev.map((p) =>
-        p.id !== id
-          ? p
-          : {
-              ...p,
-              fullName: fields.fullName,
-              phone: fields.phone,
-              status: fields.status,
-              assignedMentorId: fields.assignedMentorId,
-              assignedMentorName: mentors.find((m) => m.user_id === fields.assignedMentorId)?.full_name ?? null,
-            },
-      ),
-    )
-    setEditingId(null)
+    setErrorMessage(null)
+    try {
+      await dataSource.updateParticipant(id, fields)
+      setParticipants((prev) =>
+        prev.map((p) =>
+          p.id !== id
+            ? p
+            : {
+                ...p,
+                fullName: fields.fullName,
+                phone: fields.phone,
+                status: fields.status,
+                assignedMentorId: fields.assignedMentorId,
+                assignedMentorName: mentors.find((m) => m.user_id === fields.assignedMentorId)?.full_name ?? null,
+              },
+        ),
+      )
+      setEditingId(null)
+    } catch (error) {
+      setErrorMessage(`שמירת השינויים נכשלה: ${error instanceof Error ? error.message : String(error)}`)
+    }
   }
 
   async function handleDelete(id: string) {
-    const counts = await dataSource.getParticipantHistoryCounts(id)
-    if (!canDeleteParticipant(counts)) {
-      setBlockedMessage('לא ניתן למחוק — יש להם היסטוריית הודעות. אפשר לשנות סטטוס ל"מושהה" במקום.')
-      return
+    setErrorMessage(null)
+    try {
+      const counts = await dataSource.getParticipantHistoryCounts(id)
+      if (!canDeleteParticipant(counts)) {
+        setBlockedMessage('לא ניתן למחוק — יש להם היסטוריית הודעות. אפשר לשנות סטטוס ל"מושהה" במקום.')
+        return
+      }
+      if (!window.confirm('למחוק את הנרשם?')) return
+      await dataSource.deleteParticipant(id)
+      setParticipants((prev) => prev.filter((p) => p.id !== id))
+    } catch (error) {
+      setErrorMessage(`מחיקת הנרשם נכשלה: ${error instanceof Error ? error.message : String(error)}`)
     }
-    if (!window.confirm('למחוק את הנרשם?')) return
-    await dataSource.deleteParticipant(id)
-    setParticipants((prev) => prev.filter((p) => p.id !== id))
   }
 
   return (
     <div>
+      {errorMessage && (
+        <p style={{ color: BRAND.copper }}>
+          {errorMessage}{' '}
+          <button style={buttonSecondaryStyle} onClick={() => setErrorMessage(null)}>
+            סגור
+          </button>
+        </p>
+      )}
       {blockedMessage && (
         <p style={{ color: BRAND.copper }}>
           {blockedMessage}{' '}
@@ -107,8 +135,8 @@ export function ParticipantsTable({
       <div style={{ display: 'flex', gap: 8, margin: '16px 0' }}>
         <input style={textInputStyle} placeholder="שם מלא" value={newName} onChange={(e) => setNewName(e.target.value)} />
         <input style={textInputStyle} placeholder="טלפון" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} />
-        <button style={buttonPrimaryStyle} onClick={handleAdd}>
-          + נרשם חדש
+        <button style={buttonPrimaryStyle} onClick={handleAdd} disabled={adding}>
+          {adding ? 'מוסיף...' : '+ נרשם חדש'}
         </button>
       </div>
 
