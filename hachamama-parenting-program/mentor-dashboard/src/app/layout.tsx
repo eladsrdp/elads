@@ -15,6 +15,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700&family=Rubik:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
+        {/* דפדפנים לא מורישים font-family מ-body ל-input/textarea/select/button כברירת מחדל */}
+        <style>{`input, textarea, select, button { font-family: inherit; }`}</style>
       </head>
       <body style={{ margin: 0, background: BRAND.paper, fontFamily: FONT_FAMILY }}>{children}</body>
     </html>

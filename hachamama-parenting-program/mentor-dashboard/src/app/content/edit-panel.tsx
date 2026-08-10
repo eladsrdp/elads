@@ -85,7 +85,22 @@ export function EditPanel({
         }}
       >
         {message.media_url ? (
-          <p>מדיה קיימת: {message.media_type}</p>
+          message.media_type === 'image' ? (
+            <a href={message.media_url} target="_blank" rel="noreferrer">
+              <img
+                src={message.media_url}
+                alt="תצוגה מקדימה"
+                style={{ maxWidth: '100%', maxHeight: 220, borderRadius: 8, marginBottom: 8 }}
+              />
+            </a>
+          ) : (
+            <p>
+              מדיה קיימת:{' '}
+              <a href={message.media_url} target="_blank" rel="noreferrer" style={{ color: BRAND.greenDark }}>
+                {message.media_type}
+              </a>
+            </p>
+          )
         ) : (
           <p>גרור קובץ לפה, או:</p>
         )}

@@ -9,9 +9,16 @@ import { BRAND, buttonPrimaryStyle, buttonSecondaryStyle, buttonDangerStyle } fr
 import type { DayGroup } from '@/lib/content-view'
 import { EditPanel } from './edit-panel'
 
+const MEDIA_TYPE_ICON: Record<string, string> = {
+  video: '🎬',
+  audio: '🎵',
+  document: '📄',
+}
+
 export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
   const [groups, setGroups] = useState(initialGroups)
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
+  const [editingTimeMessageId, setEditingTimeMessageId] = useState<string | null>(null)
   const [panelMessageId, setPanelMessageId] = useState<string | null>(null)
   const dataSource = createSupabaseContentDataSource(createSupabaseBrowserClient())
 
@@ -25,6 +32,19 @@ export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
       ),
     )
     setEditingMessageId(null)
+  }
+
+  async function handleTimeSave(messageId: string, dayNumber: number, newTime: string) {
+    setEditingTimeMessageId(null)
+    if (!newTime) return
+    await dataSource.updateMessageTime(messageId, newTime)
+    setGroups((prev) =>
+      prev.map((g) =>
+        g.dayNumber !== dayNumber
+          ? g
+          : { ...g, messages: g.messages.map((m) => (m.id === messageId ? { ...m, send_offset_time: newTime } : m)) },
+      ),
+    )
   }
 
   async function handleAddMessage(dayNumber: number) {
@@ -78,9 +98,23 @@ export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
           {group.messages.map((message) => (
             <div
               key={message.id}
-              style={{ display: 'grid', gridTemplateColumns: '60px 1fr 60px 90px', gap: 8, padding: '4px 8px', alignItems: 'center' }}
+              style={{ display: 'grid', gridTemplateColumns: '70px 1fr 44px 90px', gap: 8, padding: '4px 8px', alignItems: 'center' }}
             >
-              <span>{message.send_offset_time}</span>
+              {editingTimeMessageId === message.id ? (
+                <input
+                  type="time"
+                  autoFocus
+                  defaultValue={message.send_offset_time}
+                  onBlur={(e) => handleTimeSave(message.id, group.dayNumber, e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+                  }}
+                />
+              ) : (
+                <span onClick={() => setEditingTimeMessageId(message.id)} style={{ cursor: 'text' }}>
+                  {message.send_offset_time}
+                </span>
+              )}
               {editingMessageId === message.id ? (
                 <input
                   autoFocus
@@ -95,7 +129,21 @@ export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
                   {message.body_text || '(ריק)'}
                 </span>
               )}
-              <span>{message.media_url ? '🖼' : '-'}</span>
+              {message.media_url && message.media_type === 'image' ? (
+                <a href={message.media_url} target="_blank" rel="noreferrer">
+                  <img
+                    src={message.media_url}
+                    alt="תצוגה מקדימה"
+                    style={{ width: 32, height: 32, objectFit: 'cover', borderRadius: 4, display: 'block' }}
+                  />
+                </a>
+              ) : message.media_url ? (
+                <a href={message.media_url} target="_blank" rel="noreferrer" title={message.media_type ?? undefined}>
+                  {MEDIA_TYPE_ICON[message.media_type ?? ''] ?? '📎'}
+                </a>
+              ) : (
+                <span>-</span>
+              )}
               <span>
                 <button style={buttonSecondaryStyle} onClick={() => setPanelMessageId(message.id)}>
                   ⤢

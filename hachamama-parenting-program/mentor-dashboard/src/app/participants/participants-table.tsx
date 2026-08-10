@@ -29,6 +29,7 @@ export function ParticipantsTable({
   const [newPhone, setNewPhone] = useState('')
   const [blockedMessage, setBlockedMessage] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const dataSource = createSupabaseMentorDataSource(createSupabaseBrowserClient())
 
@@ -63,6 +64,8 @@ export function ParticipantsTable({
       ])
       setNewName('')
       setNewPhone('')
+      setSuccessMessage(`✓ ${created.full_name} נוסף/ה בהצלחה`)
+      setTimeout(() => setSuccessMessage(null), 4000)
     } catch (error) {
       setErrorMessage(`הוספת הנרשם נכשלה: ${error instanceof Error ? error.message : String(error)}`)
     } finally {
@@ -131,6 +134,7 @@ export function ParticipantsTable({
           </button>
         </p>
       )}
+      {successMessage && <p style={{ color: BRAND.greenDark, fontWeight: 600 }}>{successMessage}</p>}
 
       <div style={{ display: 'flex', gap: 8, margin: '16px 0' }}>
         <input style={textInputStyle} placeholder="שם מלא" value={newName} onChange={(e) => setNewName(e.target.value)} />
