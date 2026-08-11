@@ -23,6 +23,7 @@ export interface ContentDataSource {
   listAllContentDays(): Promise<ContentDayRecord[]>
   listAllMessages(): Promise<MessageRecord[]>
   ensureContentDay(dayNumber: number): Promise<void>
+  createContentDay(dayNumber: number, title: string | null): Promise<ContentDayRecord>
   createMessage(input: { contentDayNumber: number; sendOffsetTime: string; orderInDay: number }): Promise<MessageRecord>
   updateMessageBody(id: string, bodyText: string): Promise<void>
   updateMessageTime(id: string, sendOffsetTime: string): Promise<void>
@@ -54,6 +55,18 @@ export function createSupabaseContentDataSource(supabase: SupabaseClient): Conte
     async ensureContentDay(dayNumber) {
       const { error } = await supabase.from('content_days').upsert({ day_number: dayNumber }, { onConflict: 'day_number', ignoreDuplicates: true })
       if (error) throw error
+    },
+
+    // בכוונה insert רגיל, לא upsert-ignore כמו ensureContentDay — יוצר יום ריק (בלי הודעה)
+    // במפורש, ונכשל אם היום כבר קיים (unique constraint על day_number), כדי שהמנחה תדע.
+    async createContentDay(dayNumber, title) {
+      const { data, error } = await supabase
+        .from('content_days')
+        .insert({ day_number: dayNumber, title })
+        .select('day_number, title')
+        .single()
+      if (error) throw error
+      return data as ContentDayRecord
     },
 
     async createMessage(input) {

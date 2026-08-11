@@ -91,6 +91,29 @@ export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
     )
   }
 
+  async function handleAddDay() {
+    const dayInput = window.prompt('מספר היום החדש בתוכנית (למשל 30)?')
+    if (!dayInput) return
+    const dayNumber = Number(dayInput)
+    if (!Number.isInteger(dayNumber) || dayNumber < 1) {
+      window.alert('יש להזין מספר יום תקין (1 ומעלה)')
+      return
+    }
+    if (groups.some((g) => g.dayNumber === dayNumber)) {
+      window.alert(`יום ${dayNumber} כבר קיים`)
+      return
+    }
+    const title = window.prompt('כותרת ליום (אופציונלי — אפשר להשאיר ריק)')
+    try {
+      const created = await dataSource.createContentDay(dayNumber, title || null)
+      setGroups((prev) =>
+        [...prev, { dayNumber: created.day_number, title: created.title, messages: [] }].sort((a, b) => a.dayNumber - b.dayNumber),
+      )
+    } catch (err) {
+      window.alert(`יצירת היום נכשלה: ${err instanceof Error ? err.message : String(err)}`)
+    }
+  }
+
   function handleAddToDayPrompt() {
     const input = window.prompt('להוסיף הודעה חדשה — לאיזה יום בתוכנית?')
     if (!input) return
@@ -259,6 +282,26 @@ export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
           ))}
         </div>
       ))}
+
+      <button
+        style={{
+          ...buttonSecondaryStyle,
+          position: 'fixed',
+          bottom: 88,
+          left: 24,
+          borderRadius: '50%',
+          width: 52,
+          height: 52,
+          fontSize: 22,
+          background: BRAND.white,
+          boxShadow: '0 2px 10px rgba(47, 95, 71, 0.25)',
+          zIndex: 3,
+        }}
+        title="הוסף יום חדש"
+        onClick={handleAddDay}
+      >
+        📅+
+      </button>
 
       <button
         style={{
