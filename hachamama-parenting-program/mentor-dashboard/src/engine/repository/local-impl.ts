@@ -32,6 +32,7 @@ export function createLocalDb(): AppDB {
         signup_at: input.signupAt,
         day1_date: input.day1Date,
         status: 'active',
+        assigned_mentor_id: null,
       }
       participants.set(row.id, row)
       return row
@@ -47,6 +48,10 @@ export function createLocalDb(): AppDB {
 
     async getActiveParticipants() {
       return [...participants.values()].filter((p) => p.status === 'active')
+    },
+
+    async getAllParticipants() {
+      return [...participants.values()]
     },
 
     async markParticipantCompleted(id) {

@@ -74,6 +74,12 @@ export function createSupabaseDb(url: string, key: string): AppDB {
       return data ?? []
     },
 
+    async getAllParticipants() {
+      const { data, error } = await supabase.from('participants').select()
+      if (error) throw new Error(`[supabase] participants: ${error.message}`)
+      return data ?? []
+    },
+
     async markParticipantCompleted(id) {
       await updateRow('participants', id, { status: 'completed' })
     },

@@ -11,6 +11,7 @@ export interface ParticipantRow {
   signup_at: string
   day1_date: string
   status: ParticipantStatus
+  assigned_mentor_id: string | null
 }
 
 export interface ContentDayRow {
@@ -78,6 +79,7 @@ export interface AppDB {
   getParticipant(id: string): Promise<ParticipantRow | undefined>
   findParticipantByPhone(phone: string): Promise<ParticipantRow | undefined>
   getActiveParticipants(): Promise<ParticipantRow[]>
+  getAllParticipants(): Promise<ParticipantRow[]>
   markParticipantCompleted(id: string): Promise<void>
   createVideoSubmission(input: { participantId: string; videoUrl: string }): Promise<VideoSubmissionRow>
 

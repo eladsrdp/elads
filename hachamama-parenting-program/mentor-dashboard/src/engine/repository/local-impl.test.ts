@@ -57,6 +57,28 @@ describe('createLocalDb — participants', () => {
     expect(active).toHaveLength(1)
     expect(active[0].full_name).toBe('ב')
   })
+
+  it('getAllParticipants מחזיר את כולם, בכל סטטוס', async () => {
+    const db = createLocalDb()
+    const a = await db.createParticipant({
+      fullName: 'א',
+      phone: '+972500000001',
+      signupSourceRef: null,
+      signupAt: '2023-01-05T10:00:00.000Z',
+      day1Date: '2023-01-08',
+    })
+    await db.createParticipant({
+      fullName: 'ב',
+      phone: '+972500000002',
+      signupSourceRef: null,
+      signupAt: '2023-01-05T10:00:00.000Z',
+      day1Date: '2023-01-08',
+    })
+    await db.markParticipantCompleted(a.id)
+
+    const all = await db.getAllParticipants()
+    expect(all).toHaveLength(2)
+  })
 })
 
 describe('createLocalDb — content', () => {
