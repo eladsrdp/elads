@@ -214,3 +214,9 @@
 - **Decisions:** אין החלטת מגבלת-גודל חדשה ל-Plan C — כשיבנה, יש להשתמש בתבנית של `/video-submit` (100MB, בלי מגבלת WhatsApp), לא בתבנית של `content-view.ts`.
 - **Notes / Caveats:** **עדכון:** אושר ונפרס בהצלחה ל-`hahamama.vercel.app` (curl: `/login`→200, `/content`→307) — ניסיון ראשון נכשל שוב עם "Not authorized" חולף (שלישית היום), retry פתר. המשתמש שאל בנפרד "איך מוסיפים ימים" תוך כדי — נענה בטרמינל (יום נוצר אוטומטית דרך כפתור ה-"+" הצף, אין צורך ביצירה נפרדת; אין עדיין ממשק לכותרת יום).
 - **Related:** [[project-overview]]
+
+### 2026-08-09 — נוסף `GET /api/webhooks/participants` — endpoint למשיכת כל הנרשמים ל-Make.com [shipped]
+- **What was done:** המשתמש שאל על endpoint להוספת נרשם (**קיים כבר** — `POST /api/webhooks/signup`, הוחזר לו המפרט המדויק) ועל endpoint למשיכת כל הנמענים (**לא קיים**). לפני בנייה, נשאלו 3 שאלות בטיחות (מי הצרכן, אילו שדות, איזו הגנה) — נענה: Make.com, הכל, Bearer secret. נבנה `GET /api/webhooks/participants`, מוגן ב-`Bearer <MAKE_WEBHOOK_SECRET>` (**אותו סוד** שכבר קיים ומוגדר ל-webhook לחיצת-הכפתור — נבחר בכוונה כדי לא לדרוש סוד חדש, אותו צרכן סומך). מחזיר את כל שדות `participants` (id/שם/טלפון/סטטוס/day1/signup/מנחה-מוצמדת) ב-camelCase. תוך כדי, התגלה ש-`ParticipantRow`/`AppDB` (שכבת ה-engine, המשמשת cron+webhooks — נפרדת מ-`mentor-data-source.ts` של הדשבורד) **לא כללה בכלל `assigned_mentor_id`** — נוסף לטיפוס וליישומי Local+Supabase, וגם `getAllParticipants()` (בניגוד ל-`getActiveParticipants()` הקיים שמסנן רק active). **98/99 טסטים עוברים (7 חדשים), typecheck נקי, build עובר עם 17 routes.** מוזג ונדחף — **עדיין לא deployed**.
+- **Decisions:** לא נוצר secret חדש — reuse מכוון של `MAKE_WEBHOOK_SECRET` הקיים, כי אותו צרכן (Make.com) כבר מחזיק אותו.
+- **Notes / Caveats:** ה-endpoint מחזיר PII אמיתי (שם+טלפון) לכל מי שיודע את הסוד — כמו כל שאר ה-webhooks בפרויקט הזה, זו רמת ההגנה המקובלת כאן (לא RLS/session, secret ב-header). ממתין לאישור דיפלוי.
+- **Related:** [[project-overview]]
