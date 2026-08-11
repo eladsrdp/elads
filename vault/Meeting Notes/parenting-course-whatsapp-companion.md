@@ -220,3 +220,9 @@
 - **Decisions:** לא נוצר secret חדש — reuse מכוון של `MAKE_WEBHOOK_SECRET` הקיים, כי אותו צרכן (Make.com) כבר מחזיק אותו.
 - **Notes / Caveats:** ה-endpoint מחזיר PII אמיתי (שם+טלפון) לכל מי שיודע את הסוד — כמו כל שאר ה-webhooks בפרויקט הזה, זו רמת ההגנה המקובלת כאן (לא RLS/session, secret ב-header). ממתין לאישור דיפלוי.
 - **Related:** [[project-overview]]
+
+### 2026-08-09 — הוספת יום מפורשת (בלי הודעה) ב-`/content` — כפתור צף שני [shipped]
+- **What was done:** המשתמש חזר ושאל "למה הוספת ימים לא עובד — לא הודעה, יום" — התברר שהכפתור הצף היחיד שהיה קיים תמיד יצר גם הודעה (`ensureContentDay`+`createMessage` יחד); לא הייתה דרך ליצור יום ריק. נוסף `createContentDay(dayNumber, title)` ל-`ContentDataSource` — `insert` רגיל (לא upsert-ignore כמו `ensureContentDay` הפנימי) שנכשל בבירור אם היום כבר קיים (unique constraint), כדי שהמנחה תדע. נוסף כפתור צף שני ("📅+", מעל כפתור ההודעה הקיים) שמבקש מספר יום + כותרת אופציונלית (השדה `title` שהיה קיים ב-DB בלי שום ממשק אליו עד עכשיו), בודק קודם שהיום לא קיים כבר (מונע שגיאה מבלבלת), ומוסיף אותו ל-state ממוין לפי מספר יום. **98/99 טסטים, typecheck נקי, build עובר עם 17 routes.** מוזג ונדחף — עדיין לא deployed.
+- **Decisions:** `createContentDay` נכשל במפורש אם היום קיים (בניגוד ל-`ensureContentDay` השקט) — כדי שלחיצה כפולה בטעות על "הוסף יום" תיתן הודעת שגיאה ברורה, לא תתעלם בשקט.
+- **Notes / Caveats:** ממתין לאישור דיפלוי.
+- **Related:** [[project-overview]]
