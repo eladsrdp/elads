@@ -123,7 +123,7 @@ export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
     setGroups((prev) => prev.map((g) => (g.dayNumber !== dayNumber ? g : { ...g, messages: g.messages.filter((m) => m.id !== messageId) })))
   }
 
-  function handleMediaSaved(messageId: string, dayNumber: number, mediaUrl: string, mediaType: string) {
+  function handleMediaSaved(messageId: string, dayNumber: number, mediaUrl: string | null, mediaType: string | null) {
     setGroups((prev) =>
       prev.map((g) =>
         g.dayNumber !== dayNumber

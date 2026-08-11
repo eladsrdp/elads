@@ -17,11 +17,12 @@ export function EditPanel({
   message: MessageRecord
   onClose: () => void
   onBodySave: (body: string) => void
-  onMediaSaved: (url: string, mediaType: string) => void
+  onMediaSaved: (url: string | null, mediaType: string | null) => void
 }) {
   const [body, setBody] = useState(message.body_text)
   const [error, setError] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
+  const [removing, setRemoving] = useState(false)
   const dataSource = createSupabaseContentDataSource(createSupabaseBrowserClient())
 
   async function handleFile(file: File) {
@@ -40,6 +41,20 @@ export function EditPanel({
       setError(`העלאת הקובץ נכשלה: ${err instanceof Error ? err.message : String(err)}`)
     } finally {
       setUploading(false)
+    }
+  }
+
+  async function handleRemoveMedia() {
+    if (!window.confirm('להסיר את המדיה מההודעה?')) return
+    setError(null)
+    setRemoving(true)
+    try {
+      await dataSource.updateMessageMedia(message.id, null, null)
+      onMediaSaved(null, null)
+    } catch (err) {
+      setError(`הסרת המדיה נכשלה: ${err instanceof Error ? err.message : String(err)}`)
+    } finally {
+      setRemoving(false)
     }
   }
 
@@ -105,6 +120,11 @@ export function EditPanel({
           )
         ) : (
           <p>גרור קובץ לפה, או:</p>
+        )}
+        {message.media_url && (
+          <button style={{ ...buttonSecondaryStyle, marginBottom: 8 }} onClick={handleRemoveMedia} disabled={removing}>
+            {removing ? 'מסיר...' : '🗑 הסר מדיה'}
+          </button>
         )}
         <input
           type="file"
