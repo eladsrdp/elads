@@ -17,6 +17,10 @@ const MEDIA_TYPE_ICON: Record<string, string> = {
 
 const HEADER_ROW_HEIGHT = 34
 const DEFAULT_COL_WIDTHS = { time: 70, media: 44, actions: 108 }
+// עמודות היום עצמו (מס"ד/שבוע/יום-בשבוע/כותרת) — מחושבות ונעולות מתוך מספר היום
+// (יום 1 הוא תמיד ראשון, ראו program-day.ts), לא ניתנות לעריכה נפרדת מכוונת.
+const DAY_COLS_GRID = '70px 70px 90px 1fr'
+const MONTH_OF_DAYS = 30
 
 type ResizableColumn = keyof typeof DEFAULT_COL_WIDTHS
 
@@ -114,6 +118,22 @@ export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
     }
   }
 
+  async function handleAddMonth() {
+    const nextDay = Math.max(0, ...groups.map((g) => g.dayNumber)) + 1
+    if (!window.confirm(`להוסיף ${MONTH_OF_DAYS} ימים ריקים, מיום ${nextDay} עד יום ${nextDay + MONTH_OF_DAYS - 1}?`)) return
+    const dayNumbers = Array.from({ length: MONTH_OF_DAYS }, (_, i) => nextDay + i)
+    try {
+      const created = await dataSource.createContentDays(dayNumbers)
+      setGroups((prev) =>
+        [...prev, ...created.map((d) => ({ dayNumber: d.day_number, title: d.title, messages: [] }))].sort(
+          (a, b) => a.dayNumber - b.dayNumber,
+        ),
+      )
+    } catch (err) {
+      window.alert(`הוספת הימים נכשלה: ${err instanceof Error ? err.message : String(err)}`)
+    }
+  }
+
   function handleAddToDayPrompt() {
     const input = window.prompt('להוסיף הודעה חדשה — לאיזה יום בתוכנית?')
     if (!input) return
@@ -169,6 +189,30 @@ export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
           top: 0,
           zIndex: 2,
           display: 'grid',
+          gridTemplateColumns: DAY_COLS_GRID,
+          gap: 8,
+          height: HEADER_ROW_HEIGHT,
+          alignItems: 'center',
+          padding: '0 8px',
+          background: BRAND.white,
+          borderBottom: `1px solid ${BRAND.border}`,
+          fontSize: 12,
+          fontWeight: 600,
+          color: BRAND.greenMuted,
+        }}
+      >
+        <span>מס&quot;ד</span>
+        <span>שבוע</span>
+        <span>יום בשבוע</span>
+        <span>כותרת</span>
+      </div>
+
+      <div
+        style={{
+          position: 'sticky',
+          top: HEADER_ROW_HEIGHT,
+          zIndex: 2,
+          display: 'grid',
           gridTemplateColumns: rowGridColumns,
           gap: 8,
           height: HEADER_ROW_HEIGHT,
@@ -198,7 +242,10 @@ export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
           <div
             style={{
               position: 'sticky',
-              top: HEADER_ROW_HEIGHT,
+              top: HEADER_ROW_HEIGHT * 2,
+              display: 'grid',
+              gridTemplateColumns: DAY_COLS_GRID,
+              gap: 8,
               background: BRAND.paper,
               color: BRAND.greenDark,
               fontWeight: 600,
@@ -207,8 +254,10 @@ export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
               zIndex: 1,
             }}
           >
-            שבוע {calculateWeekNumber(group.dayNumber)} — יום {calculateWeekdayName(group.dayNumber)} — יום {group.dayNumber}{' '}
-            {group.title ? `— ${group.title}` : ''}
+            <span>{group.dayNumber}</span>
+            <span>{calculateWeekNumber(group.dayNumber)}</span>
+            <span>{calculateWeekdayName(group.dayNumber)}</span>
+            <span>{group.title ?? '—'}</span>
           </div>
           {group.messages.map((message) => (
             <div
@@ -282,6 +331,27 @@ export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
           ))}
         </div>
       ))}
+
+      <button
+        style={{
+          ...buttonSecondaryStyle,
+          position: 'fixed',
+          bottom: 152,
+          left: 24,
+          borderRadius: '50%',
+          width: 52,
+          height: 52,
+          fontSize: 14,
+          fontWeight: 700,
+          background: BRAND.white,
+          boxShadow: '0 2px 10px rgba(47, 95, 71, 0.25)',
+          zIndex: 3,
+        }}
+        title={`הוסף עוד ${MONTH_OF_DAYS} ימים ריקים`}
+        onClick={handleAddMonth}
+      >
+        📅+{MONTH_OF_DAYS}
+      </button>
 
       <button
         style={{

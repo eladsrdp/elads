@@ -24,6 +24,7 @@ export interface ContentDataSource {
   listAllMessages(): Promise<MessageRecord[]>
   ensureContentDay(dayNumber: number): Promise<void>
   createContentDay(dayNumber: number, title: string | null): Promise<ContentDayRecord>
+  createContentDays(dayNumbers: number[]): Promise<ContentDayRecord[]>
   createMessage(input: { contentDayNumber: number; sendOffsetTime: string; orderInDay: number }): Promise<MessageRecord>
   updateMessageBody(id: string, bodyText: string): Promise<void>
   updateMessageTime(id: string, sendOffsetTime: string): Promise<void>
@@ -67,6 +68,18 @@ export function createSupabaseContentDataSource(supabase: SupabaseClient): Conte
         .single()
       if (error) throw error
       return data as ContentDayRecord
+    },
+
+    // insert בודד לכל השורות (bulk) — יוצר ימים ריקים (בלי כותרת/הודעה) בבת אחת,
+    // ל"הוסף עוד חודש" בממשק. נכשל כולו אם אחד ממספרי הימים כבר קיים (unique constraint) —
+    // עקבי עם createContentDay הבודד, לא בולע כפילויות בשקט.
+    async createContentDays(dayNumbers) {
+      const { data, error } = await supabase
+        .from('content_days')
+        .insert(dayNumbers.map((dayNumber) => ({ day_number: dayNumber, title: null })))
+        .select('day_number, title')
+      if (error) throw error
+      return data as ContentDayRecord[]
     },
 
     async createMessage(input) {
