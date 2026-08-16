@@ -1,6 +1,7 @@
 // שכבת גישה ל-Supabase למסך ניהול התוכן — thin adapter, לא נבדק ישירות (כמו mentor-data-source.ts).
 // הלוגיקה שכן שווה בדיקה נמצאת ב-content-view.ts.
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { extensionForMimeType } from './content-view'
 
 export type MediaType = 'image' | 'video' | 'audio' | 'document'
 
@@ -134,7 +135,9 @@ export function createSupabaseContentDataSource(supabase: SupabaseClient): Conte
     },
 
     async uploadMedia(file, contentDayNumber) {
-      const path = `content-day-${contentDayNumber}/${crypto.randomUUID()}-${file.name}`
+      // SECURITY: שם קובץ רנדומלי, לא שם-הקובץ-שהמשתמש-נתן — גם מונע "Invalid key" מ-Supabase
+      // Storage כששם הקובץ המקורי מכיל עברית/רווחים, וגם עוקף PII/תוכן זדוני אפשריים בשם הקובץ.
+      const path = `content-day-${contentDayNumber}/${crypto.randomUUID()}.${extensionForMimeType(file.type)}`
       const { error } = await supabase.storage.from('media').upload(path, file)
       if (error) throw error
       const { data } = supabase.storage.from('media').getPublicUrl(path)

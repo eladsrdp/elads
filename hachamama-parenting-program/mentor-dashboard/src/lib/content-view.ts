@@ -43,6 +43,28 @@ const MIME_TO_MEDIA_TYPE: Record<string, MediaType> = {
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'document',
 }
 
+// סיומת גזורה מה-MIME המאומת, לא משם הקובץ המקורי — ראו uploadMedia ב-content-data-source.ts:
+// שם קובץ שהמשתמש נתן יכול להכיל עברית/רווחים/תווים שנדחים כ-"Invalid key" ע"י Supabase Storage,
+// ומטעמי אבטחה עדיף גם ככה שם רנדומלי במקום שם-קובץ-של-משתמש בנתיב האחסון.
+const MIME_TO_EXTENSION: Record<string, string> = {
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/gif': 'gif',
+  'image/webp': 'webp',
+  'video/mp4': 'mp4',
+  'video/quicktime': 'mov',
+  'audio/mpeg': 'mp3',
+  'audio/wav': 'wav',
+  'audio/ogg': 'ogg',
+  'application/pdf': 'pdf',
+  'application/msword': 'doc',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+}
+
+export function extensionForMimeType(mimeType: string): string {
+  return MIME_TO_EXTENSION[mimeType] ?? 'bin'
+}
+
 export type MediaValidationResult = { ok: true; mediaType: MediaType } | { ok: false; error: string }
 
 export function validateMediaFile(file: { name: string; size: number; type: string }): MediaValidationResult {
