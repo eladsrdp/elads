@@ -1,7 +1,7 @@
 // hachamama-parenting-program/mentor-dashboard/src/app/content/content-grid.tsx
 'use client'
 
-import { useRef, useState } from 'react'
+import { useRef, useState, type CSSProperties } from 'react'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import { createSupabaseContentDataSource } from '@/lib/content-data-source'
 import { calculateWeekdayName, calculateWeekNumber } from '@/lib/program-day'
@@ -21,6 +21,12 @@ const DEFAULT_COL_WIDTHS = { time: 70, media: 44, actions: 108 }
 // (יום 1 הוא תמיד ראשון, ראו program-day.ts), לא ניתנות לעריכה נפרדת מכוונת.
 const DAY_COLS_GRID = '70px 70px 90px 1fr'
 const MONTH_OF_DAYS = 30
+
+// קו מפריד עדין בין עמודות — מיושם על כל עמודה חוץ מהאחרונה בכל שורה/כותרת, כדי ששתי
+// הרשתות השונות (מידע-יום מול הודעות) ייראו כל אחת כטבלה אחידה בפני עצמה, במקום טקסט צף.
+function colDividerStyle(isLast: boolean): CSSProperties {
+  return isLast ? {} : { borderInlineEnd: `1px solid ${BRAND.border}`, paddingInlineEnd: 8 }
+}
 
 type ResizableColumn = keyof typeof DEFAULT_COL_WIDTHS
 
@@ -194,17 +200,17 @@ export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
           height: HEADER_ROW_HEIGHT,
           alignItems: 'center',
           padding: '0 8px',
-          background: BRAND.white,
+          background: BRAND.paper,
           borderBottom: `1px solid ${BRAND.border}`,
           fontSize: 12,
           fontWeight: 600,
           color: BRAND.greenMuted,
         }}
       >
-        <span>מס&quot;ד</span>
-        <span>שבוע</span>
-        <span>יום בשבוע</span>
-        <span>כותרת</span>
+        <span style={colDividerStyle(false)}>מס&quot;ד</span>
+        <span style={colDividerStyle(false)}>שבוע</span>
+        <span style={colDividerStyle(false)}>יום בשבוע</span>
+        <span style={colDividerStyle(true)}>כותרת</span>
       </div>
 
       <div
@@ -219,22 +225,23 @@ export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
           alignItems: 'center',
           padding: '0 8px',
           background: BRAND.white,
+          borderTop: `1px solid ${BRAND.border}`,
           borderBottom: `2px solid ${BRAND.greenDark}`,
           fontSize: 12,
           fontWeight: 600,
           color: BRAND.greenMuted,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+        <div style={{ display: 'flex', alignItems: 'center', height: '100%', ...colDividerStyle(false) }}>
           שעה
           <ResizeHandle onMouseDown={(e) => startResize('time', e)} />
         </div>
-        <span>תוכן</span>
-        <div style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+        <span style={colDividerStyle(false)}>תוכן</span>
+        <div style={{ display: 'flex', alignItems: 'center', height: '100%', ...colDividerStyle(false) }}>
           מדיה
           <ResizeHandle onMouseDown={(e) => startResize('media', e)} />
         </div>
-        <span>פעולות</span>
+        <span style={colDividerStyle(true)}>פעולות</span>
       </div>
 
       {groups.map((group) => (
@@ -254,10 +261,10 @@ export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
               zIndex: 1,
             }}
           >
-            <span>{group.dayNumber}</span>
-            <span>{calculateWeekNumber(group.dayNumber)}</span>
-            <span>{calculateWeekdayName(group.dayNumber)}</span>
-            <span>{group.title ?? '—'}</span>
+            <span style={colDividerStyle(false)}>{group.dayNumber}</span>
+            <span style={colDividerStyle(false)}>{calculateWeekNumber(group.dayNumber)}</span>
+            <span style={colDividerStyle(false)}>{calculateWeekdayName(group.dayNumber)}</span>
+            <span style={colDividerStyle(true)}>{group.title ?? '—'}</span>
           </div>
           {group.messages.map((message) => (
             <div
@@ -271,51 +278,57 @@ export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
                 borderBottom: `1px solid ${BRAND.border}`,
               }}
             >
-              {editingTimeMessageId === message.id ? (
-                <input
-                  type="time"
-                  autoFocus
-                  defaultValue={message.send_offset_time}
-                  onBlur={(e) => handleTimeSave(message.id, group.dayNumber, e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
-                  }}
-                />
-              ) : (
-                <span onClick={() => setEditingTimeMessageId(message.id)} style={{ cursor: 'text' }}>
-                  {message.send_offset_time}
-                </span>
-              )}
-              {editingMessageId === message.id ? (
-                <input
-                  autoFocus
-                  defaultValue={message.body_text}
-                  onBlur={(e) => handleBodySave(message.id, group.dayNumber, e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
-                  }}
-                  style={{ width: '100%', boxSizing: 'border-box' }}
-                />
-              ) : (
-                <span onClick={() => setEditingMessageId(message.id)} style={{ cursor: 'text' }}>
-                  {message.body_text || '(ריק)'}
-                </span>
-              )}
-              {message.media_url && message.media_type === 'image' ? (
-                <a href={message.media_url} target="_blank" rel="noreferrer">
-                  <img
-                    src={message.media_url}
-                    alt="תצוגה מקדימה"
-                    style={{ width: 32, height: 32, objectFit: 'cover', borderRadius: 4, display: 'block' }}
+              <div style={colDividerStyle(false)}>
+                {editingTimeMessageId === message.id ? (
+                  <input
+                    type="time"
+                    autoFocus
+                    defaultValue={message.send_offset_time}
+                    onBlur={(e) => handleTimeSave(message.id, group.dayNumber, e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+                    }}
                   />
-                </a>
-              ) : message.media_url ? (
-                <a href={message.media_url} target="_blank" rel="noreferrer" title={message.media_type ?? undefined}>
-                  {MEDIA_TYPE_ICON[message.media_type ?? ''] ?? '📎'}
-                </a>
-              ) : (
-                <span>-</span>
-              )}
+                ) : (
+                  <span onClick={() => setEditingTimeMessageId(message.id)} style={{ cursor: 'text' }}>
+                    {message.send_offset_time}
+                  </span>
+                )}
+              </div>
+              <div style={colDividerStyle(false)}>
+                {editingMessageId === message.id ? (
+                  <input
+                    autoFocus
+                    defaultValue={message.body_text}
+                    onBlur={(e) => handleBodySave(message.id, group.dayNumber, e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+                    }}
+                    style={{ width: '100%', boxSizing: 'border-box' }}
+                  />
+                ) : (
+                  <span onClick={() => setEditingMessageId(message.id)} style={{ cursor: 'text' }}>
+                    {message.body_text || '(ריק)'}
+                  </span>
+                )}
+              </div>
+              <div style={colDividerStyle(false)}>
+                {message.media_url && message.media_type === 'image' ? (
+                  <a href={message.media_url} target="_blank" rel="noreferrer">
+                    <img
+                      src={message.media_url}
+                      alt="תצוגה מקדימה"
+                      style={{ width: 32, height: 32, objectFit: 'cover', borderRadius: 4, display: 'block' }}
+                    />
+                  </a>
+                ) : message.media_url ? (
+                  <a href={message.media_url} target="_blank" rel="noreferrer" title={message.media_type ?? undefined}>
+                    {MEDIA_TYPE_ICON[message.media_type ?? ''] ?? '📎'}
+                  </a>
+                ) : (
+                  <span>-</span>
+                )}
+              </div>
               <span>
                 <button style={buttonSecondaryStyle} title="הוסף הודעה אחרי זו" onClick={() => handleInsertMessage(group.dayNumber, message.id)}>
                   +
