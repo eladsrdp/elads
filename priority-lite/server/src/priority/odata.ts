@@ -1,6 +1,6 @@
 // Adapter אמיתי מול Priority REST API (OData v4).
 // מבנה הנתונים מופה מתוך $metadata ודיווחים אמיתיים — ראו mapping.ts.
-import type { CustNote, TaskSummary } from '@priority-lite/shared'
+import type { CustNote, TaskSummary, UpdateCustNoteInput } from '@priority-lite/shared'
 import type { NewTimeEntry, PriorityAdapter } from './adapter'
 import { assertMappingComplete, priorityMapping as m } from './mapping'
 
@@ -120,6 +120,56 @@ export function createODataAdapter(cfg: ODataConfig): PriorityAdapter {
       projectName: String(row[f.projectName] ?? ''),
       status: row[f.status] != null ? String(row[f.status]) : undefined,
     }
+  }
+
+  function rowToCustNote(row: Row): CustNote {
+    const cf = m.custNoteFields
+    return {
+      id: Number(row[cf.id] ?? 0),
+      subject: String(row[cf.subject] ?? ''),
+      custName: String(row[cf.custName] ?? ''),
+      custDes: String(row[cf.custDes] ?? ''),
+      statDes: row[cf.statDes] != null ? String(row[cf.statDes]) : undefined,
+      tillDate: row[cf.tillDate] != null ? String(row[cf.tillDate]).slice(0, 10) : undefined,
+      projDocNo: row[cf.projDocNo] != null ? String(row[cf.projDocNo]).trim() || undefined : undefined,
+      hoursReported: row[cf.hours] != null ? Number(row[cf.hours]) : undefined,
+      priority: row[cf.priority] != null ? Number(row[cf.priority]) : undefined,
+      handlerEmpId: row[cf.handler] != null ? String(row[cf.handler]) : undefined,
+    }
+  }
+
+  async function fetchCustNoteDetail(id: number): Promise<CustNote | null> {
+    const cf = m.custNoteFields
+    const select = [cf.id, cf.subject, cf.custName, cf.custDes, cf.statDes, cf.tillDate, cf.projDocNo, cf.hours, cf.priority, cf.owner, cf.handler].join(',')
+    const data = await request<{ value: Row[] }>(
+      `${m.entities.custNotes}?$select=${select}&$filter=${cf.id} eq ${id}&$top=1`,
+    )
+    const row = data.value[0]
+    if (!row) return null
+    const base = rowToCustNote(row)
+    base.ownerName = row[cf.owner] != null ? String(row[cf.owner]) : undefined
+
+    const textData = await request<{ value: Row[] }>(
+      `${m.entities.custNotes}(CUSTNOTE=${id})/${m.custNoteTextSubform}?$select=${m.custNoteTextFields.text}`,
+    ).catch(() => ({ value: [] as Row[] }))
+    const textRow = textData.value[0]
+    base.description = textRow?.[m.custNoteTextFields.text] != null
+      ? String(textRow[m.custNoteTextFields.text])
+      : undefined
+
+    const logData = await request<{ value: Row[] }>(
+      `${m.entities.custNotes}(CUSTNOTE=${id})/${m.custNoteLogSubform}` +
+        `?$select=${m.custNoteLogFields.date},${m.custNoteLogFields.status},${m.custNoteLogFields.handler},${m.custNoteLogFields.initiator}` +
+        `&$orderby=${m.custNoteLogFields.date} desc`,
+    ).catch(() => ({ value: [] as Row[] }))
+    base.history = logData.value.map((r) => ({
+      date: String(r[m.custNoteLogFields.date] ?? '').slice(0, 10),
+      status: String(r[m.custNoteLogFields.status] ?? ''),
+      handlerName: r[m.custNoteLogFields.handler] != null ? String(r[m.custNoteLogFields.handler]) : undefined,
+      initiatorName: r[m.custNoteLogFields.initiator] != null ? String(r[m.custNoteLogFields.initiator]) : undefined,
+    }))
+
+    return base
   }
 
   /**
@@ -265,6 +315,59 @@ export function createODataAdapter(cfg: ODataConfig): PriorityAdapter {
         statDes: row[cf.statDes] != null ? String(row[cf.statDes]) : undefined,
         projDocNo: input.projDocNo,
       }
+    },
+
+    async searchCustNotes(query, opts, limitN = 50) {
+      const cf = m.custNoteFields
+      const select = [cf.id, cf.subject, cf.custName, cf.custDes, cf.statDes, cf.tillDate, cf.projDocNo, cf.hours, cf.priority, cf.handler].join(',')
+      const filters = [`${cf.closed} eq 'N'`]
+      if (opts.handlerEmpId) filters.push(`${cf.handler} eq '${escapeOData(opts.handlerEmpId)}'`)
+      if (opts.status && opts.status.length > 0) {
+        filters.push('(' + opts.status.map((s) => `${cf.statDes} eq '${escapeOData(s)}'`).join(' or ') + ')')
+      }
+      // OData לא תומך ב-contains() — טוענים עד 500 עם הפילטרים המבניים, ומסננים טקסט חופשי אצלנו
+      // (אותו דפוס כמו fetchAllTasks למעלה).
+      const data = await request<{ value: Row[] }>(
+        `${m.entities.custNotes}?$select=${select}&$filter=${encodeURI(filters.join(' and '))}&$orderby=${cf.id} desc&$top=500`,
+      )
+      const needle = query.trim()
+      const rows = needle
+        ? data.value.filter(
+            (row) => String(row[cf.subject] ?? '').includes(needle) || String(row[cf.custDes] ?? '').includes(needle),
+          )
+        : data.value
+      return rows.slice(0, limitN).map(rowToCustNote)
+    },
+
+    async getCustNoteDetail(id) {
+      return fetchCustNoteDetail(id)
+    },
+
+    async updateCustNote(id, changes: UpdateCustNoteInput) {
+      const cf = m.custNoteFields
+      const body: Row = {}
+      if (changes.status) body[cf.statDes] = changes.status
+      if (changes.priority != null) body[cf.priority] = changes.priority
+      if (changes.tillDate) body[cf.tillDate] = changes.tillDate
+      if (changes.handlerEmpId) body[cf.handler] = changes.handlerEmpId
+
+      if (Object.keys(body).length > 0) {
+        await request<Row>(`${m.entities.custNotes}(CUSTNOTE=${id})`, {
+          method: 'PATCH',
+          body: JSON.stringify(body),
+        })
+      }
+
+      if (changes.description) {
+        await request<Row>(`${m.entities.custNotes}(CUSTNOTE=${id})/${m.custNoteTextSubform}`, {
+          method: 'POST',
+          body: JSON.stringify({ [m.custNoteTextFields.text]: changes.description }),
+        })
+      }
+
+      const updated = await fetchCustNoteDetail(id)
+      if (!updated) throw new Error('משימה לא נמצאה לאחר עדכון')
+      return updated
     },
 
     async getTimeEntries(priorityEmpId, from, to) {
