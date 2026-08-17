@@ -23,6 +23,7 @@ export function NewCustNoteModal({ open, onClose, onCreated }: Props) {
 
   const reset = () => {
     setTask(null)
+    setPickerOpen(false)
     setSubject('')
     setTillDate('')
     setError('')
