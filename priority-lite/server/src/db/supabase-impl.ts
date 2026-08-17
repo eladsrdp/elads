@@ -24,6 +24,16 @@ export function createSupabaseDb(url: string, serviceKey: string): AppDB {
       if (error) throw new Error(`ping failed: ${error.message}`)
     },
 
+    async listActiveEmployees() {
+      const { data, error } = await client
+        .from('employees')
+        .select('phone, email, priority_emp_id, name, active, totp_secret')
+        .eq('active', true)
+        .order('name')
+      if (error) throw new Error(`listActiveEmployees failed: ${error.message}`)
+      return (data as EmployeeRow[]) ?? []
+    },
+
     async findEmployee(phone) {
       const { data } = await client
         .from('employees')
