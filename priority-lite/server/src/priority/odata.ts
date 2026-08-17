@@ -359,6 +359,9 @@ export function createODataAdapter(cfg: ODataConfig): PriorityAdapter {
       }
 
       if (changes.description) {
+        // WARNING: לא אומת חי אם ה-POST הזה מוסיף רשומה חדשה או דורס את התיאור הקיים
+        // (ראה Task 1 בתוכנית המימוש — פריוריטי הפכה ללא-יציבה באמצע האימות). אם מתברר
+        // שזו דריסה, זה עלול למחוק תיאורים קודמים בשקט — יש לאמת לפני חשיפה רחבה למשתמשים.
         await request<Row>(`${m.entities.custNotes}(CUSTNOTE=${id})/${m.custNoteTextSubform}`, {
           method: 'POST',
           body: JSON.stringify({ [m.custNoteTextFields.text]: changes.description }),
