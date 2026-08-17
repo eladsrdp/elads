@@ -65,10 +65,24 @@ export const priorityMapping = {
     statDes: 'STATDES',    // סטטוס
     closed: 'CLOSED',      // "Y" = סגורה, "N" = פתוחה
     tillDate: 'TILLDATE',  // תאריך יעד
-    userLogin: 'USERLOGIN', // בעל המשימה
+    userLogin: 'USERLOGIN', // בעל המשימה (יוצר) — נשלח רק ביצירה
     projDocNo: 'PROJDOCNO', // מזהה הפרויקט המקושר
     hours: 'ZRDP_HOURS',   // שעות שדווחו
+    priority: 'PRIO',      // עדיפות (0-99)
+    owner: 'ZRDP_TASKOWNER', // "אחראי משימה" — לצפייה בלבד
+    // "לטיפול" — מאושר בסקריפט הגילוי (Task 1, 2026-08-17): הודעת שגיאה של פריוריטי
+    // עצמה קראה לעמודה הזו "לטיפול". הערך חייב להיות login עובד אמיתי (למשל 'elads'),
+    // לא משתמש ה-API של האינטגרציה.
+    handler: 'USERLOGIN',
   },
+  // תת-טופס תיאור מורחב ("תקציר המשימה") — ContainsTarget יחיד, שדה TEXT.
+  // השם אומת חי ב-Task 1 (2026-08-17): CUSTNOTESTEXT_ONE_SUBFORM שגוי (property not found),
+  // השם הנכון על CUSTNOTESA הוא CUSTNOTESTEXT_SUBFORM (מצביע ל-CUSTNOTESTEXT).
+  custNoteTextSubform: 'CUSTNOTESTEXT_SUBFORM',
+  custNoteTextFields: { text: 'TEXT' },
+  /** תת-טופס לוג הסטטוסים ("לוג סטטוסים") — כל השדות read-only בפריוריטי. */
+  custNoteLogSubform: 'DOCTODOLISTLOG_SUBFORM',
+  custNoteLogFields: { date: 'UDATE', status: 'STATDES', handler: 'OWNERLOGIN', initiator: 'INITIATORLOGIN' },
   /** TQUANT הוא שעות עשרוניות (1.75 = שעה ושלושת-רבעי) */
   hoursAsDecimal: true,
   /** PDES מוגבל ל-60 תווים בפריוריטי */
