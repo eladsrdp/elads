@@ -16,4 +16,14 @@ describe('listActiveEmployees', () => {
     const db = createLocalDb('__nonexistent__')
     expect(await db.listActiveEmployees()).toEqual([])
   })
+
+  it('ממוין לפי שם — עקבי עם supabase-impl', async () => {
+    const db = createLocalDb('__nonexistent__')
+    await db.upsertEmployee({ phone: '0501111111', email: 'c@test.co', priorityEmpId: '3', name: 'רועי' })
+    await db.upsertEmployee({ phone: '0502222222', email: 'a@test.co', priorityEmpId: '1', name: 'אלעד' })
+    await db.upsertEmployee({ phone: '0503333333', email: 'b@test.co', priorityEmpId: '2', name: 'בני' })
+
+    const employees = await db.listActiveEmployees()
+    expect(employees.map((e) => e.name)).toEqual(['אלעד', 'בני', 'רועי'])
+  })
 })

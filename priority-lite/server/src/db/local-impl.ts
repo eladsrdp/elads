@@ -40,7 +40,7 @@ export function createLocalDb(whitelistPath = './whitelist.json'): AppDB {
     },
 
     async listActiveEmployees() {
-      return [...employees.values()].filter((e) => e.active)
+      return [...employees.values()].filter((e) => e.active).sort((a, b) => a.name.localeCompare(b.name))
     },
 
     async findEmployee(phone) {
