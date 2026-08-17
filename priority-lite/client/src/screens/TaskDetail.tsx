@@ -29,8 +29,12 @@ export function TaskDetail({ id, onBack }: Props) {
       .finally(() => setLoading(false))
   }, [id])
 
-  const applyChange = async (changes: UpdateCustNoteInput) => {
-    if (!note) return
+  // מחזיר true/false (הצלחה) כדי שקוראים (כמו saveDescription) יוכלו להגיב בהתאם —
+  // לא רק זורק, כי applyChange כבר "בולע" את השגיאה ומציג אותה ב-UI בעצמו.
+  // saving גודר את כל הפקדים המשנים (סטטוס/עדיפות/תאריך/לטיפול) כדי שלא יתאפשרו
+  // שתי קריאות applyChange חופפות על אותה משימה (שהייתה עלולה לגרום לאחת "לדרוס" את השנייה).
+  const applyChange = async (changes: UpdateCustNoteInput): Promise<boolean> => {
+    if (!note || saving) return false
     const previous = note
     setNote({ ...note, ...changes, statDes: changes.status ?? note.statDes })
     setSaving(true)
@@ -38,9 +42,11 @@ export function TaskDetail({ id, onBack }: Props) {
     try {
       const updated = await updateCustNote(id, changes)
       setNote(updated)
+      return true
     } catch (err) {
       setNote(previous)
       setError(err instanceof Error ? err.message : 'שגיאה בעדכון — נסה שוב')
+      return false
     } finally {
       setSaving(false)
     }
@@ -48,8 +54,9 @@ export function TaskDetail({ id, onBack }: Props) {
 
   const saveDescription = async () => {
     if (!descriptionText.trim()) return
-    await applyChange({ description: descriptionText.trim() })
-    setDescriptionText('')
+    const ok = await applyChange({ description: descriptionText.trim() })
+    // מנקים את הטיוטה רק אם השמירה הצליחה — אחרת המשתמש מאבד את מה שהקליד בכשל רשת.
+    if (ok) setDescriptionText('')
   }
 
   if (loading) return <p className="py-6 text-center text-slate-500">טוען…</p>
@@ -95,26 +102,30 @@ export function TaskDetail({ id, onBack }: Props) {
         <div className="space-y-1">
           <p className="text-xs text-slate-500">עדיפות (0-99)</p>
           <input
+            key={`priority-${note.priority ?? ''}`}
             type="number"
             min={0}
             max={99}
+            disabled={saving}
             defaultValue={note.priority ?? ''}
             onBlur={(e) => {
               const v = e.target.value ? Number(e.target.value) : undefined
               if (v != null && v >= 0 && v <= 99) applyChange({ priority: v })
             }}
-            className="w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100"
+            className="w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100 disabled:opacity-50"
           />
         </div>
         <div className="space-y-1">
           <p className="text-xs text-slate-500">תאריך יעד</p>
           <input
+            key={`tilldate-${note.tillDate ?? ''}`}
             type="date"
+            disabled={saving}
             defaultValue={note.tillDate ?? ''}
             onBlur={(e) => {
               if (e.target.value) applyChange({ tillDate: e.target.value })
             }}
-            className="w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100"
+            className="w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100 disabled:opacity-50"
           />
         </div>
       </div>
@@ -128,7 +139,8 @@ export function TaskDetail({ id, onBack }: Props) {
         <p className="text-xs text-slate-500">לטיפול</p>
         <button
           onClick={() => setPickerOpen(true)}
-          className="w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-right text-slate-100"
+          disabled={saving}
+          className="w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-right text-slate-100 disabled:opacity-50"
         >
           {note.handlerName ?? note.handlerEmpId ?? 'בחר איש צוות…'}
         </button>
