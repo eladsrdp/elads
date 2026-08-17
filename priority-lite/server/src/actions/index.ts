@@ -137,6 +137,7 @@ export const searchCustNotesSchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(50),
 })
 
+/** חיפוש משימות לקוח — "mine" ממופה ל-handlerEmpId (הסינון בפועל הוא לפי "לטיפול"). */
 export async function searchCustNotes(
   adapter: PriorityAdapter,
   me: Me,
@@ -161,6 +162,7 @@ export const updateCustNoteSchema = z.object({
   description: z.string().min(1).max(2000).optional(),
 })
 
+/** עדכון משימה — שולח רק את השדות שהוגדרו ב-input. */
 export async function updateCustNote(
   adapter: PriorityAdapter,
   _me: Me,
@@ -170,7 +172,10 @@ export async function updateCustNote(
   return adapter.updateCustNote(id, input)
 }
 
-/** רשימת עובדי priority-lite לבורר "לטיפול". SECURITY: לא חושף טלפון/totp_secret. */
+/**
+ * רשימת עובדי priority-lite לבורר "לטיפול". SECURITY: לא חושף טלפון/totp_secret.
+ * לוקח `db` ולא `adapter` — בכוונה: אין כאן תלות בפריוריטי, רק ב-AppDB המקומי.
+ */
 export async function listEmployees(db: AppDB, _me: Me) {
   const rows = await db.listActiveEmployees()
   return rows.map((r) => ({ priorityEmpId: r.priority_emp_id, name: r.name }))
