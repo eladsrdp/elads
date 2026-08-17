@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { BottomNav, type Tab } from './components/BottomNav'
 import { RdpLogo } from './components/RdpLogo'
 import { usePendingEntries } from './state/useEntries'
@@ -24,6 +24,14 @@ export default function App() {
   const [tab, setTab] = useState<Tab>('today')
   const pending = usePendingEntries()
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null)
+
+  // SECURITY: מאפסים ניווט פנימי (טאב + משימה נבחרת) בכל שינוי זהות משתמש —
+  // כולל logout (me הופך ל-null) — כדי שלא יישאר בזיכרון state של משתמש קודם
+  // (למשל taskId שנצפה) אם מישהו אחר יתחבר על אותו דפדפן בלי רענון עמוד.
+  useEffect(() => {
+    setTab('today')
+    setSelectedTaskId(null)
+  }, [me?.phone])
 
   if (loading) {
     return <div className="flex h-full items-center justify-center text-slate-500">טוען…</div>
