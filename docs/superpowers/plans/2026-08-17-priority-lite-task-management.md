@@ -253,11 +253,14 @@ export interface CustNote {
 
 - [ ] **Step 2: טייפצ'ק**
 
+**תיקון (2026-08-17):** ל-`shared/` אין `tsconfig.json` משלו — הוא מייצא TS גולמי (`exports: {".": "./src/types.ts"}`), ונבדק כחלק מהקומפילציה של `server`/`client` שצורכים אותו. `npx tsc -p shared --noEmit` נכשל תמיד (`TS5057`, אין tsconfig). הבדיקה הנכונה:
+
 ```bash
 cd priority-lite
-npx tsc -p shared --noEmit
+npx tsc -p server --noEmit
+npx tsc -p client --noEmit
 ```
-צפוי: ללא שגיאות.
+צפוי: ללא שגיאות בשני הפרויקטים.
 
 - [ ] **Step 3: Commit**
 
@@ -1942,9 +1945,10 @@ git commit -m "feat(priority-lite): wire Tasks tab into navigation"
 
 - [ ] **Step 1: טייפצ'ק מלא**
 
+(`shared/` אין לו `tsconfig.json` משלו — נבדק דרך server/client שצורכים אותו, ראו הערה ב-Task 2)
+
 ```bash
 cd priority-lite
-npx tsc -p shared --noEmit
 npx tsc -p server --noEmit
 npx tsc -p client --noEmit
 ```
