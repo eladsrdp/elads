@@ -1,6 +1,6 @@
 // Adapter מדומה — מאפשר פיתוח ובדיקות מלאות לפני חיבור לפריוריטי אמיתי.
 // מדמה latency של רשת וכשלים אקראיים (MOCK_FAIL_RATE) לבדיקת UI של שגיאות.
-import type { CustNote, RemoteTimeEntry, TaskDetail } from '@priority-lite/shared'
+import type { CustNote, RemoteTimeEntry, TaskDetail, TaskStatus } from '@priority-lite/shared'
 import type { NewTimeEntry, PriorityAdapter } from './adapter'
 
 const PROJECTS = [
@@ -55,10 +55,12 @@ const TASKS: TaskDetail[] = [
 ]
 
 const MOCK_CUSTNOTES: CustNote[] = [
-  { id: 5001, subject: 'הטמעה ראשונית — הגדרת סביבה', custName: 'P-100', custDes: 'לקוח אלפא', statDes: 'לפיתוח', tillDate: '2026-07-31', projDocNo: 'P-100', hoursReported: 4 },
-  { id: 5002, subject: 'בדיקות קבלה שלב א׳', custName: 'P-100', custDes: 'לקוח אלפא', statDes: 'טיוטא', projDocNo: 'P-100', hoursReported: 0 },
-  { id: 5003, subject: 'ממשק WMS — תיקון דילוגי שורות', custName: 'P-200', custDes: 'שדרוג לוגיסטיקה', statDes: 'לפיתוח', tillDate: '2026-06-30', projDocNo: 'P-200', hoursReported: 2 },
-  { id: 5004, subject: 'הדרכת צוות כספים', custName: 'P-500', custDes: 'הדרכות', statDes: 'ממתינה לאישור', projDocNo: 'P-500', hoursReported: 0 },
+  { id: 5001, subject: 'הטמעה ראשונית — הגדרת סביבה', custName: 'P-100', custDes: 'לקוח אלפא', statDes: 'לפיתוח', tillDate: '2026-07-31', projDocNo: 'P-100', hoursReported: 4, priority: 50, handlerEmpId: '42' },
+  { id: 5002, subject: 'בדיקות קבלה שלב א׳', custName: 'P-100', custDes: 'לקוח אלפא', statDes: 'טיוטא', projDocNo: 'P-100', hoursReported: 0, priority: 10, handlerEmpId: '99' },
+  { id: 5003, subject: 'ממשק WMS — תיקון דילוגי שורות', custName: 'P-200', custDes: 'שדרוג לוגיסטיקה', statDes: 'לפיתוח', tillDate: '2026-06-30', projDocNo: 'P-200', hoursReported: 2, priority: 70, handlerEmpId: '42' },
+  { id: 5004, subject: 'הדרכת צוות כספים', custName: 'P-500', custDes: 'הדרכות', statDes: 'ממתינה לאישור', projDocNo: 'P-500', hoursReported: 0, priority: 20, handlerEmpId: '99' },
+  { id: 5005, subject: 'עיצוב מסך ניהול ספקים', custName: 'P-300', custDes: 'פורטל ספקים', statDes: 'במעקב', projDocNo: 'P-300', hoursReported: 6, priority: 40, handlerEmpId: '42' },
+  { id: 5006, subject: 'תיקון תקלת גיבוי לילי', custName: 'P-400', custDes: 'תחזוקה שוטפת', statDes: 'בוצעה', projDocNo: 'P-400', hoursReported: 3, priority: 5, handlerEmpId: '99' },
 ]
 
 export function createMockAdapter(opts: { failRate?: number } = {}): PriorityAdapter {
@@ -164,6 +166,49 @@ export function createMockAdapter(opts: { failRate?: number } = {}): PriorityAda
       }
       custNotes.push(created)
       return created
+    },
+
+    async searchCustNotes(query, opts, limitN = 50) {
+      await simulate('חיפוש משימות')
+      let rows = [...custNotes]
+      if (opts.handlerEmpId) rows = rows.filter((n) => n.handlerEmpId === opts.handlerEmpId)
+      if (opts.status && opts.status.length > 0) {
+        const statuses = opts.status
+        rows = rows.filter((n) => n.statDes != null && statuses.includes(n.statDes as TaskStatus))
+      }
+      const needle = query.trim()
+      if (needle) rows = rows.filter((n) => n.subject.includes(needle) || n.custDes.includes(needle))
+      return rows.slice(0, limitN)
+    },
+
+    async getCustNoteDetail(id) {
+      await simulate('פרטי משימה')
+      const found = custNotes.find((n) => n.id === id)
+      if (!found) return null
+      return {
+        ...found,
+        ownerName: found.ownerName ?? 'אלעד (מוק)',
+        description: found.description ?? 'תיאור לדוגמה שנוסף לאחרונה.',
+        history: found.history ?? [
+          { date: '2026-08-01', status: 'טיוטא', handlerName: found.handlerEmpId },
+          { date: '2026-08-05', status: found.statDes ?? 'לפיתוח', handlerName: found.handlerEmpId },
+        ],
+      }
+    },
+
+    async updateCustNote(id, changes) {
+      await simulate('עדכון משימה')
+      const idx = custNotes.findIndex((n) => n.id === id)
+      if (idx === -1) throw new Error(`Priority (mock): משימה ${id} לא נמצאה`)
+      custNotes[idx] = {
+        ...custNotes[idx],
+        ...(changes.status ? { statDes: changes.status } : {}),
+        ...(changes.priority != null ? { priority: changes.priority } : {}),
+        ...(changes.tillDate ? { tillDate: changes.tillDate } : {}),
+        ...(changes.handlerEmpId ? { handlerEmpId: changes.handlerEmpId } : {}),
+        ...(changes.description ? { description: changes.description } : {}),
+      }
+      return custNotes[idx]
     },
   }
 }
