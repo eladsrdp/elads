@@ -3,14 +3,20 @@ export type {
   CreateCustNoteInput,
   CreateTaskInput,
   CustNote,
+  EmployeeSummary,
   Me,
   ProjectSite,
   RemoteTimeEntry,
+  SearchCustNotesOptions,
   SyncItemResult,
   TaskDetail,
+  TaskStatus,
+  TaskStatusLogEntry,
   TaskSummary,
   TimeEntryInput,
+  UpdateCustNoteInput,
 } from '@priority-lite/shared'
+export { TASK_STATUSES } from '@priority-lite/shared'
 
 export type EntryStatus = 'draft' | 'pending' | 'synced' | 'error'
 
