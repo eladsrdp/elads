@@ -1,3 +1,4 @@
+// priority-lite/client/src/components/NewCustNoteModal.tsx
 // יצירת משימה חדשה מהטאב "משימות" — משתמש ב-endpoint הקיים ליצירת CUSTNOTESA בהקשר פרויקט.
 import { useState } from 'react'
 import { api } from '../lib/api'
