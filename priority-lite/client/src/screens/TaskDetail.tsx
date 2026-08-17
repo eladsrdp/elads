@@ -1,6 +1,6 @@
 // priority-lite/client/src/screens/TaskDetail.tsx
 // מסך פרטי משימה — עריכת סטטוס/עדיפות/תאריך/לטיפול/תיאור, היסטוריית סטטוס.
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AssigneePicker } from '../components/AssigneePicker'
 import { getCustNoteDetail, updateCustNote } from '../state/useCustNotes'
 import { TASK_STATUSES } from '../types'
@@ -19,6 +19,10 @@ export function TaskDetail({ id, onBack }: Props) {
   const [descriptionText, setDescriptionText] = useState('')
   const [historyOpen, setHistoryOpen] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
+  // מצב React (`saving`) מתעדכן רק אחרי render — לא עוצר קריאה שנייה שמתחילה באותו
+  // "tick" סינכרוני (למשל blur על שדה עדיפות ואז click מיידי על כפתור סטטוס, לפני
+  // ש-React הספיק להריץ render עם saving=true). ref מתעדכן מיידית וסוגר את החלון הזה.
+  const savingRef = useRef(false)
 
   useEffect(() => {
     setLoading(true)
@@ -34,7 +38,8 @@ export function TaskDetail({ id, onBack }: Props) {
   // saving גודר את כל הפקדים המשנים (סטטוס/עדיפות/תאריך/לטיפול) כדי שלא יתאפשרו
   // שתי קריאות applyChange חופפות על אותה משימה (שהייתה עלולה לגרום לאחת "לדרוס" את השנייה).
   const applyChange = async (changes: UpdateCustNoteInput): Promise<boolean> => {
-    if (!note || saving) return false
+    if (!note || savingRef.current) return false
+    savingRef.current = true
     const previous = note
     setNote({ ...note, ...changes, statDes: changes.status ?? note.statDes })
     setSaving(true)
@@ -48,6 +53,7 @@ export function TaskDetail({ id, onBack }: Props) {
       setError(err instanceof Error ? err.message : 'שגיאה בעדכון — נסה שוב')
       return false
     } finally {
+      savingRef.current = false
       setSaving(false)
     }
   }
