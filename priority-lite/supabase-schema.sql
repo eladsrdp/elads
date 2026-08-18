@@ -17,6 +17,28 @@ CREATE TABLE IF NOT EXISTS otp_codes (
   window_start BIGINT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS local_checklist_items (
+  id          BIGSERIAL PRIMARY KEY,
+  phone       TEXT NOT NULL REFERENCES employees(phone),
+  task_id     BIGINT,
+  text        TEXT NOT NULL,
+  done        BOOLEAN NOT NULL DEFAULT FALSE,
+  sort_order  INTEGER NOT NULL DEFAULT 0,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS local_drafts (
+  id          BIGSERIAL PRIMARY KEY,
+  phone       TEXT NOT NULL REFERENCES employees(phone),
+  task_id     BIGINT,
+  text        TEXT NOT NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- Disable Row Level Security — this is a server-side-only app (service key used)
 ALTER TABLE employees DISABLE ROW LEVEL SECURITY;
 ALTER TABLE otp_codes DISABLE ROW LEVEL SECURITY;
+ALTER TABLE local_checklist_items DISABLE ROW LEVEL SECURITY;
+ALTER TABLE local_drafts DISABLE ROW LEVEL SECURITY;
