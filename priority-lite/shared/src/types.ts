@@ -130,3 +130,38 @@ export interface SearchCustNotesOptions {
   handlerEmpId?: string
   status?: TaskStatus[]
 }
+
+/** סעיף צ'קליסט אישי (Phase 2) — לא מסונכרן עם פריוריטי, פרטי למשתמש בלבד. */
+export interface ChecklistItem {
+  id: number
+  taskId?: number // CUSTNOTE id מפריוריטי; חסר = פריט עצמאי
+  text: string
+  done: boolean
+  sortOrder: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateChecklistItemInput {
+  taskId?: number
+  text: string
+}
+
+export interface UpdateChecklistItemInput {
+  text?: string
+  done?: boolean
+}
+
+/** טיוטה חופשית אישית (Phase 2) — לא מסונכרנת עם פריוריטי, פרטית למשתמש בלבד. */
+export interface DraftNote {
+  id: number
+  taskId?: number
+  text: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateDraftInput {
+  taskId?: number
+  text: string
+}
