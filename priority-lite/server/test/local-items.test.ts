@@ -68,6 +68,17 @@ describe('checklist items (local db)', () => {
     const ok = await db.reorderChecklistItems('0501111111', null, [a.id, 9999])
     expect(ok).toBe(false)
   })
+
+  it('reorderChecklistItems דוחה מזהה כפול, ולא דורס sort_order', async () => {
+    const db = createLocalDb('__nonexistent__')
+    const a = await db.createChecklistItem('0501111111', null, 'א')
+    const b = await db.createChecklistItem('0501111111', null, 'ב')
+    const ok = await db.reorderChecklistItems('0501111111', null, [a.id, a.id])
+    expect(ok).toBe(false)
+    const items = await db.listChecklistItems('0501111111', null)
+    expect(items.map((i) => i.id)).toEqual([a.id, b.id])
+    expect(items.map((i) => i.sort_order)).toEqual([0, 1])
+  })
 })
 
 describe('drafts (local db)', () => {

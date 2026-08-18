@@ -128,7 +128,16 @@ export function createLocalDb(whitelistPath = './whitelist.json'): AppDB {
     async reorderChecklistItems(phone, taskId, orderedIds) {
       const scoped = [...checklistItems.values()].filter((r) => r.phone === phone && r.task_id === taskId)
       const scopedIds = new Set(scoped.map((r) => r.id))
-      if (orderedIds.length !== scoped.length || !orderedIds.every((id) => scopedIds.has(id))) return false
+      const uniqueOrderedIds = new Set(orderedIds)
+      // SECURITY/יציבות: בלי בדיקת כפילויות, [a.id, a.id] היה עובר את בדיקת האורך+חברות
+      // ודורס את sort_order של שני הפריטים לאותו ערך (item a נכתב פעמיים, item b אף פעם).
+      if (
+        orderedIds.length !== scoped.length ||
+        uniqueOrderedIds.size !== orderedIds.length ||
+        !orderedIds.every((id) => scopedIds.has(id))
+      ) {
+        return false
+      }
       const now = new Date().toISOString()
       orderedIds.forEach((id, idx) => {
         const row = checklistItems.get(id)
