@@ -31,6 +31,13 @@ export function createCustNoteRoutes(ctx: AppContext) {
     if (!Number.isInteger(id)) return c.json({ error: 'מזהה לא תקין' }, 400)
     const detail = await getCustNoteDetail(ctx.adapter, c.get('me'), id)
     if (!detail) return c.json({ error: 'משימה לא נמצאה' }, 404)
+    // המתאמים (mock/odata) מחזירים רק handlerEmpId (login) — השם מגיע מה-DB שלנו,
+    // לא מפריוריטי, אז הפתרון (resolve) קורה כאן ולא בשכבת ה-adapter.
+    if (detail.handlerEmpId) {
+      const employees = await ctx.db.listActiveEmployees()
+      const handler = employees.find((e) => e.priority_emp_id === detail.handlerEmpId)
+      if (handler) detail.handlerName = handler.name
+    }
     return c.json(detail)
   })
 

@@ -86,6 +86,13 @@ export function TaskDetail({ id, onBack }: Props) {
 
       <div className="space-y-1">
         <p className="text-xs text-slate-500">סטטוס</p>
+        {/* סטטוסים מפריוריטי שאינם בתת-הקבוצה הנבחרת (TASK_STATUSES) לא מקבלים צ'יפ —
+            בלעדי השורה הזו הסטטוס האמיתי היה נעלם לגמרי מהמסך. */}
+        {note.statDes && !(TASK_STATUSES as readonly string[]).includes(note.statDes) && (
+          <p className="text-xs text-slate-400">
+            סטטוס נוכחי (לא ברשימה המקוצרת): <span className="text-slate-200">{note.statDes}</span>
+          </p>
+        )}
         <div className="flex flex-wrap gap-1.5">
           {TASK_STATUSES.map((s) => (
             <button

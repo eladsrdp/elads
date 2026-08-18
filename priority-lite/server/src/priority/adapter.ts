@@ -41,7 +41,7 @@ export interface PriorityAdapter {
   createCustNote(input: CreateCustNoteInput): Promise<CustNote>
   /** חיפוש גלובלי במשימות לקוח על פני כל החברה — לא מוגבל ללקוח אחד. */
   searchCustNotes(query: string, opts: SearchCustNotesOptions, limit?: number): Promise<CustNote[]>
-  /** פרטי משימה מלאים — כולל תיאור (CUSTNOTESTEXT_ONE) והיסטוריית סטטוס (DOCTODOLISTLOG). */
+  /** פרטי משימה מלאים — כולל תיאור (CUSTNOTESTEXT) והיסטוריית סטטוס (DOCTODOLISTLOG). */
   getCustNoteDetail(id: number): Promise<CustNote | null>
   /** עדכון משימה — סטטוס/עדיפות/תאריך/לטיפול/תיאור. שולח רק שדות שהוגדרו ב-changes. */
   updateCustNote(id: number, changes: UpdateCustNoteInput): Promise<CustNote>

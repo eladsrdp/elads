@@ -163,6 +163,10 @@ export function createMockAdapter(opts: { failRate?: number } = {}): PriorityAda
         tillDate: input.tillDate,
         projDocNo: input.projDocNo,
         hoursReported: 0,
+        // בפריוריטי האמיתי handler ו-userLogin הם אותה עמודה (USERLOGIN) — משימה
+        // חדשה משויכת אוטומטית ליוצר שלה. בלי זה, המוק "שוכח" משימה שזה עתה
+        // נוצרה מיד כשמסננים לפי "שלי" (handlerEmpId).
+        handlerEmpId: input.userLogin,
       }
       custNotes.push(created)
       return created
