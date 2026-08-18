@@ -98,7 +98,8 @@ export function createSupabaseDb(url: string, serviceKey: string): AppDB {
         .order('sort_order', { ascending: false })
         .limit(1)
       maxQ = taskId == null ? maxQ.is('task_id', null) : maxQ.eq('task_id', taskId)
-      const { data: maxRows } = await maxQ
+      const { data: maxRows, error: maxErr } = await maxQ
+      if (maxErr) throw new Error(`createChecklistItem failed: ${maxErr.message}`)
       const nextOrder = ((maxRows?.[0] as { sort_order: number } | undefined)?.sort_order ?? -1) + 1
       const { data, error } = await client
         .from('local_checklist_items')
