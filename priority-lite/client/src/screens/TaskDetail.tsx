@@ -2,6 +2,8 @@
 // מסך פרטי משימה — עריכת סטטוס/עדיפות/תאריך/לטיפול/תיאור, היסטוריית סטטוס.
 import { useEffect, useRef, useState } from 'react'
 import { AssigneePicker } from '../components/AssigneePicker'
+import { ChecklistSection } from '../components/ChecklistSection'
+import { DraftsSection } from '../components/DraftsSection'
 import { getCustNoteDetail, updateCustNote } from '../state/useCustNotes'
 import { TASK_STATUSES } from '../types'
 import type { CustNote, EmployeeSummary, UpdateCustNoteInput } from '../types'
@@ -208,6 +210,9 @@ export function TaskDetail({ id, onBack }: Props) {
         onClose={() => setPickerOpen(false)}
         onSelect={(e: EmployeeSummary) => applyChange({ handlerEmpId: e.priorityEmpId })}
       />
+
+      <ChecklistSection taskId={note.id} />
+      <DraftsSection taskId={note.id} />
     </div>
   )
 }
