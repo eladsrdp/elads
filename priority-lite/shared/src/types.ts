@@ -47,6 +47,12 @@ export interface CustNote {
   tillDate?: string  // TILLDATE — תאריך יעד (YYYY-MM-DD)
   projDocNo?: string // PROJDOCNO — פרויקט מקושר
   hoursReported?: number // ZRDP_HOURS
+  priority?: number      // PRIO (0-99)
+  description?: string   // CUSTNOTESTEXT.TEXT — התוספת האחרונה
+  ownerName?: string     // ZRDP_TASKOWNER ("אחראי משימה") — לצפייה בלבד
+  handlerEmpId?: string  // "לטיפול"
+  handlerName?: string
+  history?: TaskStatusLogEntry[] // מ-DOCTODOLISTLOG — רק ב-getCustNoteDetail
 }
 
 export interface CreateCustNoteInput {
@@ -90,4 +96,37 @@ export interface RemoteTimeEntry {
   date: string
   durationMin: number
   note?: string
+}
+
+/** תת-קבוצת הסטטוסים הנבחרת לשימוש יומיומי (מתוך ~12 שקיימים בפריוריטי). */
+export const TASK_STATUSES = ['טיוטא', 'לפיתוח', 'לבדיקת פיתוח', 'בוצעה', 'מבוטלת', 'במעקב'] as const
+export type TaskStatus = (typeof TASK_STATUSES)[number]
+
+/** רשומת היסטוריה אחת מ-DOCTODOLISTLOG (לוג סטטוסים, read-only בפריוריטי). */
+export interface TaskStatusLogEntry {
+  date: string
+  status: string
+  handlerName?: string
+  initiatorName?: string
+}
+
+/** שינויים אפשריים במשימה — כל שדה אופציונלי, נשלחים רק אלה שהשתנו. */
+export interface UpdateCustNoteInput {
+  status?: TaskStatus
+  priority?: number // PRIO, 0-99
+  tillDate?: string // YYYY-MM-DD
+  handlerEmpId?: string // "לטיפול"
+  description?: string // תוספת חדשה לתיאור, לא עריכת קיים
+}
+
+/** עובד לבורר "לטיפול" — רק מה שדרוש, בלי טלפון/totp. */
+export interface EmployeeSummary {
+  priorityEmpId: string
+  name: string
+}
+
+/** אפשרויות סינון לחיפוש משימות גלובלי. */
+export interface SearchCustNotesOptions {
+  handlerEmpId?: string
+  status?: TaskStatus[]
 }

@@ -20,6 +20,8 @@ export interface EmployeeRow {
 export interface AppDB {
   /** בקשת שמירה-על-חיים — נוגעת ב-DB כדי למנוע auto-pause בפרויקטי Supabase free-tier. */
   ping(): Promise<void>
+  /** כל העובדים הפעילים — לבורר "לטיפול" בניהול משימות. */
+  listActiveEmployees(): Promise<EmployeeRow[]>
   findEmployee(phone: string): Promise<EmployeeRow | undefined>
   upsertEmployee(e: {
     phone: string
