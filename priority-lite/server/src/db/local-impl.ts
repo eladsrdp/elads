@@ -1,11 +1,15 @@
 // מימוש Local של AppDB — in-memory לפיתוח מקומי.
 // קורא עובדים מ-whitelist.json בהפעלה. OTP נשמר בזיכרון (נמחק ב-restart).
 import { existsSync, readFileSync } from 'node:fs'
-import type { AppDB, EmployeeRow, OtpRow } from './interface'
+import type { AppDB, ChecklistItemRow, DraftRow, EmployeeRow, OtpRow } from './interface'
 
 export function createLocalDb(whitelistPath = './whitelist.json'): AppDB {
   const employees = new Map<string, EmployeeRow>()
   const otps = new Map<string, OtpRow>()
+  const checklistItems = new Map<number, ChecklistItemRow>()
+  const drafts = new Map<number, DraftRow>()
+  let checklistCounter = 0
+  let draftCounter = 0
 
   if (existsSync(whitelistPath)) {
     try {
@@ -80,6 +84,85 @@ export function createLocalDb(whitelistPath = './whitelist.json'): AppDB {
 
     async deleteOtp(phone) {
       otps.delete(phone)
+    },
+
+    async listChecklistItems(phone, taskId) {
+      return [...checklistItems.values()]
+        .filter((r) => r.phone === phone && r.task_id === taskId)
+        .sort((a, b) => a.sort_order - b.sort_order)
+    },
+
+    async createChecklistItem(phone, taskId, text) {
+      const scoped = [...checklistItems.values()].filter((r) => r.phone === phone && r.task_id === taskId)
+      const maxOrder = scoped.reduce((max, r) => Math.max(max, r.sort_order), -1)
+      const now = new Date().toISOString()
+      const row: ChecklistItemRow = {
+        id: ++checklistCounter,
+        phone,
+        task_id: taskId,
+        text,
+        done: false,
+        sort_order: maxOrder + 1,
+        created_at: now,
+        updated_at: now,
+      }
+      checklistItems.set(row.id, row)
+      return row
+    },
+
+    async updateChecklistItem(phone, id, changes) {
+      const row = checklistItems.get(id)
+      if (!row || row.phone !== phone) return undefined
+      const updated = { ...row, ...changes, updated_at: new Date().toISOString() }
+      checklistItems.set(id, updated)
+      return updated
+    },
+
+    async deleteChecklistItem(phone, id) {
+      const row = checklistItems.get(id)
+      if (!row || row.phone !== phone) return false
+      checklistItems.delete(id)
+      return true
+    },
+
+    async reorderChecklistItems(phone, taskId, orderedIds) {
+      const scoped = [...checklistItems.values()].filter((r) => r.phone === phone && r.task_id === taskId)
+      const scopedIds = new Set(scoped.map((r) => r.id))
+      if (orderedIds.length !== scoped.length || !orderedIds.every((id) => scopedIds.has(id))) return false
+      const now = new Date().toISOString()
+      orderedIds.forEach((id, idx) => {
+        const row = checklistItems.get(id)
+        if (row) checklistItems.set(id, { ...row, sort_order: idx, updated_at: now })
+      })
+      return true
+    },
+
+    async listDrafts(phone, taskId) {
+      return [...drafts.values()]
+        .filter((r) => r.phone === phone && r.task_id === taskId)
+        .sort((a, b) => a.created_at.localeCompare(b.created_at))
+    },
+
+    async createDraft(phone, taskId, text) {
+      const now = new Date().toISOString()
+      const row: DraftRow = { id: ++draftCounter, phone, task_id: taskId, text, created_at: now, updated_at: now }
+      drafts.set(row.id, row)
+      return row
+    },
+
+    async updateDraft(phone, id, text) {
+      const row = drafts.get(id)
+      if (!row || row.phone !== phone) return undefined
+      const updated = { ...row, text, updated_at: new Date().toISOString() }
+      drafts.set(id, updated)
+      return updated
+    },
+
+    async deleteDraft(phone, id) {
+      const row = drafts.get(id)
+      if (!row || row.phone !== phone) return false
+      drafts.delete(id)
+      return true
     },
   }
 }
