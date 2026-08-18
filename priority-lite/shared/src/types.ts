@@ -142,11 +142,13 @@ export interface ChecklistItem {
   updatedAt: string
 }
 
+/** קלט יצירת סעיף צ'קליסט. */
 export interface CreateChecklistItemInput {
   taskId?: number
   text: string
 }
 
+/** עדכון סעיף צ'קליסט — כל שדה אופציונלי, נשלחים רק אלה שהשתנו. */
 export interface UpdateChecklistItemInput {
   text?: string
   done?: boolean
@@ -161,6 +163,7 @@ export interface DraftNote {
   updatedAt: string
 }
 
+/** קלט יצירת טיוטה. עדכון טיוטה משתמש ב-text ישירות (שדה יחיד) — אין צורך ב-wrapper type. */
 export interface CreateDraftInput {
   taskId?: number
   text: string
