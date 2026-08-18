@@ -5,6 +5,7 @@ import { usePendingEntries } from './state/useEntries'
 import { useAuth } from './state/useAuth'
 import { Entries } from './screens/Entries'
 import { Login } from './screens/Login'
+import { MyItems } from './screens/MyItems'
 import { Settings } from './screens/Settings'
 import { Summary } from './screens/Summary'
 import { TaskDetail } from './screens/TaskDetail'
@@ -15,6 +16,7 @@ const TAB_TITLES: Record<Tab, string> = {
   today: 'היום',
   entries: 'דיווחים',
   tasks: 'משימות',
+  mine: 'שלי',
   summary: 'סיכום',
   settings: 'הגדרות',
 }
@@ -70,6 +72,7 @@ export default function App() {
         {tab === 'tasks' && selectedTaskId != null && (
           <TaskDetail id={selectedTaskId} onBack={() => setSelectedTaskId(null)} />
         )}
+        {tab === 'mine' && <MyItems />}
         {tab === 'summary' && <Summary />}
         {tab === 'settings' && <Settings />}
       </main>

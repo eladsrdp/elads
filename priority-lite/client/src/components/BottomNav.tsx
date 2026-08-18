@@ -1,4 +1,4 @@
-export type Tab = 'today' | 'entries' | 'tasks' | 'summary' | 'settings'
+export type Tab = 'today' | 'entries' | 'tasks' | 'mine' | 'summary' | 'settings'
 
 interface Props {
   value: Tab
@@ -10,6 +10,7 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'today', label: 'היום', icon: '🕒' },
   { id: 'entries', label: 'דיווחים', icon: '📋' },
   { id: 'tasks', label: 'משימות', icon: '📝' },
+  { id: 'mine', label: 'שלי', icon: '✅' },
   { id: 'summary', label: 'סיכום', icon: '📊' },
   { id: 'settings', label: 'הגדרות', icon: '⚙️' },
 ]
