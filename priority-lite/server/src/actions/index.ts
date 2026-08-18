@@ -2,9 +2,9 @@
 // ה-routes קוראים לכאן, ובשלב הצ'אט (Phase 3) אותם schemas ישמשו
 // כ-tool definitions ל-LLM ואותם handlers יבצעו — בלי refactor.
 import { z } from 'zod'
-import type { Me, SyncItemResult } from '@priority-lite/shared'
+import type { ChecklistItem, DraftNote, Me, SyncItemResult } from '@priority-lite/shared'
 import { TASK_STATUSES } from '@priority-lite/shared'
-import type { AppDB } from '../db/db'
+import type { AppDB, ChecklistItemRow, DraftRow } from '../db/db'
 import type { PriorityAdapter } from '../priority/adapter'
 
 const dateRe = /^\d{4}-\d{2}-\d{2}$/
@@ -179,4 +179,122 @@ export async function updateCustNote(
 export async function listEmployees(db: AppDB, _me: Me) {
   const rows = await db.listActiveEmployees()
   return rows.map((r) => ({ priorityEmpId: r.priority_emp_id, name: r.name }))
+}
+
+function rowToChecklistItem(row: ChecklistItemRow): ChecklistItem {
+  return {
+    id: row.id,
+    taskId: row.task_id ?? undefined,
+    text: row.text,
+    done: row.done,
+    sortOrder: row.sort_order,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+function rowToDraft(row: DraftRow): DraftNote {
+  return {
+    id: row.id,
+    taskId: row.task_id ?? undefined,
+    text: row.text,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+export const listChecklistItemsSchema = z.object({
+  taskId: z.coerce.number().int().positive().optional(),
+})
+
+export async function listChecklistItems(
+  db: AppDB,
+  me: Me,
+  input: z.infer<typeof listChecklistItemsSchema>,
+): Promise<ChecklistItem[]> {
+  const rows = await db.listChecklistItems(me.phone, input.taskId ?? null)
+  return rows.map(rowToChecklistItem)
+}
+
+export const createChecklistItemSchema = z.object({
+  taskId: z.number().int().positive().optional(),
+  text: z.string().min(1).max(500),
+})
+
+export async function createChecklistItem(
+  db: AppDB,
+  me: Me,
+  input: z.infer<typeof createChecklistItemSchema>,
+): Promise<ChecklistItem> {
+  const row = await db.createChecklistItem(me.phone, input.taskId ?? null, input.text)
+  return rowToChecklistItem(row)
+}
+
+export const updateChecklistItemSchema = z.object({
+  text: z.string().min(1).max(500).optional(),
+  done: z.boolean().optional(),
+})
+
+export async function updateChecklistItem(
+  db: AppDB,
+  me: Me,
+  id: number,
+  input: z.infer<typeof updateChecklistItemSchema>,
+): Promise<ChecklistItem | undefined> {
+  const row = await db.updateChecklistItem(me.phone, id, input)
+  return row ? rowToChecklistItem(row) : undefined
+}
+
+export async function deleteChecklistItem(db: AppDB, me: Me, id: number): Promise<boolean> {
+  return db.deleteChecklistItem(me.phone, id)
+}
+
+export const reorderChecklistSchema = z.object({
+  taskId: z.number().int().positive().optional(),
+  orderedIds: z.array(z.number().int().positive()).min(1),
+})
+
+export async function reorderChecklistItems(
+  db: AppDB,
+  me: Me,
+  input: z.infer<typeof reorderChecklistSchema>,
+): Promise<boolean> {
+  return db.reorderChecklistItems(me.phone, input.taskId ?? null, input.orderedIds)
+}
+
+export const listDraftsSchema = z.object({
+  taskId: z.coerce.number().int().positive().optional(),
+})
+
+export async function listDrafts(db: AppDB, me: Me, input: z.infer<typeof listDraftsSchema>): Promise<DraftNote[]> {
+  const rows = await db.listDrafts(me.phone, input.taskId ?? null)
+  return rows.map(rowToDraft)
+}
+
+export const createDraftSchema = z.object({
+  taskId: z.number().int().positive().optional(),
+  text: z.string().min(1).max(5000),
+})
+
+export async function createDraft(db: AppDB, me: Me, input: z.infer<typeof createDraftSchema>): Promise<DraftNote> {
+  const row = await db.createDraft(me.phone, input.taskId ?? null, input.text)
+  return rowToDraft(row)
+}
+
+export const updateDraftSchema = z.object({
+  text: z.string().min(1).max(5000),
+})
+
+export async function updateDraft(
+  db: AppDB,
+  me: Me,
+  id: number,
+  input: z.infer<typeof updateDraftSchema>,
+): Promise<DraftNote | undefined> {
+  const row = await db.updateDraft(me.phone, id, input.text)
+  return row ? rowToDraft(row) : undefined
+}
+
+export async function deleteDraft(db: AppDB, me: Me, id: number): Promise<boolean> {
+  return db.deleteDraft(me.phone, id)
 }
