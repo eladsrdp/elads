@@ -141,10 +141,12 @@ export function createODataAdapter(cfg: ODataConfig): PriorityAdapter {
   async function fetchCustNoteDetail(id: number): Promise<CustNote | null> {
     const cf = m.custNoteFields
     const select = [cf.id, cf.subject, cf.custName, cf.custDes, cf.statDes, cf.tillDate, cf.projDocNo, cf.hours, cf.priority, cf.owner, cf.handler].join(',')
-    const data = await request<{ value: Row[] }>(
+    // SECURITY/יציבות: `?.` על value — פריוריטי נצפתה חי מחזירה מדי-פעם תשובת 200 בלי
+    // מבנה {value:[...]} התקין (חוסר יציבות זמנית בשירות), מה שהיה קורס באינדקס [0] ישיר.
+    const data = await request<{ value?: Row[] }>(
       `${m.entities.custNotes}?$select=${select}&$filter=${cf.id} eq ${id}&$top=1`,
     )
-    const row = data.value[0]
+    const row = data.value?.[0]
     if (!row) return null
     const base = rowToCustNote(row)
     base.ownerName = row[cf.owner] != null ? String(row[cf.owner]) : undefined
