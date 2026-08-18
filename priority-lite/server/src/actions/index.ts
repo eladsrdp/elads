@@ -251,7 +251,8 @@ export async function deleteChecklistItem(db: AppDB, me: Me, id: number): Promis
 
 export const reorderChecklistSchema = z.object({
   taskId: z.number().int().positive().optional(),
-  orderedIds: z.array(z.number().int().positive()).min(1),
+  // תקרה גבוהה בהרבה מכל צ'קליסט אישי אמיתי — מונעת שליחת מערך ענק (DoS על הבקשה עצמה).
+  orderedIds: z.array(z.number().int().positive()).min(1).max(500),
 })
 
 export async function reorderChecklistItems(

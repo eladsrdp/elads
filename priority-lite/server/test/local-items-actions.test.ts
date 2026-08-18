@@ -65,11 +65,15 @@ describe('checklist actions', () => {
 })
 
 describe('draft actions', () => {
-  it('יוצר טיוטה וממפה ל-camelCase (DraftNote)', async () => {
+  it('יוצר טיוטה וממפה ל-camelCase (DraftNote) — כולל taskId וחותמות זמן', async () => {
     const db = createLocalDb('__nonexistent__')
-    const created = await createDraft(db, me, createDraftSchema.parse({ text: 'טיוטה' }))
+    const created = await createDraft(db, me, createDraftSchema.parse({ taskId: 5001, text: 'טיוטה' }))
     expect(created.text).toBe('טיוטה')
-    expect(created.taskId).toBeUndefined()
+    // taskId ו-createdAt/updatedAt (לא task_id/created_at/updated_at) — אם המיפוי
+    // היה מדלג, השדות האלה היו undefined גם כשיש להם ערך אמיתי ב-DB.
+    expect(created.taskId).toBe(5001)
+    expect(typeof created.createdAt).toBe('string')
+    expect(typeof created.updatedAt).toBe('string')
   })
 
   it('טקסט ריק נדחה בסכימה', () => {
