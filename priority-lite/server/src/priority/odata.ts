@@ -33,6 +33,36 @@ function escapeOData(value: string): string {
 }
 
 /**
+ * פריוריטי עוטפת אוטומטית כל טקסט שנשלח ל-INTERNALDIALOGTEXT_SUBFORM ב-HTML/CSS
+ * (‏<style>...</style><p dir=rtl>...טקסט...</p>‏) — מסירים את זה כדי להציג טקסט נקי
+ * למשתמש. אומת חי מול פריוריטי אמיתי (2026-08-19), ראה mapping.ts custNoteTextSubform.
+ *
+ * סדר הפעולות חשוב: קודם מסירים תגי HTML אמיתיים (בזמן שתווים מיוחדים שהמשתמש
+ * הקליד עדיין escaped, למשל "&lt;" ולא "<") — כדי שטקסט משתמש שנראה כמו תג לא יימחק
+ * בטעות — ורק אחר כך מפענחים ישויות HTML בחזרה לתווים רגילים. שברי שורה (<br>,
+ * גבול בין <p>...</p>) הופכים ל-\n לפני ההסרה, כדי לא לאבד ירידות שורה בדריסה.
+ * ⚠️ לא אומת חי: איך פריוריטי בפועל מתמודדת עם טקסט משתמש שמכיל "<"/">"/פסקאות
+ * מרובות (רק מבנה ה-wrapper וסמנטיקת הדריסה אומתו) — אם יתגלה קלט שמתעוות בדריסה
+ * חוזרת, יש לבדוק חי ולעדכן כאן.
+ */
+function stripInternalDialogHtml(raw: string): string {
+  return raw
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>\s*<p[^>]*>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
+/**
  * מחלץ הודעת שגיאה נקייה מתשובת פריוריטי — בלי XML/JSON גולמי.
  * פריוריטי מחזיר שגיאות בכמה פורמטים:
  *   1. שגיאות טופס: { FORM: { InterfaceErrors: { text: "..."|[...] } } }  ← הנפוץ ב-POST
@@ -151,12 +181,13 @@ export function createODataAdapter(cfg: ODataConfig): PriorityAdapter {
     const base = rowToCustNote(row)
     base.ownerName = row[cf.owner] != null ? String(row[cf.owner]) : undefined
 
-    const textData = await request<{ value: Row[] }>(
+    // INTERNALDIALOGTEXT_SUBFORM הוא navigation property יחיד (לא Collection) — פריוריטי
+    // מחזירה ישות בודדת ($entity), לא {value:[...]}. אומת חי 2026-08-19.
+    const textData = await request<Row>(
       `${m.entities.custNotes}(CUSTNOTE=${id})/${m.custNoteTextSubform}?$select=${m.custNoteTextFields.text}`,
-    ).catch(() => ({ value: [] as Row[] }))
-    const textRow = textData.value[0]
-    base.description = textRow?.[m.custNoteTextFields.text] != null
-      ? String(textRow[m.custNoteTextFields.text])
+    ).catch(() => null)
+    base.description = textData?.[m.custNoteTextFields.text] != null
+      ? stripInternalDialogHtml(String(textData[m.custNoteTextFields.text]))
       : undefined
 
     const logData = await request<{ value: Row[] }>(
@@ -361,9 +392,9 @@ export function createODataAdapter(cfg: ODataConfig): PriorityAdapter {
       }
 
       if (changes.description) {
-        // WARNING: לא אומת חי אם ה-POST הזה מוסיף רשומה חדשה או דורס את התיאור הקיים
-        // (ראה Task 1 בתוכנית המימוש — פריוריטי הפכה ללא-יציבה באמצע האימות). אם מתברר
-        // שזו דריסה, זה עלול למחוק תיאורים קודמים בשקט — יש לאמת לפני חשיפה רחבה למשתמשים.
+        // אומת חי (2026-08-19): זו דריסה (overwrite), לא הוספה (append) — ה-POST הזה
+        // מחליף את הטקסט הקודם לגמרי, לא מוסיף לצידו. ה-UI חייב להציג את התיאור הקיים
+        // ולשלוח את הטקסט המלא המעודכן, לא רק את מה שהמשתמש הקליד כ"תוספת".
         await request<Row>(`${m.entities.custNotes}(CUSTNOTE=${id})/${m.custNoteTextSubform}`, {
           method: 'POST',
           body: JSON.stringify({ [m.custNoteTextFields.text]: changes.description }),

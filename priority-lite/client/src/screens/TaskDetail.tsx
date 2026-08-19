@@ -30,7 +30,12 @@ export function TaskDetail({ id, onBack }: Props) {
     setLoading(true)
     setError('')
     getCustNoteDetail(id)
-      .then(setNote)
+      .then((n) => {
+        setNote(n)
+        // מאתחלים פעם אחת בטעינה — לא ב-useEffect שתלוי ב-note, כדי לא למחוק טיוטת
+        // עריכה של המשתמש בכל שינוי שדה אחר (סטטוס/עדיפות/וכו') שמעדכן את note.
+        setDescriptionText(n.description ?? '')
+      })
       .catch((err) => setError(err instanceof Error ? err.message : 'שגיאה בטעינת המשימה'))
       .finally(() => setLoading(false))
   }, [id])
@@ -60,11 +65,14 @@ export function TaskDetail({ id, onBack }: Props) {
     }
   }
 
+  // אומת חי (2026-08-19): עדכון תיאור בפריוריטי הוא דריסה מלאה, לא הוספה — לכן
+  // הטקסטרה מציגה/עורכת את התיאור המלא הקיים, ולא מתנקה אחרי שמירה מוצלחת
+  // (בניגוד לפני התיקון, כשהיא הצטיירה כ"הוספת עדכון" לטקסט קיים).
   const saveDescription = async () => {
-    if (!descriptionText.trim()) return
-    const ok = await applyChange({ description: descriptionText.trim() })
-    // מנקים את הטיוטה רק אם השמירה הצליחה — אחרת המשתמש מאבד את מה שהקליד בכשל רשת.
-    if (ok) setDescriptionText('')
+    const trimmed = descriptionText.trim()
+    if (!trimmed) return
+    setDescriptionText(trimmed)
+    await applyChange({ description: trimmed })
   }
 
   if (loading) return <p className="py-6 text-center text-slate-500">טוען…</p>
@@ -163,24 +171,22 @@ export function TaskDetail({ id, onBack }: Props) {
 
       <div className="space-y-2">
         <p className="text-xs text-slate-500">תיאור</p>
-        {note.description && (
-          <p className="whitespace-pre-wrap rounded-xl bg-slate-800/60 p-3 text-sm text-slate-300">
-            {note.description}
-          </p>
-        )}
+        {/* עריכת התיאור המלא — שמירה דורסת את התיאור הקיים בפריוריטי, לא מוסיפה
+            לצידו (אומת חי). הטקסטרה מציגה תמיד את הטקסט הנוכחי, לא שדה "תוספת" ריק. */}
         <textarea
           value={descriptionText}
           onChange={(e) => setDescriptionText(e.target.value)}
-          placeholder="הוסף עדכון…"
-          rows={3}
-          className="w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100"
+          disabled={saving}
+          placeholder="תיאור המשימה…"
+          rows={4}
+          className="w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100 disabled:opacity-50"
         />
         <button
           onClick={saveDescription}
           disabled={saving || !descriptionText.trim()}
           className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
         >
-          הוסף עדכון
+          שמור תיאור
         </button>
       </div>
 

@@ -75,10 +75,17 @@ export const priorityMapping = {
     // לא משתמש ה-API של האינטגרציה.
     handler: 'USERLOGIN',
   },
-  // תת-טופס תיאור מורחב ("תקציר המשימה") — ContainsTarget יחיד, שדה TEXT.
-  // השם אומת חי ב-Task 1 (2026-08-17): CUSTNOTESTEXT_ONE_SUBFORM שגוי (property not found),
-  // השם הנכון על CUSTNOTESA הוא CUSTNOTESTEXT_SUBFORM (מצביע ל-CUSTNOTESTEXT).
-  custNoteTextSubform: 'CUSTNOTESTEXT_SUBFORM',
+  // תת-טופס תיאור מורחב ("עדכון פנימי") — ContainsTarget יחיד, שדה TEXT.
+  // היסטוריה: CUSTNOTESTEXT_ONE_SUBFORM שגוי (property not found, Task 1 2026-08-17).
+  // CUSTNOTESTEXT_SUBFORM (השם שתוקן אז) התברר read-only בפועל בפריוריטי — הודעת
+  // השרת: "מסך טקסט CUSTNOTESTEXT הינו לקריאה בלבד ולא ניתן לעדכון" (אומת חי 2026-08-18).
+  // המועמד שכן עובד, אומת חי 2026-08-19: INTERNALDIALOGTEXT_SUBFORM — אותו מבנה שדות
+  // (TEXT/APPEND/SIGNATURE), אבל ניתן לכתיבה (POST החזיר 201, גם על משימה "מבוטלת").
+  // סמנטיקה מאומתת: **דריסה (overwrite), לא הוספה (append)** — POST שני דרס את הראשון
+  // לגמרי (רק הטקסט האחרון הופיע ב-GET לאחר מכן). פריוריטי גם עוטפת את הטקסט
+  // אוטומטית ב-HTML/CSS (<style>...</style><p dir=rtl>...) — יש להסיר את זה בקריאה
+  // (ראה stripInternalDialogHtml ב-odata.ts) לפני הצגה למשתמש.
+  custNoteTextSubform: 'INTERNALDIALOGTEXT_SUBFORM',
   custNoteTextFields: { text: 'TEXT' },
   /** תת-טופס לוג הסטטוסים ("לוג סטטוסים") — כל השדות read-only בפריוריטי. */
   custNoteLogSubform: 'DOCTODOLISTLOG_SUBFORM',

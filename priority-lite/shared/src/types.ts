@@ -48,7 +48,7 @@ export interface CustNote {
   projDocNo?: string // PROJDOCNO — פרויקט מקושר
   hoursReported?: number // ZRDP_HOURS
   priority?: number      // PRIO (0-99)
-  description?: string   // CUSTNOTESTEXT.TEXT — התוספת האחרונה
+  description?: string   // INTERNALDIALOGTEXT.TEXT — התיאור המלא הנוכחי
   ownerName?: string     // ZRDP_TASKOWNER ("אחראי משימה") — לצפייה בלבד
   handlerEmpId?: string  // "לטיפול"
   handlerName?: string
@@ -116,7 +116,7 @@ export interface UpdateCustNoteInput {
   priority?: number // PRIO, 0-99
   tillDate?: string // YYYY-MM-DD
   handlerEmpId?: string // "לטיפול"
-  description?: string // תוספת חדשה לתיאור, לא עריכת קיים
+  description?: string // התיאור המלא החדש — דורס את הקיים בפריוריטי, לא מוסיף לצידו (אומת חי)
 }
 
 /** עובד לבורר "לטיפול" — רק מה שדרוש, בלי טלפון/totp. */
