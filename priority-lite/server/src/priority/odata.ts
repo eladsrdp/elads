@@ -311,7 +311,10 @@ export function createODataAdapter(cfg: ODataConfig): PriorityAdapter {
     async listCustNotes(custName) {
       const cf = m.custNoteFields
       const select = [cf.id, cf.subject, cf.custDes, cf.statDes, cf.tillDate, cf.projDocNo, cf.hours].join(',')
-      const filter = `${cf.closed} eq 'N' and ${cf.custName} eq '${escapeOData(custName)}'`
+      // CLOSED הוא null במשימות פתוחות בפועל (לא המחרוזת 'N' כפי שהונח במקור) — אומת
+      // חי 2026-08-19. 'ne' תופס גם null נכון בפריוריטי; '(eq null or eq \'N\')' נכשל
+      // עם 500 (Object reference not set) — ה-OData של פריוריטי לא אוהב את הצירוף.
+      const filter = `${cf.closed} ne 'Y' and ${cf.custName} eq '${escapeOData(custName)}'`
       const data = await request<{ value: Row[] }>(
         `${m.entities.custNotes}?$select=${select}&$filter=${encodeURI(filter)}&$orderby=${cf.id} desc&$top=100`,
       )
@@ -353,7 +356,8 @@ export function createODataAdapter(cfg: ODataConfig): PriorityAdapter {
     async searchCustNotes(query, opts, limitN = 50) {
       const cf = m.custNoteFields
       const select = [cf.id, cf.subject, cf.custName, cf.custDes, cf.statDes, cf.tillDate, cf.projDocNo, cf.hours, cf.priority, cf.handler].join(',')
-      const filters = [`${cf.closed} eq 'N'`]
+      // ראה הערה ב-listCustNotes — CLOSED הוא null בפועל, לא 'N'; 'ne' תופס גם null.
+      const filters = [`${cf.closed} ne 'Y'`]
       if (opts.handlerEmpId) filters.push(`${cf.handler} eq '${escapeOData(opts.handlerEmpId)}'`)
       if (opts.status && opts.status.length > 0) {
         filters.push('(' + opts.status.map((s) => `${cf.statDes} eq '${escapeOData(s)}'`).join(' or ') + ')')
