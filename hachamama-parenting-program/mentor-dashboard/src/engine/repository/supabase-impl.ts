@@ -169,6 +169,12 @@ export function createSupabaseDb(url: string, key: string): AppDB {
       return data ?? []
     },
 
+    async getDailyTriggersForDate(calendarDate) {
+      const { data, error } = await supabase.from('daily_triggers').select().eq('calendar_date', calendarDate)
+      if (error) throw new Error(`[supabase] daily_triggers: ${error.message}`)
+      return data ?? []
+    },
+
     async markDailyTriggerSent(id, sentAt) {
       await updateRow('daily_triggers', id, { trigger_sent_at: sentAt })
     },

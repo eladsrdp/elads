@@ -107,6 +107,7 @@ export interface AppDB {
   findDailyTrigger(participantId: string, calendarDate: string): Promise<DailyTriggerRow | undefined>
   getDailyTrigger(id: string): Promise<DailyTriggerRow | undefined>
   getUnsentDailyTriggers(calendarDate: string): Promise<DailyTriggerRow[]>
+  getDailyTriggersForDate(calendarDate: string): Promise<DailyTriggerRow[]>
   markDailyTriggerSent(id: string, sentAt: string): Promise<void>
   markDailyTriggerClicked(id: string, clickedAt: string): Promise<void>
 

@@ -136,6 +136,10 @@ export function createLocalDb(): AppDB {
       return [...dailyTriggers.values()].filter((t) => t.calendar_date === calendarDate && !t.trigger_sent_at)
     },
 
+    async getDailyTriggersForDate(calendarDate) {
+      return [...dailyTriggers.values()].filter((t) => t.calendar_date === calendarDate)
+    },
+
     async markDailyTriggerSent(id, sentAt) {
       const row = dailyTriggers.get(id)
       if (row) dailyTriggers.set(id, { ...row, trigger_sent_at: sentAt })
