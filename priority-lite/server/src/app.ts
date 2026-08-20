@@ -2,7 +2,11 @@
 import { Hono } from 'hono'
 import type { AppContext } from './context'
 import { createAuthRoutes } from './routes/auth'
+import { createChecklistRoutes } from './routes/checklist'
 import { createCronRoutes } from './routes/cron'
+import { createCustNoteRoutes } from './routes/custnotes'
+import { createDraftRoutes } from './routes/drafts'
+import { createEmployeeRoutes } from './routes/employees'
 import { createParseRoutes } from './routes/parse'
 import { createTaskRoutes } from './routes/tasks'
 import { createTimeEntryRoutes } from './routes/timeEntries'
@@ -23,6 +27,10 @@ export function createApp(ctx: AppContext) {
   app.route('/api/time-entries', createTimeEntryRoutes(ctx))
   app.route('/api/parse-entry', createParseRoutes(ctx))
   app.route('/api/cron', createCronRoutes(ctx))
+  app.route('/api/custnotes', createCustNoteRoutes(ctx))
+  app.route('/api/employees', createEmployeeRoutes(ctx))
+  app.route('/api/checklist', createChecklistRoutes(ctx))
+  app.route('/api/drafts', createDraftRoutes(ctx))
 
   app.onError((err, c) => {
     console.error('[server error]', err)

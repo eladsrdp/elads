@@ -1,16 +1,27 @@
 // טיפוסי הקליינט — מייצא את המשותפים ומוסיף את מודל הטיוטות המקומי.
 export type {
+  ChecklistItem,
+  CreateChecklistItemInput,
   CreateCustNoteInput,
+  CreateDraftInput,
   CreateTaskInput,
   CustNote,
+  DraftNote,
+  EmployeeSummary,
   Me,
   ProjectSite,
   RemoteTimeEntry,
+  SearchCustNotesOptions,
   SyncItemResult,
   TaskDetail,
+  TaskStatus,
+  TaskStatusLogEntry,
   TaskSummary,
   TimeEntryInput,
+  UpdateChecklistItemInput,
+  UpdateCustNoteInput,
 } from '@priority-lite/shared'
+export { TASK_STATUSES } from '@priority-lite/shared'
 
 export type EntryStatus = 'draft' | 'pending' | 'synced' | 'error'
 

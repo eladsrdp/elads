@@ -47,6 +47,12 @@ export interface CustNote {
   tillDate?: string  // TILLDATE — תאריך יעד (YYYY-MM-DD)
   projDocNo?: string // PROJDOCNO — פרויקט מקושר
   hoursReported?: number // ZRDP_HOURS
+  priority?: number      // PRIO (0-99)
+  description?: string   // INTERNALDIALOGTEXT.TEXT — התיאור המלא הנוכחי
+  ownerName?: string     // ZRDP_TASKOWNER ("אחראי משימה") — לצפייה בלבד
+  handlerEmpId?: string  // "לטיפול"
+  handlerName?: string
+  history?: TaskStatusLogEntry[] // מ-DOCTODOLISTLOG — רק ב-getCustNoteDetail
 }
 
 export interface CreateCustNoteInput {
@@ -90,4 +96,75 @@ export interface RemoteTimeEntry {
   date: string
   durationMin: number
   note?: string
+}
+
+/** תת-קבוצת הסטטוסים הנבחרת לשימוש יומיומי (מתוך ~12 שקיימים בפריוריטי). */
+export const TASK_STATUSES = ['טיוטא', 'לפיתוח', 'לבדיקת פיתוח', 'בוצעה', 'מבוטלת', 'במעקב'] as const
+export type TaskStatus = (typeof TASK_STATUSES)[number]
+
+/** רשומת היסטוריה אחת מ-DOCTODOLISTLOG (לוג סטטוסים, read-only בפריוריטי). */
+export interface TaskStatusLogEntry {
+  date: string
+  status: string
+  handlerName?: string
+  initiatorName?: string
+}
+
+/** שינויים אפשריים במשימה — כל שדה אופציונלי, נשלחים רק אלה שהשתנו. */
+export interface UpdateCustNoteInput {
+  status?: TaskStatus
+  priority?: number // PRIO, 0-99
+  tillDate?: string // YYYY-MM-DD
+  handlerEmpId?: string // "לטיפול"
+  description?: string // התיאור המלא החדש — דורס את הקיים בפריוריטי, לא מוסיף לצידו (אומת חי)
+}
+
+/** עובד לבורר "לטיפול" — רק מה שדרוש, בלי טלפון/totp. */
+export interface EmployeeSummary {
+  priorityEmpId: string
+  name: string
+}
+
+/** אפשרויות סינון לחיפוש משימות גלובלי. */
+export interface SearchCustNotesOptions {
+  handlerEmpId?: string
+  status?: TaskStatus[]
+}
+
+/** סעיף צ'קליסט אישי (Phase 2) — לא מסונכרן עם פריוריטי, פרטי למשתמש בלבד. */
+export interface ChecklistItem {
+  id: number
+  taskId?: number // CUSTNOTE id מפריוריטי; חסר = פריט עצמאי
+  text: string
+  done: boolean
+  sortOrder: number
+  createdAt: string
+  updatedAt: string
+}
+
+/** קלט יצירת סעיף צ'קליסט. */
+export interface CreateChecklistItemInput {
+  taskId?: number
+  text: string
+}
+
+/** עדכון סעיף צ'קליסט — כל שדה אופציונלי, נשלחים רק אלה שהשתנו. */
+export interface UpdateChecklistItemInput {
+  text?: string
+  done?: boolean
+}
+
+/** טיוטה חופשית אישית (Phase 2) — לא מסונכרנת עם פריוריטי, פרטית למשתמש בלבד. */
+export interface DraftNote {
+  id: number
+  taskId?: number
+  text: string
+  createdAt: string
+  updatedAt: string
+}
+
+/** קלט יצירת טיוטה. עדכון טיוטה משתמש ב-text ישירות (שדה יחיד) — אין צורך ב-wrapper type. */
+export interface CreateDraftInput {
+  taskId?: number
+  text: string
 }

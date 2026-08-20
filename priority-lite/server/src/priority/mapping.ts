@@ -65,10 +65,31 @@ export const priorityMapping = {
     statDes: 'STATDES',    // סטטוס
     closed: 'CLOSED',      // "Y" = סגורה, "N" = פתוחה
     tillDate: 'TILLDATE',  // תאריך יעד
-    userLogin: 'USERLOGIN', // בעל המשימה
+    userLogin: 'USERLOGIN', // בעל המשימה (יוצר) — נשלח רק ביצירה
     projDocNo: 'PROJDOCNO', // מזהה הפרויקט המקושר
     hours: 'ZRDP_HOURS',   // שעות שדווחו
+    priority: 'PRIO',      // עדיפות (0-99)
+    owner: 'ZRDP_TASKOWNER', // "אחראי משימה" — לצפייה בלבד
+    // "לטיפול" — מאושר בסקריפט הגילוי (Task 1, 2026-08-17): הודעת שגיאה של פריוריטי
+    // עצמה קראה לעמודה הזו "לטיפול". הערך חייב להיות login עובד אמיתי (למשל 'elads'),
+    // לא משתמש ה-API של האינטגרציה.
+    handler: 'USERLOGIN',
   },
+  // תת-טופס תיאור מורחב ("עדכון פנימי") — ContainsTarget יחיד, שדה TEXT.
+  // היסטוריה: CUSTNOTESTEXT_ONE_SUBFORM שגוי (property not found, Task 1 2026-08-17).
+  // CUSTNOTESTEXT_SUBFORM (השם שתוקן אז) התברר read-only בפועל בפריוריטי — הודעת
+  // השרת: "מסך טקסט CUSTNOTESTEXT הינו לקריאה בלבד ולא ניתן לעדכון" (אומת חי 2026-08-18).
+  // המועמד שכן עובד, אומת חי 2026-08-19: INTERNALDIALOGTEXT_SUBFORM — אותו מבנה שדות
+  // (TEXT/APPEND/SIGNATURE), אבל ניתן לכתיבה (POST החזיר 201, גם על משימה "מבוטלת").
+  // סמנטיקה מאומתת: **דריסה (overwrite), לא הוספה (append)** — POST שני דרס את הראשון
+  // לגמרי (רק הטקסט האחרון הופיע ב-GET לאחר מכן). פריוריטי גם עוטפת את הטקסט
+  // אוטומטית ב-HTML/CSS (<style>...</style><p dir=rtl>...) — יש להסיר את זה בקריאה
+  // (ראה stripInternalDialogHtml ב-odata.ts) לפני הצגה למשתמש.
+  custNoteTextSubform: 'INTERNALDIALOGTEXT_SUBFORM',
+  custNoteTextFields: { text: 'TEXT' },
+  /** תת-טופס לוג הסטטוסים ("לוג סטטוסים") — כל השדות read-only בפריוריטי. */
+  custNoteLogSubform: 'DOCTODOLISTLOG_SUBFORM',
+  custNoteLogFields: { date: 'UDATE', status: 'STATDES', handler: 'OWNERLOGIN', initiator: 'INITIATORLOGIN' },
   /** TQUANT הוא שעות עשרוניות (1.75 = שעה ושלושת-רבעי) */
   hoursAsDecimal: true,
   /** PDES מוגבל ל-60 תווים בפריוריטי */

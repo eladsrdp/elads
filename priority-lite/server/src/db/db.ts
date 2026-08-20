@@ -1,5 +1,5 @@
 // Factory: Supabase אם URL מוגדר, אחרת local (in-memory + whitelist.json).
-export type { AppDB, EmployeeRow, OtpRow } from './interface'
+export type { AppDB, EmployeeRow, OtpRow, ChecklistItemRow, DraftRow } from './interface'
 import type { AppDB } from './interface'
 import { createLocalDb } from './local-impl'
 import { createSupabaseDb } from './supabase-impl'

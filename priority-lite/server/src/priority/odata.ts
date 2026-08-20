@@ -1,6 +1,6 @@
 // Adapter אמיתי מול Priority REST API (OData v4).
 // מבנה הנתונים מופה מתוך $metadata ודיווחים אמיתיים — ראו mapping.ts.
-import type { CustNote, TaskSummary } from '@priority-lite/shared'
+import type { CustNote, TaskSummary, UpdateCustNoteInput } from '@priority-lite/shared'
 import type { NewTimeEntry, PriorityAdapter } from './adapter'
 import { assertMappingComplete, priorityMapping as m } from './mapping'
 
@@ -30,6 +30,36 @@ function createLimiter(max: number) {
 
 function escapeOData(value: string): string {
   return value.replace(/'/g, "''")
+}
+
+/**
+ * פריוריטי עוטפת אוטומטית כל טקסט שנשלח ל-INTERNALDIALOGTEXT_SUBFORM ב-HTML/CSS
+ * (‏<style>...</style><p dir=rtl>...טקסט...</p>‏) — מסירים את זה כדי להציג טקסט נקי
+ * למשתמש. אומת חי מול פריוריטי אמיתי (2026-08-19), ראה mapping.ts custNoteTextSubform.
+ *
+ * סדר הפעולות חשוב: קודם מסירים תגי HTML אמיתיים (בזמן שתווים מיוחדים שהמשתמש
+ * הקליד עדיין escaped, למשל "&lt;" ולא "<") — כדי שטקסט משתמש שנראה כמו תג לא יימחק
+ * בטעות — ורק אחר כך מפענחים ישויות HTML בחזרה לתווים רגילים. שברי שורה (<br>,
+ * גבול בין <p>...</p>) הופכים ל-\n לפני ההסרה, כדי לא לאבד ירידות שורה בדריסה.
+ * ⚠️ לא אומת חי: איך פריוריטי בפועל מתמודדת עם טקסט משתמש שמכיל "<"/">"/פסקאות
+ * מרובות (רק מבנה ה-wrapper וסמנטיקת הדריסה אומתו) — אם יתגלה קלט שמתעוות בדריסה
+ * חוזרת, יש לבדוק חי ולעדכן כאן.
+ */
+function stripInternalDialogHtml(raw: string): string {
+  return raw
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>\s*<p[^>]*>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
 }
 
 /**
@@ -120,6 +150,59 @@ export function createODataAdapter(cfg: ODataConfig): PriorityAdapter {
       projectName: String(row[f.projectName] ?? ''),
       status: row[f.status] != null ? String(row[f.status]) : undefined,
     }
+  }
+
+  function rowToCustNote(row: Row): CustNote {
+    const cf = m.custNoteFields
+    return {
+      id: Number(row[cf.id] ?? 0),
+      subject: String(row[cf.subject] ?? ''),
+      custName: String(row[cf.custName] ?? ''),
+      custDes: String(row[cf.custDes] ?? ''),
+      statDes: row[cf.statDes] != null ? String(row[cf.statDes]) : undefined,
+      tillDate: row[cf.tillDate] != null ? String(row[cf.tillDate]).slice(0, 10) : undefined,
+      projDocNo: row[cf.projDocNo] != null ? String(row[cf.projDocNo]).trim() || undefined : undefined,
+      hoursReported: row[cf.hours] != null ? Number(row[cf.hours]) : undefined,
+      priority: row[cf.priority] != null ? Number(row[cf.priority]) : undefined,
+      handlerEmpId: row[cf.handler] != null ? String(row[cf.handler]) : undefined,
+    }
+  }
+
+  async function fetchCustNoteDetail(id: number): Promise<CustNote | null> {
+    const cf = m.custNoteFields
+    const select = [cf.id, cf.subject, cf.custName, cf.custDes, cf.statDes, cf.tillDate, cf.projDocNo, cf.hours, cf.priority, cf.owner, cf.handler].join(',')
+    // SECURITY/יציבות: `?.` על value — פריוריטי נצפתה חי מחזירה מדי-פעם תשובת 200 בלי
+    // מבנה {value:[...]} התקין (חוסר יציבות זמנית בשירות), מה שהיה קורס באינדקס [0] ישיר.
+    const data = await request<{ value?: Row[] }>(
+      `${m.entities.custNotes}?$select=${select}&$filter=${cf.id} eq ${id}&$top=1`,
+    )
+    const row = data.value?.[0]
+    if (!row) return null
+    const base = rowToCustNote(row)
+    base.ownerName = row[cf.owner] != null ? String(row[cf.owner]) : undefined
+
+    // INTERNALDIALOGTEXT_SUBFORM הוא navigation property יחיד (לא Collection) — פריוריטי
+    // מחזירה ישות בודדת ($entity), לא {value:[...]}. אומת חי 2026-08-19.
+    const textData = await request<Row>(
+      `${m.entities.custNotes}(CUSTNOTE=${id})/${m.custNoteTextSubform}?$select=${m.custNoteTextFields.text}`,
+    ).catch(() => null)
+    base.description = textData?.[m.custNoteTextFields.text] != null
+      ? stripInternalDialogHtml(String(textData[m.custNoteTextFields.text]))
+      : undefined
+
+    const logData = await request<{ value: Row[] }>(
+      `${m.entities.custNotes}(CUSTNOTE=${id})/${m.custNoteLogSubform}` +
+        `?$select=${m.custNoteLogFields.date},${m.custNoteLogFields.status},${m.custNoteLogFields.handler},${m.custNoteLogFields.initiator}` +
+        `&$orderby=${m.custNoteLogFields.date} desc`,
+    ).catch(() => ({ value: [] as Row[] }))
+    base.history = logData.value.map((r) => ({
+      date: String(r[m.custNoteLogFields.date] ?? '').slice(0, 10),
+      status: String(r[m.custNoteLogFields.status] ?? ''),
+      handlerName: r[m.custNoteLogFields.handler] != null ? String(r[m.custNoteLogFields.handler]) : undefined,
+      initiatorName: r[m.custNoteLogFields.initiator] != null ? String(r[m.custNoteLogFields.initiator]) : undefined,
+    }))
+
+    return base
   }
 
   /**
@@ -228,7 +311,10 @@ export function createODataAdapter(cfg: ODataConfig): PriorityAdapter {
     async listCustNotes(custName) {
       const cf = m.custNoteFields
       const select = [cf.id, cf.subject, cf.custDes, cf.statDes, cf.tillDate, cf.projDocNo, cf.hours].join(',')
-      const filter = `${cf.closed} eq 'N' and ${cf.custName} eq '${escapeOData(custName)}'`
+      // CLOSED הוא null במשימות פתוחות בפועל (לא המחרוזת 'N' כפי שהונח במקור) — אומת
+      // חי 2026-08-19. 'ne' תופס גם null נכון בפריוריטי; '(eq null or eq \'N\')' נכשל
+      // עם 500 (Object reference not set) — ה-OData של פריוריטי לא אוהב את הצירוף.
+      const filter = `${cf.closed} ne 'Y' and ${cf.custName} eq '${escapeOData(custName)}'`
       const data = await request<{ value: Row[] }>(
         `${m.entities.custNotes}?$select=${select}&$filter=${encodeURI(filter)}&$orderby=${cf.id} desc&$top=100`,
       )
@@ -265,6 +351,63 @@ export function createODataAdapter(cfg: ODataConfig): PriorityAdapter {
         statDes: row[cf.statDes] != null ? String(row[cf.statDes]) : undefined,
         projDocNo: input.projDocNo,
       }
+    },
+
+    async searchCustNotes(query, opts, limitN = 50) {
+      const cf = m.custNoteFields
+      const select = [cf.id, cf.subject, cf.custName, cf.custDes, cf.statDes, cf.tillDate, cf.projDocNo, cf.hours, cf.priority, cf.handler].join(',')
+      // ראה הערה ב-listCustNotes — CLOSED הוא null בפועל, לא 'N'; 'ne' תופס גם null.
+      const filters = [`${cf.closed} ne 'Y'`]
+      if (opts.handlerEmpId) filters.push(`${cf.handler} eq '${escapeOData(opts.handlerEmpId)}'`)
+      if (opts.status && opts.status.length > 0) {
+        filters.push('(' + opts.status.map((s) => `${cf.statDes} eq '${escapeOData(s)}'`).join(' or ') + ')')
+      }
+      // OData לא תומך ב-contains() — טוענים עד 500 עם הפילטרים המבניים, ומסננים טקסט חופשי אצלנו
+      // (אותו דפוס כמו fetchAllTasks למעלה).
+      const data = await request<{ value: Row[] }>(
+        `${m.entities.custNotes}?$select=${select}&$filter=${encodeURI(filters.join(' and '))}&$orderby=${cf.id} desc&$top=500`,
+      )
+      const needle = query.trim()
+      const rows = needle
+        ? data.value.filter(
+            (row) => String(row[cf.subject] ?? '').includes(needle) || String(row[cf.custDes] ?? '').includes(needle),
+          )
+        : data.value
+      return rows.slice(0, limitN).map(rowToCustNote)
+    },
+
+    async getCustNoteDetail(id) {
+      return fetchCustNoteDetail(id)
+    },
+
+    async updateCustNote(id, changes: UpdateCustNoteInput) {
+      const cf = m.custNoteFields
+      const body: Row = {}
+      if (changes.status) body[cf.statDes] = changes.status
+      if (changes.priority != null) body[cf.priority] = changes.priority
+      if (changes.tillDate) body[cf.tillDate] = changes.tillDate
+      if (changes.handlerEmpId) body[cf.handler] = changes.handlerEmpId
+
+      if (Object.keys(body).length > 0) {
+        await request<Row>(`${m.entities.custNotes}(CUSTNOTE=${id})`, {
+          method: 'PATCH',
+          body: JSON.stringify(body),
+        })
+      }
+
+      if (changes.description) {
+        // אומת חי (2026-08-19): זו דריסה (overwrite), לא הוספה (append) — ה-POST הזה
+        // מחליף את הטקסט הקודם לגמרי, לא מוסיף לצידו. ה-UI חייב להציג את התיאור הקיים
+        // ולשלוח את הטקסט המלא המעודכן, לא רק את מה שהמשתמש הקליד כ"תוספת".
+        await request<Row>(`${m.entities.custNotes}(CUSTNOTE=${id})/${m.custNoteTextSubform}`, {
+          method: 'POST',
+          body: JSON.stringify({ [m.custNoteTextFields.text]: changes.description }),
+        })
+      }
+
+      const updated = await fetchCustNoteDetail(id)
+      if (!updated) throw new Error('משימה לא נמצאה לאחר עדכון')
+      return updated
     },
 
     async getTimeEntries(priorityEmpId, from, to) {

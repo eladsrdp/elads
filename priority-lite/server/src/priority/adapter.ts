@@ -6,8 +6,10 @@ import type {
   CustNote,
   ProjectSite,
   RemoteTimeEntry,
+  SearchCustNotesOptions,
   TaskDetail,
   TaskSummary,
+  UpdateCustNoteInput,
 } from '@priority-lite/shared'
 
 export interface NewTimeEntry {
@@ -37,4 +39,10 @@ export interface PriorityAdapter {
   listCustNotes(custName: string): Promise<CustNote[]>
   /** יצירת משימת לקוח חדשה ב-CUSTNOTESA */
   createCustNote(input: CreateCustNoteInput): Promise<CustNote>
+  /** חיפוש גלובלי במשימות לקוח על פני כל החברה — לא מוגבל ללקוח אחד. */
+  searchCustNotes(query: string, opts: SearchCustNotesOptions, limit?: number): Promise<CustNote[]>
+  /** פרטי משימה מלאים — כולל תיאור (INTERNALDIALOGTEXT) והיסטוריית סטטוס (DOCTODOLISTLOG). */
+  getCustNoteDetail(id: number): Promise<CustNote | null>
+  /** עדכון משימה — סטטוס/עדיפות/תאריך/לטיפול/תיאור. שולח רק שדות שהוגדרו ב-changes. */
+  updateCustNote(id: number, changes: UpdateCustNoteInput): Promise<CustNote>
 }
