@@ -297,14 +297,18 @@ export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
               </div>
               <div style={colDividerStyle(false)}>
                 {editingMessageId === message.id ? (
-                  <input
+                  <textarea
                     autoFocus
                     defaultValue={message.body_text}
+                    rows={3}
                     onBlur={(e) => handleBodySave(message.id, group.dayNumber, e.target.value)}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault()
+                        ;(e.target as HTMLTextAreaElement).blur()
+                      }
                     }}
-                    style={{ width: '100%', boxSizing: 'border-box' }}
+                    style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit', fontSize: 'inherit' }}
                   />
                 ) : (
                   <span onClick={() => setEditingMessageId(message.id)} style={{ cursor: 'text' }}>
@@ -407,6 +411,7 @@ export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
 
       {panelMessage && (
         <EditPanel
+          key={panelMessage.id}
           message={panelMessage}
           onClose={() => setPanelMessageId(null)}
           onBodySave={(body) => handleBodySave(panelMessage.id, panelMessage.content_day_number, body)}
