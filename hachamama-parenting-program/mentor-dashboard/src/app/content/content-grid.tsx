@@ -311,7 +311,10 @@ export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
                     style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit', fontSize: 'inherit' }}
                   />
                 ) : (
-                  <span onClick={() => setEditingMessageId(message.id)} style={{ cursor: 'text' }}>
+                  <span
+                    onClick={() => (panelMessageId ? setPanelMessageId(message.id) : setEditingMessageId(message.id))}
+                    style={{ cursor: 'text' }}
+                  >
                     {message.body_text || '(ריק)'}
                   </span>
                 )}
