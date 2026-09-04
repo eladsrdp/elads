@@ -3,6 +3,7 @@
 // "עקרון מרכזי": לחיצה על הכפתור הזה תשחרר בעתיד רק את היום הספציפי הזה.
 import type { AppDB } from '../repository/interface'
 import type { MakeClient } from '../make/client'
+import { calculateWeekNumber } from '../domain/scheduling'
 
 export interface SendTriggersResult {
   sent: number
@@ -31,11 +32,13 @@ export async function sendMorningTriggers(
       if (!participant) continue
 
       const dayOfWeekName = DAY_OF_WEEK_HE[new Date(`${trigger.calendar_date}T00:00:00Z`).getUTCDay()]
+      const weekNumber = calculateWeekNumber(trigger.content_day_number)
 
       await makeClient.sendMorningTrigger({
         phone: participant.phone,
         fullName: participant.full_name,
         dayOfWeekName,
+        weekNumber,
         buttonPayload: trigger.id,
       })
       await db.markDailyTriggerSent(trigger.id, new Date().toISOString())

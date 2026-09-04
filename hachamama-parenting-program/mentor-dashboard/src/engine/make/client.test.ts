@@ -16,6 +16,7 @@ describe('createMakeClient', () => {
       phone: '+972501234567',
       fullName: 'דנה כהן',
       dayOfWeekName: 'שלישי',
+      weekNumber: 3,
       buttonPayload: 'trigger-1',
     })
 
@@ -29,6 +30,7 @@ describe('createMakeClient', () => {
           phone: '972501234567', // בלי '+' — Make/WhatsApp מצפים לפורמט הזה
           fullName: 'דנה כהן',
           dayOfWeekName: 'שלישי',
+          weekNumber: 3,
           buttonPayload: 'trigger-1',
         }),
       }),
@@ -81,7 +83,7 @@ describe('createMakeClient', () => {
 describe('createFakeMakeClient', () => {
   it('רושם קריאות בלי לבצע HTTP אמיתי — לשימוש בבדיקות jobs', async () => {
     const fake = createFakeMakeClient()
-    await fake.sendMorningTrigger({ phone: '+972501234567', fullName: 'דנה כהן', dayOfWeekName: 'שני', buttonPayload: 't1' })
+    await fake.sendMorningTrigger({ phone: '+972501234567', fullName: 'דנה כהן', dayOfWeekName: 'שני', weekNumber: 1, buttonPayload: 't1' })
     expect(fake.morningTriggersSent).toHaveLength(1)
     expect(fake.morningTriggersSent[0].buttonPayload).toBe('t1')
   })

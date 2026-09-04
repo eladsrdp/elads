@@ -4,6 +4,7 @@ export interface MakeClient {
     phone: string
     fullName: string
     dayOfWeekName: string
+    weekNumber: number
     buttonPayload: string
   }): Promise<void>
   sendSessionMessage(input: {
@@ -64,7 +65,7 @@ async function postToMake(url: string, payload: unknown): Promise<void> {
 }
 
 export interface FakeMakeClient extends MakeClient {
-  morningTriggersSent: Array<{ phone: string; fullName: string; dayOfWeekName: string; buttonPayload: string }>
+  morningTriggersSent: Array<{ phone: string; fullName: string; dayOfWeekName: string; weekNumber: number; buttonPayload: string }>
   sessionMessagesSent: Array<{ phone: string; bodyText: string; mediaUrl: string | null; mediaType: string | null }>
 }
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   calculateDay1Date,
   calculateProgramDayNumber,
+  calculateWeekNumber,
   combineDateAndTimeInIsrael,
   getIsraelDateString,
 } from './scheduling'
@@ -60,5 +61,20 @@ describe('calculateProgramDayNumber', () => {
 
   it('שבוע אחרי day1_date — יום 8', () => {
     expect(calculateProgramDayNumber('2023-01-08', '2023-01-15')).toBe(8)
+  })
+})
+
+describe('calculateWeekNumber', () => {
+  it('ימים 1-7 (ראשון עד שבת) הם שבוע 1', () => {
+    expect(calculateWeekNumber(1)).toBe(1)
+    expect(calculateWeekNumber(7)).toBe(1)
+  })
+
+  it('יום 8 (ראשון הבא) הוא שבוע 2', () => {
+    expect(calculateWeekNumber(8)).toBe(2)
+  })
+
+  it('יום 23 הוא שבוע 4', () => {
+    expect(calculateWeekNumber(23)).toBe(4)
   })
 })

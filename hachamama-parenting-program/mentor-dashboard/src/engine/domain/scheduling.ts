@@ -38,3 +38,8 @@ export function calculateProgramDayNumber(day1Date: string, todayDate: string): 
   const diffDays = today.diff(d1, 'days').days
   return Math.round(diffDays) + 1
 }
+
+/** באיזה שבוע בתוכנית (1-based) נמצא יום נתון — כל שבוע הוא 7 ימים, יום 1 הוא תמיד יום ראשון (ראשון-שבת). */
+export function calculateWeekNumber(dayNumber: number): number {
+  return Math.ceil(dayNumber / 7)
+}
