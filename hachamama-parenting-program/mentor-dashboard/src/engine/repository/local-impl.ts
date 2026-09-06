@@ -78,15 +78,17 @@ export function createLocalDb(): AppDB {
         participant_id: input.participantId,
         questionnaire_number: input.questionnaireNumber,
         goal_answer: input.goalAnswer,
-        scheduled_date: input.scheduledDate,
+        scheduled_for: input.scheduledFor,
         sent_at: null,
       }
       goalMessages.set(row.id, row)
       return row
     },
 
-    async getDueGoalMessages(calendarDate) {
-      return [...goalMessages.values()].filter((m) => m.scheduled_date === calendarDate && !m.sent_at)
+    async getDueGoalMessages(now) {
+      return [...goalMessages.values()]
+        .filter((m) => !m.sent_at && m.scheduled_for <= now)
+        .sort((a, b) => (a.scheduled_for < b.scheduled_for ? -1 : a.scheduled_for > b.scheduled_for ? 1 : 0))
     },
 
     async markGoalMessageSent(id, sentAt) {

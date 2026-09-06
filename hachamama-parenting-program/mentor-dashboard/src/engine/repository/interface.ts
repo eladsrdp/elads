@@ -70,7 +70,7 @@ export interface GoalMessageRow {
   participant_id: string
   questionnaire_number: number
   goal_answer: string
-  scheduled_date: string
+  scheduled_for: string
   sent_at: string | null
 }
 
@@ -92,14 +92,16 @@ export interface AppDB {
   markParticipantCompleted(id: string): Promise<void>
   createVideoSubmission(input: { participantId: string; videoUrl: string }): Promise<VideoSubmissionRow>
 
-  // goal messages (Plan C — הודעת מעקב מותאמת לתשובת "יעד" בשאלון)
+  // goal messages (Plan C — הודעת מעקב מותאמת לתשובת "יעד" בשאלון). נשלחות ע"י drip.ts,
+  // לא cron נפרד — getDueGoalMessages מחזיר לפי scheduled_for<=now בלבד; בדיקת חלון-session
+  // פתוח נעשית ב-drip.ts עצמו (כמו ל-message_deliveries).
   createGoalMessage(input: {
     participantId: string
     questionnaireNumber: number
     goalAnswer: string
-    scheduledDate: string
+    scheduledFor: string
   }): Promise<GoalMessageRow>
-  getDueGoalMessages(calendarDate: string): Promise<GoalMessageRow[]>
+  getDueGoalMessages(now: string): Promise<GoalMessageRow[]>
   markGoalMessageSent(id: string, sentAt: string): Promise<void>
 
   // content

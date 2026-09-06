@@ -218,38 +218,43 @@ describe('createLocalDb — goal messages', () => {
       participantId: 'p1',
       questionnaireNumber: 3,
       goalAnswer: 'לדבר יותר בשקט',
-      scheduledDate: '2023-01-08',
+      scheduledFor: '2023-01-08T12:00:00.000Z',
     })
     expect(row.id).toBeTruthy()
     expect(row.sent_at).toBeNull()
     expect(row.goal_answer).toBe('לדבר יותר בשקט')
   })
 
-  it('getDueGoalMessages מחזיר רק את אותו תאריך שעדיין לא נשלח', async () => {
+  it('getDueGoalMessages מחזיר רק מה שהגיע זמנו וטרם נשלח, ממוין לפי scheduled_for', async () => {
     const db = createLocalDb()
-    const due = await db.createGoalMessage({
+    const later = await db.createGoalMessage({
       participantId: 'p1',
       questionnaireNumber: 1,
-      goalAnswer: 'יעד א',
-      scheduledDate: '2023-01-08',
+      goalAnswer: 'יעד מאוחר',
+      scheduledFor: '2023-01-08T13:00:00.000Z',
+    })
+    const earlier = await db.createGoalMessage({
+      participantId: 'p1',
+      questionnaireNumber: 1,
+      goalAnswer: 'יעד מוקדם',
+      scheduledFor: '2023-01-08T09:00:00.000Z',
     })
     await db.createGoalMessage({
       participantId: 'p2',
       questionnaireNumber: 1,
-      goalAnswer: 'יעד ב',
-      scheduledDate: '2023-01-15', // תאריך אחר
+      goalAnswer: 'עדיין לא הגיע הזמן',
+      scheduledFor: '2023-01-15T12:00:00.000Z',
     })
     const alreadySent = await db.createGoalMessage({
       participantId: 'p3',
       questionnaireNumber: 1,
-      goalAnswer: 'יעד ג',
-      scheduledDate: '2023-01-08',
+      goalAnswer: 'כבר נשלח',
+      scheduledFor: '2023-01-08T08:00:00.000Z',
     })
     await db.markGoalMessageSent(alreadySent.id, '2023-01-08T14:00:00.000Z')
 
-    const result = await db.getDueGoalMessages('2023-01-08')
-    expect(result).toHaveLength(1)
-    expect(result[0].id).toBe(due.id)
+    const result = await db.getDueGoalMessages('2023-01-08T14:00:00.000Z')
+    expect(result.map((r) => r.id)).toEqual([earlier.id, later.id])
   })
 
   it('markGoalMessageSent מעדכן sent_at', async () => {
@@ -258,10 +263,10 @@ describe('createLocalDb — goal messages', () => {
       participantId: 'p1',
       questionnaireNumber: 1,
       goalAnswer: 'יעד',
-      scheduledDate: '2023-01-08',
+      scheduledFor: '2023-01-08T12:00:00.000Z',
     })
     await db.markGoalMessageSent(row.id, '2023-01-08T14:00:00.000Z')
-    const due = await db.getDueGoalMessages('2023-01-08')
+    const due = await db.getDueGoalMessages('2023-01-08T14:00:00.000Z')
     expect(due).toHaveLength(0)
   })
 })

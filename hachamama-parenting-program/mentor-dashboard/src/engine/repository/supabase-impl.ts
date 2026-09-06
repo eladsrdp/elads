@@ -97,16 +97,17 @@ export function createSupabaseDb(url: string, key: string): AppDB {
         participant_id: input.participantId,
         questionnaire_number: input.questionnaireNumber,
         goal_answer: input.goalAnswer,
-        scheduled_date: input.scheduledDate,
+        scheduled_for: input.scheduledFor,
       })
     },
 
-    async getDueGoalMessages(calendarDate) {
+    async getDueGoalMessages(now) {
       const { data, error } = await supabase
         .from('goal_messages')
         .select()
-        .eq('scheduled_date', calendarDate)
         .is('sent_at', null)
+        .lte('scheduled_for', now)
+        .order('scheduled_for', { ascending: true })
       if (error) throw new Error(`[supabase] goal_messages: ${error.message}`)
       return data ?? []
     },

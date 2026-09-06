@@ -20,19 +20,14 @@ vi.mock('@/engine/jobs/send-triggers', () => ({
 vi.mock('@/engine/jobs/drip', () => ({
   runDrip: vi.fn(),
 }))
-vi.mock('@/engine/jobs/send-goal-messages', () => ({
-  sendGoalMessages: vi.fn(),
-}))
 
 import { getDb } from '@/engine/app-context'
 import { generateDailyDeliveries } from '@/engine/jobs/generate-daily'
 import { sendMorningTriggers } from '@/engine/jobs/send-triggers'
 import { runDrip } from '@/engine/jobs/drip'
-import { sendGoalMessages } from '@/engine/jobs/send-goal-messages'
 import { GET as generateDailyGet, POST as generateDailyPost } from './generate-daily/route'
 import { GET as sendTriggersGet, POST as sendTriggersPost } from './send-triggers/route'
 import { GET as dripGet, POST as dripPost } from './drip/route'
-import { GET as sendGoalMessagesGet, POST as sendGoalMessagesPost } from './send-goal-messages/route'
 
 function makeRequest(path: string, method: string, authHeader?: string): Request {
   return new Request(`http://localhost/api/cron/${path}`, {
@@ -52,14 +47,12 @@ describe('cron route handlers', () => {
     })
     vi.mocked(sendMorningTriggers).mockResolvedValue({ sent: 0, errors: [] })
     vi.mocked(runDrip).mockResolvedValue({ sent: 0, errors: [] })
-    vi.mocked(sendGoalMessages).mockResolvedValue({ sent: 0, errors: [] })
   })
 
   it.each([
     ['generate-daily', generateDailyGet, generateDailyPost],
     ['send-triggers', sendTriggersGet, sendTriggersPost],
     ['drip', dripGet, dripPost],
-    ['send-goal-messages', sendGoalMessagesGet, sendGoalMessagesPost],
   ] as const)('%s דוחה בלי CRON_SECRET תקין, ב-GET וב-POST', async (path, get, post) => {
     expect((await get(makeRequest(path, 'GET', 'Bearer wrong'))).status).toBe(401)
     expect((await post(makeRequest(path, 'POST'))).status).toBe(401)
@@ -84,12 +77,6 @@ describe('cron route handlers', () => {
 
   it('POST /drip מריץ ומחזיר תוצאה', async () => {
     const res = await dripPost(makeRequest('drip', 'POST', 'Bearer test-secret'))
-    expect(res.status).toBe(200)
-    expect(await res.json()).toEqual({ sent: 0, errors: [] })
-  })
-
-  it('POST /send-goal-messages מריץ ומחזיר תוצאה', async () => {
-    const res = await sendGoalMessagesPost(makeRequest('send-goal-messages', 'POST', 'Bearer test-secret'))
     expect(res.status).toBe(200)
     expect(await res.json()).toEqual({ sent: 0, errors: [] })
   })

@@ -9,6 +9,7 @@ vi.mock('@/engine/env', () => ({
 }))
 vi.mock('@/engine/domain/scheduling', () => ({
   calculateGoalMessageSendDate: vi.fn(() => '2023-01-08'),
+  combineDateAndTimeInIsrael: vi.fn(() => new Date('2023-01-08T12:00:00.000Z')), // 14:00 בישראל בחורף
 }))
 
 import { getDb } from '@/engine/app-context'
@@ -52,12 +53,12 @@ describe('POST /api/webhooks/goal-answer', () => {
     )
 
     expect(res.status).toBe(201)
-    expect(await res.json()).toEqual({ goalMessageId: 'gm1', scheduledDate: '2023-01-08' })
+    expect(await res.json()).toEqual({ goalMessageId: 'gm1', scheduledFor: '2023-01-08T12:00:00.000Z' })
     expect(createGoalMessage).toHaveBeenCalledWith({
       participantId: 'p1',
       questionnaireNumber: 3,
       goalAnswer: 'לדבר יותר בשקט',
-      scheduledDate: '2023-01-08',
+      scheduledFor: '2023-01-08T12:00:00.000Z',
     })
   })
 

@@ -17,9 +17,8 @@ project אחד. `server/` נשאר בריפו בלי להימחק (בכוונה,
 | POST | `/api/webhooks/make/button-click` | `Authorization: Bearer $MAKE_WEBHOOK_SECRET` | Make מעביר לחיצת כפתור |
 | GET/POST | `/api/cron/generate-daily` | `Authorization: Bearer $CRON_SECRET` | ריצה יומית — Vercel Cron מובנה, 00:05 |
 | GET/POST | `/api/cron/send-triggers` | `Authorization: Bearer $CRON_SECRET` | טריגר בוקר — cron-job.org, 06:45 מדויק |
-| GET/POST | `/api/cron/drip` | `Authorization: Bearer $CRON_SECRET` | שליחה בזמן אמת — cron-job.org, כל 5 דקות |
-| POST | `/api/webhooks/goal-answer` | `Authorization: Bearer $MAKE_WEBHOOK_SECRET` | Make מעביר תשובת "יעד" מכל שגרת שאלון (טלפון+מספר שאלון+תשובה) |
-| GET/POST | `/api/cron/send-goal-messages` | `Authorization: Bearer $CRON_SECRET` | שולח הודעת מעקב-יעד שהגיע תורה — cron-job.org, 14:00 |
+| GET/POST | `/api/cron/drip` | `Authorization: Bearer $CRON_SECRET` | שליחה בזמן אמת — cron-job.org, כל 5 דקות (כולל הודעות יעד, ראו למטה) |
+| POST | `/api/webhooks/goal-answer` | `Authorization: Bearer $MAKE_WEBHOOK_SECRET` | Make מעביר תשובת "יעד" מכל שגרת שאלון (טלפון+מספר שאלון+תשובה) — לא endpoint נשלח בפועל, רק מתזמן |
 | GET/POST | `/video-submit` | — (ציבורי) | לינק להעלאת סרטון ע"י נרשם |
 | — | `/participants`, `/content` | Supabase Auth (מנחה) | הדשבורד |
 
@@ -110,7 +109,11 @@ insert into mentors (user_id, full_name) values ('<uuid מהשלב הקודם>',
   (עדכון: מנחות קיבלו בהמשך גישת read-write על תוכן ההודעות — ראו סעיף "מסך תכנים" למטה).
 - אין מסך תשובות לשאלונים — Plan C (שאלונים עצמם: איך נשלחים/נאספים) לא נבנה עדיין,
   אין טבלת `forms`/`form_responses`. מה שכן נבנה (2026-09-06): `goal_messages` — מקבל
-  רק את תשובת "יעד" (טלפון+מספר שאלון+טקסט) דרך `/api/webhooks/goal-answer` ומתזמן
-  הודעת מעקב מותאמת, ראו `server/migrations/0008_goal_messages.sql`.
+  רק את תשובת "יעד" (טלפון+מספר שאלון+טקסט) דרך `/api/webhooks/goal-answer`, ומתזמן
+  `scheduled_for` (14:00 בתאריך המחושב, ראו `calculateGoalMessageSendDate`). **השליחה
+  בפועל נעשית ע"י `drip.ts`** (לא cron נפרד) — בדיוק כמו message_deliveries רגילים:
+  רק כשיש חלון-session פתוח, ובסדר כרונולוגי משולב עם שאר הודעות אותו יום. אם המשתתף
+  טרם לחץ על כפתור הבוקר עד 14:00, ההודעה ממתינה ונשלחת ברצף כשהוא סוף-סוף לוחץ.
+  ראו `server/migrations/0008_goal_messages.sql`.
 - בלי component/E2E tests — רק unit tests ללוגיקה הטהורה (`src/lib/*.test.ts`). כיסוי
   התואם לעומק הבדיקות הקיים ב-`server/`.

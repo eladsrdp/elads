@@ -1,13 +1,17 @@
 // Webhook תשובת "יעד" בשאלון — Make.com קורא לזה בכל מילוי שאלון (כל שגרות השאלון
 // חולקות את אותו webhook, לא endpoint נפרד לכל שגרה). מתזמן הודעת מעקב מותאמת
-// שנשלחת ע"י /api/cron/send-goal-messages בתאריך המחושב.
+// (scheduled_for = 14:00 בתאריך המחושב) — נשלחת בפועל ע"י drip.ts, לא ע"י cron נפרד:
+// אם המשתתף עוד לא לחץ על כפתור הבוקר עד 14:00 (חלון-session סגור), ההודעה ממתינה
+// ונשלחת ברצף עם שאר הודעות אותו יום ברגע שהוא סוף-סוף לוחץ (drip רץ כל 5 דק').
 // SECURITY: חשוף לאינטרנט, מוגן בסוד משותף (אותו MAKE_WEBHOOK_SECRET כמו button-click —
 // אותו צרכן, Make.com, כבר מחזיק אותו).
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { calculateGoalMessageSendDate } from '@/engine/domain/scheduling'
+import { calculateGoalMessageSendDate, combineDateAndTimeInIsrael } from '@/engine/domain/scheduling'
 import { getDb } from '@/engine/app-context'
 import { engineEnv } from '@/engine/env'
+
+const GOAL_MESSAGE_SEND_TIME = '14:00'
 
 const GoalAnswerSchema = z.object({
   phone: z.string().min(1),
@@ -43,12 +47,13 @@ export async function POST(request: Request) {
   }
 
   const scheduledDate = calculateGoalMessageSendDate(new Date())
+  const scheduledFor = combineDateAndTimeInIsrael(scheduledDate, GOAL_MESSAGE_SEND_TIME).toISOString()
   const goalMessage = await db.createGoalMessage({
     participantId: participant.id,
     questionnaireNumber: parsed.data.questionnaireNumber,
     goalAnswer: parsed.data.goalAnswer,
-    scheduledDate,
+    scheduledFor,
   })
 
-  return NextResponse.json({ goalMessageId: goalMessage.id, scheduledDate }, { status: 201 })
+  return NextResponse.json({ goalMessageId: goalMessage.id, scheduledFor }, { status: 201 })
 }
