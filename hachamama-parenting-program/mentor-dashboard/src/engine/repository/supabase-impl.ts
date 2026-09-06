@@ -6,6 +6,7 @@ import type {
   AppDB,
   ContentDayRow,
   DailyTriggerRow,
+  GoalMessageRow,
   MessageDeliveryRow,
   MessageRow,
   ParticipantRow,
@@ -89,6 +90,29 @@ export function createSupabaseDb(url: string, key: string): AppDB {
         participant_id: input.participantId,
         video_url: input.videoUrl,
       })
+    },
+
+    async createGoalMessage(input) {
+      return insertAndReturn<GoalMessageRow>('goal_messages', {
+        participant_id: input.participantId,
+        questionnaire_number: input.questionnaireNumber,
+        goal_answer: input.goalAnswer,
+        scheduled_date: input.scheduledDate,
+      })
+    },
+
+    async getDueGoalMessages(calendarDate) {
+      const { data, error } = await supabase
+        .from('goal_messages')
+        .select()
+        .eq('scheduled_date', calendarDate)
+        .is('sent_at', null)
+      if (error) throw new Error(`[supabase] goal_messages: ${error.message}`)
+      return data ?? []
+    },
+
+    async markGoalMessageSent(id, sentAt) {
+      await updateRow('goal_messages', id, { sent_at: sentAt })
     },
 
     async createContentDay(input) {

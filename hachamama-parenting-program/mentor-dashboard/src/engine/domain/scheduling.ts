@@ -43,3 +43,21 @@ export function calculateProgramDayNumber(day1Date: string, todayDate: string): 
 export function calculateWeekNumber(dayNumber: number): number {
   return Math.ceil(dayNumber / 7)
 }
+
+/**
+ * מתי לשלוח הודעת מעקב מותאמת לתשובת "יעד" בשאלון, בהינתן מתי ההורה ענה.
+ * כלל (מאושר ע"י המשתמש): תאריך שליחה = תאריך מענה + יום אחד, ב-14:00 — אלא אם זה
+ * נופל בשישי/שבת, ואז קופצים לראשון הקרוב (לא שולחים בשישי/שבת, כמו שאר התוכן).
+ * חריג יחיד: מענה בראשון עצמו לפני 14:00 → נשלח באותו יום, לא למחרת.
+ * מענה בדיוק ב-14:00 נחשב "אחרי" (המשתמש אישר).
+ */
+export function calculateGoalMessageSendDate(answeredAt: Date): string {
+  const israelTime = DateTime.fromJSDate(answeredAt).setZone(ISRAEL_ZONE)
+  const isSundayBeforeCutoff = israelTime.weekday === 7 && israelTime.hour < 14
+  if (isSundayBeforeCutoff) return israelTime.toISODate() as string
+
+  let sendDate = israelTime.startOf('day').plus({ days: 1 })
+  if (sendDate.weekday === 5) sendDate = sendDate.plus({ days: 2 }) // שישי → קופץ לראשון
+  else if (sendDate.weekday === 6) sendDate = sendDate.plus({ days: 1 }) // שבת → קופץ לראשון
+  return sendDate.toISODate() as string
+}

@@ -211,6 +211,61 @@ describe('createLocalDb — daily triggers ומ-message deliveries', () => {
   })
 })
 
+describe('createLocalDb — goal messages', () => {
+  it('יוצר goal_message עם sent_at=null', async () => {
+    const db = createLocalDb()
+    const row = await db.createGoalMessage({
+      participantId: 'p1',
+      questionnaireNumber: 3,
+      goalAnswer: 'לדבר יותר בשקט',
+      scheduledDate: '2023-01-08',
+    })
+    expect(row.id).toBeTruthy()
+    expect(row.sent_at).toBeNull()
+    expect(row.goal_answer).toBe('לדבר יותר בשקט')
+  })
+
+  it('getDueGoalMessages מחזיר רק את אותו תאריך שעדיין לא נשלח', async () => {
+    const db = createLocalDb()
+    const due = await db.createGoalMessage({
+      participantId: 'p1',
+      questionnaireNumber: 1,
+      goalAnswer: 'יעד א',
+      scheduledDate: '2023-01-08',
+    })
+    await db.createGoalMessage({
+      participantId: 'p2',
+      questionnaireNumber: 1,
+      goalAnswer: 'יעד ב',
+      scheduledDate: '2023-01-15', // תאריך אחר
+    })
+    const alreadySent = await db.createGoalMessage({
+      participantId: 'p3',
+      questionnaireNumber: 1,
+      goalAnswer: 'יעד ג',
+      scheduledDate: '2023-01-08',
+    })
+    await db.markGoalMessageSent(alreadySent.id, '2023-01-08T14:00:00.000Z')
+
+    const result = await db.getDueGoalMessages('2023-01-08')
+    expect(result).toHaveLength(1)
+    expect(result[0].id).toBe(due.id)
+  })
+
+  it('markGoalMessageSent מעדכן sent_at', async () => {
+    const db = createLocalDb()
+    const row = await db.createGoalMessage({
+      participantId: 'p1',
+      questionnaireNumber: 1,
+      goalAnswer: 'יעד',
+      scheduledDate: '2023-01-08',
+    })
+    await db.markGoalMessageSent(row.id, '2023-01-08T14:00:00.000Z')
+    const due = await db.getDueGoalMessages('2023-01-08')
+    expect(due).toHaveLength(0)
+  })
+})
+
 describe('createLocalDb — session windows', () => {
   it('חלון סגור כברירת מחדל למי שלא לחץ מעולם', async () => {
     const db = createLocalDb()

@@ -65,6 +65,15 @@ export interface VideoSubmissionRow {
   submitted_at: string
 }
 
+export interface GoalMessageRow {
+  id: string
+  participant_id: string
+  questionnaire_number: number
+  goal_answer: string
+  scheduled_date: string
+  sent_at: string | null
+}
+
 export interface AppDB {
   ping(): Promise<void>
 
@@ -82,6 +91,16 @@ export interface AppDB {
   getAllParticipants(): Promise<ParticipantRow[]>
   markParticipantCompleted(id: string): Promise<void>
   createVideoSubmission(input: { participantId: string; videoUrl: string }): Promise<VideoSubmissionRow>
+
+  // goal messages (Plan C — הודעת מעקב מותאמת לתשובת "יעד" בשאלון)
+  createGoalMessage(input: {
+    participantId: string
+    questionnaireNumber: number
+    goalAnswer: string
+    scheduledDate: string
+  }): Promise<GoalMessageRow>
+  getDueGoalMessages(calendarDate: string): Promise<GoalMessageRow[]>
+  markGoalMessageSent(id: string, sentAt: string): Promise<void>
 
   // content
   createContentDay(input: { dayNumber: number; title: string | null }): Promise<ContentDayRow>

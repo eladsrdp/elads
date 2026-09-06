@@ -4,6 +4,7 @@ import type {
   AppDB,
   ContentDayRow,
   DailyTriggerRow,
+  GoalMessageRow,
   MessageDeliveryRow,
   MessageRow,
   ParticipantRow,
@@ -19,6 +20,7 @@ export function createLocalDb(): AppDB {
   const messageDeliveries = new Map<string, MessageDeliveryRow>()
   const sessionWindows = new Map<string, SessionWindowRow>()
   const videoSubmissions = new Map<string, VideoSubmissionRow>()
+  const goalMessages = new Map<string, GoalMessageRow>()
 
   return {
     async ping() {},
@@ -68,6 +70,28 @@ export function createLocalDb(): AppDB {
       }
       videoSubmissions.set(row.id, row)
       return row
+    },
+
+    async createGoalMessage(input) {
+      const row: GoalMessageRow = {
+        id: randomUUID(),
+        participant_id: input.participantId,
+        questionnaire_number: input.questionnaireNumber,
+        goal_answer: input.goalAnswer,
+        scheduled_date: input.scheduledDate,
+        sent_at: null,
+      }
+      goalMessages.set(row.id, row)
+      return row
+    },
+
+    async getDueGoalMessages(calendarDate) {
+      return [...goalMessages.values()].filter((m) => m.scheduled_date === calendarDate && !m.sent_at)
+    },
+
+    async markGoalMessageSent(id, sentAt) {
+      const row = goalMessages.get(id)
+      if (row) goalMessages.set(id, { ...row, sent_at: sentAt })
     },
 
     async createContentDay(input) {
