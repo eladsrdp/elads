@@ -28,3 +28,4 @@
 - [[parenting-course-whatsapp-companion]] — תוכנית ליווי דיגיטלית לקורס הנחיית הורים, WhatsApp+Make.com, מחליף Airtable
 - [[whatsapp-personal-agent]] — סוכן WhatsApp אישי לאלעד (WAHA על Hetzner) — שליחה/קבלה, בהמשך Outlook+חשבוניות
 - [[make-issues-dashboard]] — webhook receiver + לוח בקרה לתקלות סנריו מ-Make.com (make-issues/) — Hono+React+Neon, בפרודקשן
+- [[make-mcp-connection]] — חיבור MCP ברמת הפרויקט מול Make.com (`.mcp.json`, OAuth), עדיין דורש אישור בטרמינל
