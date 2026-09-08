@@ -14,7 +14,8 @@ CONSIGNEE (מספר לקוח קבוע אצל Orian) בדוגמאות: `30000060`
 - אין עדיין credentials (username/password) שמורים ב-.env — כשתתחיל אינטגרציה בקוד, יש להוסיף `ORIAN_USERNAME`/`ORIAN_PASSWORD` ל-.env (לא לצ'אט/git), ראו [[env-config]].
 - לא ידוע אם זו אינטגרציה עצמאית חדשה או קשורה לפרויקט קיים (למשל priority-lite) — לברר עם המשתמש כשיתחיל פיתוח בפועל.
 - כללי ייחודיות (uniqueness) של `PACKAGEID`/`REFERENCEORDER` בסביבת ה-test מול Orian לא ידועים במדויק — פותר בפועל ע"י תוספת סיומת ייחודית (timestamp) לכל ניסיון, ועם `PACKAGEID` בן 11 תווים בדיוק (המגבלה המתועדת) ההזמנה הצליחה.
-- תגובת ה-`CreateTransportationOrder` המוצלחת מחזירה שדות שלא מתועדים במסמך כלל: `CARRIER`, `DELIVERYMETHOD`, `EXTERNALCHUTE`, `PIN` — לא ידוע אם אלו קבועים או משתנים לפי כתובת/סוג הזמנה; לא נבדק עדיין GetTransporttaionOrderLabel על ההזמנה שנוצרה בהצלחה.
+- תגובת ה-`CreateTransportationOrder` המוצלחת מחזירה שדות שלא מתועדים במסמך כלל: `CARRIER`, `DELIVERYMETHOD`, `EXTERNALCHUTE`, `PIN` — לא ידוע אם אלו קבועים או משתנים לפי כתובת/סוג הזמנה.
+- **`GetTransporttaionOrderLabel` נכשל** עם `ORDERID=REFERENCEORDER` תקין (`XLT1038352639-101540`, ההזמנה שאומתה כ-SUCCESS) — שגיאה `400 Bad Request: Value cannot be null. Parameter name: s`. המסמך קובע במפורש ש-ORDERID יכול להיות internal ID **או** REFERENCEORDER, כך שהתאוריה "צריך מזהה פנימי" סותרת את המסמך. הבדיקה בוצעה דרך כלי חיצוני (לא curl) עם דגל `requestCompressedContent:true` (gzip) — חשד שזו הסיבה האמיתית לשגיאה, לא שדה ה-ORDERID. טרם נבדק עם curl נקי כדי לבודד את הגורם.
 
 ## Session Log
 
@@ -40,4 +41,10 @@ CONSIGNEE (מספר לקוח קבוע אצל Orian) בדוגמאות: `30000060`
 - **What was done:** ניסיון חוזר עם `PACKAGEID` ייחודי בן 11 תווים (`19888808230`) ו-`REFERENCEORDER`/`HOSTORDERID` עם סיומת timestamp — הצליח במלואו: `SUCCESS:true`, `STATUSCODE:200`. זו ההוכחה הראשונה שההזמנה נוצרת בפועל אצל Orian (test environment), לא רק ש-הבקשה מתקבלת.
 - **Decisions:** תבנית ה-uniqueness (timestamp suffix + הקפדה על 11 תווים ב-PACKAGEID) עובדת ומספיקה לבדיקות ידניות חוזרות; לאינטגרציה אמיתית יידרש generator מסודר יותר (למשל מונה/UUID מקוצר).
 - **Notes / Caveats:** התגובה המוצלחת כוללת 4 שדות שלא קיימים בכלל בדוגמת ה-Response של המסמך: `CARRIER` (Orian), `DELIVERYMETHOD` (POD), `EXTERNALCHUTE` (מרכז), `PIN` (TRUE) — ככל הנראה מטא-דאטה על שיוך ההזמנה למרכז מיון/שיטת מסירה, לא תועדו כי המסמך מציג רק דוגמת תגובה חלקית. עדיין לא נבדק `GetTransporttaionOrderLabel` על ההזמנה הזו כדי לוודא שגם שליפת התווית עובדת בפועל.
+- **Related:** none חדשים
+
+### 2026-09-08 — GetTransporttaionOrderLabel נכשל — חשד לבעיית דחיסה בכלי הבדיקה, לא בשדה ORDERID [debug]
+- **What was done:** ניסיון עם `ORDERID` שגוי (סיומת 101541 במקום 101540) נכשל כצפוי (מזהה לא קיים). לאחר תיקון ל-`XLT1038352639-101540` (ה-REFERENCEORDER המדויק של ההזמנה שאומתה כ-SUCCESS) — עדיין נכשל: `400 Bad Request: "Value cannot be null. Parameter name: s"`. הבדיקה בוצעה דרך כלי חיצוני (JSON config, לא curl) שכלל `"requestCompressedContent": true`.
+- **Decisions:** המסמך קובע במפורש ש-`ORDERID` יכול להיות ה-internal ID **או** ה-REFERENCEORDER — לכן התאוריה ש"נדרש מזהה פנימי" סותרת את המסמך ולא התקבלה כמסקנה סופית. הועלתה תאוריה חלופית: דגל הדחיסה (gzip) בכלי החיצוני עלול לגרום לשרת לקבל גוף דחוס בזמן שה-Content-Type עדיין מוצהר כטקסט רגיל → exception גנרי כמו שהתקבל. הומלץ למשתמש להריץ בדיוק את אותה בקשה דרך curl נקי (ללא כל דחיסה) כדי לבודד את הגורם, לפני שפונים ל-Orian לאישור בנושא מזהה פנימי.
+- **Notes / Caveats:** טרם התקבלה תוצאת curl נקי — הסעיף הזה ב-Open Questions פתוח עד לבדיקה חוזרת.
 - **Related:** none חדשים
