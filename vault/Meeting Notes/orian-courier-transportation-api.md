@@ -5,7 +5,7 @@
 
 **Base URLs:** Test = `https://disapiTest.orian.com`, Production = `https://disapi.orian.com`.
 
-**Endpoints:** `Login` (POST, Basic Auth → AuthToken בתוקף לשעה), `Logout` (POST), `CreateTransportationOrder` (POST, גוף XML לפי סכימת TRANSPORTATIONORDER, Content-Type מוצהר כ-`x-www-form-urlencoded` למרות גוף XML גולמי — לא אומת חי), `GetTransporttaionOrderLabel` (POST, XML עם CONSIGNEE+ORDERID → תווית PDF ב-Base64), `GetPackageStatus` (GET, query params), `pudo/Getpudos` ו-`pudo/Getpudosjson` (GET, איתור PUDO לפי עיר/כתובת/מרחק).
+**Endpoints:** `Login` (POST, Basic Auth → AuthToken בתוקף לשעה), `Logout` (POST), `CreateTransportationOrder` (POST, גוף XML גולמי, אומת חי), `GetTransporttaionOrderLabel` (POST, **חריג**: דורש גוף `x-www-form-urlencoded` אמיתי/מקודד, לא XML גולמי כמו שאר הקריאות — ראו Session Log 2026-09-08), `GetPackageStatus` (GET, query params, אומת חי), `pudo/Getpudos` ו-`pudo/Getpudosjson` (GET, איתור PUDO לפי עיר/כתובת/מרחק, טרם נבדק).
 
 CONSIGNEE (מספר לקוח קבוע אצל Orian) בדוגמאות: `30000060`.
 
@@ -17,7 +17,7 @@ CONSIGNEE (מספר לקוח קבוע אצל Orian) בדוגמאות: `30000060`
 - לא ידוע אם זו אינטגרציה עצמאית חדשה או קשורה לפרויקט קיים (למשל priority-lite) — לברר עם המשתמש כשיתחיל פיתוח בפועל.
 - כללי ייחודיות (uniqueness) של `PACKAGEID`/`REFERENCEORDER` בסביבת ה-test מול Orian לא ידועים במדויק — פותר בפועל ע"י תוספת סיומת ייחודית (timestamp) לכל ניסיון, ועם `PACKAGEID` בן 11 תווים בדיוק (המגבלה המתועדת) ההזמנה הצליחה.
 - תגובת ה-`CreateTransportationOrder` המוצלחת מחזירה שדות שלא מתועדים במסמך כלל: `CARRIER`, `DELIVERYMETHOD`, `EXTERNALCHUTE`, `PIN` — לא ידוע אם אלו קבועים או משתנים לפי כתובת/סוג הזמנה.
-- **`GetTransporttaionOrderLabel` שבור באופן עקבי בסביבת ה-test — כל האפשרויות מהצד שלנו מוצו, ממתין לפנייה לתמיכת Orian.** נבדק עם 3 ערכי ORDERID שונים (REFERENCEORDER תואם, REFERENCEORDER לא תואם, PACKAGEID) — תמיד אותה שגיאה: `400 Bad Request: Value cannot be null. Parameter name: s`. אושר ש-Login/CreateTransportationOrder/GetPackageStatus עובדים מושלם ושההזמנה/החבילה קיימות ותקינות אצל Orian (`PACKAGESTATUS:NEW`) — הבעיה ממוקדת אך ורק ב-endpoint הזה. סביר שזו תקלה אמיתית בצד Orian (תבנית הדפסה לא מוגדרת לחשבון הבדיקה, או באג בקוד ה-endpoint). **הוכן תקציר repro מוכן להעברה לתמיכת Orian** (נמסר למשתמש בצ'אט, לא נשמר כאן כי עלול לכלול מזהים שישתנו).
+- **תוקן (2026-09-08): `GetTransporttaionOrderLabel` דורש גוף `x-www-form-urlencoded` אמיתי (מקודד), לא XML גולמי** — **בניגוד** ל-Login/CreateTransportationOrder/GetPackageStatus שכולם עובדים עם XML גולמי בגוף (למרות שה-Content-Type המוצהר זהה בכולם!). ה"תקלה" שיוחסה בטעות ל-Orian (3 כשלים עם `Value cannot be null. Parameter name: s`) הייתה בעצם **טעות קידוד מהצד שלנו** — שלחנו XML גולמי (כמו בכל שאר הקריאות) לקריאה שדווקא מצפה ל-form-encoding אמיתי. אומת בפוסטמן: שליחה כ-`x-www-form-urlencoded` עם Key ריק ו-XML מקודד ב-Value מחזירה תשובה מובנית (`STATUSCODE:100`, לא exception) גם עם ORDERID שגוי (PACKAGEID במקום REFERENCEORDER) — **טרם אומת הצלחה מלאה (LABEL לא ריק) עם REFERENCEORDER הנכון**, זה השלב הבא.
 
 ## Session Log
 
@@ -67,4 +67,10 @@ CONSIGNEE (מספר לקוח קבוע אצל Orian) בדוגמאות: `30000060`
 - **What was done:** ניסיון עם `ORDERID=PACKAGEID` (`19888808234`) — נכשל באותה שגיאה בדיוק: `Value cannot be null. Parameter name: s`. זהו הניסיון השלישי (REFERENCEORDER תואם, REFERENCEORDER לא תואם, PACKAGEID) עם אותה תוצאה זהה, בעוד Login/CreateTransportationOrder/GetPackageStatus עובדים ללא רבב.
 - **Decisions:** הוסקה מסקנה סופית: זו כנראה תקלה אמיתית בצד Orian (test environment) — לא תלויה בקלט/פורמט מהצד שלנו. הוכן למשתמש תקציר repro מובנה (environment, endpoint, consignee, 3 גופי בקשה שנוסו, השגיאה החוזרת, השוואה להצלחת Create/GetPackageStatus על אותם מזהים) להעברה ישירה לתמיכת Orian — לא נשמר כאן במלואו כי הוא כולל מזהי בדיקה שישתנו בכל פנייה עתידית.
 - **Notes / Caveats:** לא ידוע אם התקלה נובעת מהיעדר תבנית הדפסה מוגדרת לחשבון `30000060` בסביבת ה-test, או מבאג כללי ב-endpoint. יש להמתין לתשובת Orian לפני המשך עבודה על הקריאה הזו.
+- **Related:** none חדשים
+
+### 2026-09-08 — תיקון מסקנה קודמת: זו לא תקלה של Orian — טעות קידוד גוף מהצד שלנו [debug]
+- **What was done:** המשתמש בדק את אותה קריאה (`GetTransporttaionOrderLabel`) בפוסטמן, אך עם body type **`x-www-form-urlencoded`** (Key ריק, XML מקודד ב-Value) במקום XML גולמי. ה-`ORDERID` שנשלח בטעות היה `19888808234` (PACKAGEID, לא REFERENCEORDER) — אבל התגובה **לא הייתה קריסה**: `STATUSCODE:100`, `RESPONSEERROR:"No Records Found"`, מבנה XML תקין ומלא (`TRANSPORTATIONORDERID`, `LABEL` ריק, וכו').
+- **Decisions:** **מסקנת ה-Session הקודם (הסלמה ל-Orian) הייתה שגויה ומבוטלת.** ה-3 כשלים החוזרים (`Value cannot be null. Parameter name: s`) נגרמו כי שלחנו XML גולמי (בדיוק כמו ב-Login/Create/GetPackageStatus) לקריאה שדווקא **דורשת** form-encoding אמיתי — אי-עקביות בין endpoints של אותו API (כנראה מימוש שרת שונה/legacy ל-endpoint הזה ספציפית). ברגע שהגוף נשלח מקודד כהלכה, הקריאה מתפקדת נורמלית (מחזירה שגיאה עסקית נקייה, לא exception). השלב הבא: לחזור על אותה בדיקה עם `ORDERID=XLT1038352639-101545` (ה-REFERENCEORDER הנכון) כדי לאשר קבלת LABEL בפועל.
+- **Notes / Caveats:** עדיין לא ידוע התחביר המדויק שגרם להצלחה (Key ריק + `=`+encoded, או שקוד השרת פשוט מוריד "=" ומפענח מה שנשאר) — לא קריטי כרגע, מה שחשוב הוא שצריך form-encoding אמיתי ולא raw XML לקריאה הזו בלבד. יש למצוא איך לשחזר את זה במייק (ששם Name חובה בטבלת x-www-form-urlencoded, בניגוד לפוסטמן).
 - **Related:** none חדשים
