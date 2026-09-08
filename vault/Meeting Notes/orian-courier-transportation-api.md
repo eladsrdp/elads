@@ -10,7 +10,7 @@
 CONSIGNEE (מספר לקוח קבוע אצל Orian) בדוגמאות: `30000060`.
 
 ## Open Questions
-- לא אומת חי מול Orian בפועל — כל הבדיקה עד כה היא קריאת מסמך + הכנת curl. יש לבדוק אם ה-`Content-Type: x-www-form-urlencoded` עם גוף XML גולמי אכן מתקבל, או שנדרשת עטיפת `data=<xml>`.
+- עדיין לא אומת: `CreateTransportationOrder` עם `Content-Type: x-www-form-urlencoded` וגוף XML גולמי — Login כן אומת חי (ראו Session Log), שאר הקריאות טרם נבדקו.
 - אין עדיין credentials (username/password) שמורים ב-.env — כשתתחיל אינטגרציה בקוד, יש להוסיף `ORIAN_USERNAME`/`ORIAN_PASSWORD` ל-.env (לא לצ'אט/git), ראו [[env-config]].
 - לא ידוע אם זו אינטגרציה עצמאית חדשה או קשורה לפרויקט קיים (למשל priority-lite) — לברר עם המשתמש כשיתחיל פיתוח בפועל.
 
@@ -21,3 +21,9 @@ CONSIGNEE (מספר לקוח קבוע אצל Orian) בדוגמאות: `30000060`
 - **Decisions:** credentials (`ORIAN_USER`/`ORIAN_PASS`) מועברים כמשתני סביבת shell שהמשתמש מגדיר בעצמו בטרמינל — לא הוטמעו בשום קובץ/צ'אט, לפי מדיניות אבטחת הארגון. פרטי איש הקשר (שם/טלפון/מייל) בקבצי הדוגמה לא שוכפלו כאן או בתשובה לצ'אט מעבר לנדרש — PII שנשאר רק בקבצים המקוריים ב-OneDrive (מחוץ לריפו).
 - **Notes / Caveats:** pandoc לא זמין בסביבת ה-Bash הנוכחית (רק unzip+node לפירוק XML ידני). קבצי המקור נמצאים ב-OneDrive, לא הועתקו לריפו.
 - **Related:** [[env-config]], none נוספים (רשומה ראשונה בנושא)
+
+### 2026-09-08 — Login אומת חי — פורמט תגובה שונה מהמסמך [debug]
+- **What was done:** המשתמש הריץ את קריאת `Login` (test env) בפועל וקיבל 200. **פורמט התגובה שונה מהמסמך**: המסמך תיאר גוף JSON ‏`{AuthToken: ...}`, אך בפועל הגוף הוא המחרוזת `"Authorized"` בלבד, וה-AuthToken חוזר ב-**response header** בשם `authtoken` (וגם `tokenexpiry` header, שחזר ריק בבדיקה זו).
+- **Decisions:** יש לקרוא את הטוקן מה-header `authtoken` (case-insensitive) ולא מגוף התגובה, בכל מימוש עתידי של הקריאה הזו.
+- **Notes / Caveats:** הטוקן שהתקבל בבדיקה זו לא נשמר בשום קובץ — חי ל-1 שעה לפי המסמך, נמסר למשתמש דרך הצ'אט בלבד להמשך בדיקות ידניות.
+- **Related:** none חדשים
