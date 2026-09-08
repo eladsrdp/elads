@@ -1,7 +1,7 @@
 # Orian CourierExpert™ API — אינטגרציית שילוח
 
 ## Overview
-מסמך API חיצוני (Orian CourierExpert™, גרסה 1.4) לאינטגרציה עם מערכת השילוח של Orian — יצירת הזמנות הובלה (Home Delivery), הדפסת תוויות, מעקב סטטוס חבילות, ואיתור נקודות PUDO (חנויות/לוקרים). המסמך והדוגמאות המקוריות נמצאים מחוץ לריפו, ב-OneDrive: `דוקומנטציות/API description.docx` + 2 קבצי XML לדוגמה (One Package / MultiPackage to One Order). **סטטוס: שלבי בדיקה ידנית מול test environment — Login ו-CreateTransportationOrder אומתו חי ועובדים (הפורמט תואם למסמך); אין עדיין קוד אינטגרציה בפרויקט.**
+מסמך API חיצוני (Orian CourierExpert™, גרסה 1.4) לאינטגרציה עם מערכת השילוח של Orian — יצירת הזמנות הובלה (Home Delivery), הדפסת תוויות, מעקב סטטוס חבילות, ואיתור נקודות PUDO (חנויות/לוקרים). המסמך והדוגמאות המקוריות נמצאים מחוץ לריפו, ב-OneDrive: `דוקומנטציות/API description.docx` + 2 קבצי XML לדוגמה (One Package / MultiPackage to One Order). **סטטוס: Login ו-CreateTransportationOrder אומתו חי מקצה לקצה בהצלחה מלאה (200/SUCCESS) מול test environment; אין עדיין קוד אינטגרציה בפרויקט.**
 
 **Base URLs:** Test = `https://disapiTest.orian.com`, Production = `https://disapi.orian.com`.
 
@@ -13,7 +13,8 @@ CONSIGNEE (מספר לקוח קבוע אצל Orian) בדוגמאות: `30000060`
 - שאר הקריאות (GetTransporttaionOrderLabel, GetPackageStatus, GetPudos) עדיין לא נבדקו חי — רק Login ו-CreateTransportationOrder אומתו עד כה.
 - אין עדיין credentials (username/password) שמורים ב-.env — כשתתחיל אינטגרציה בקוד, יש להוסיף `ORIAN_USERNAME`/`ORIAN_PASSWORD` ל-.env (לא לצ'אט/git), ראו [[env-config]].
 - לא ידוע אם זו אינטגרציה עצמאית חדשה או קשורה לפרויקט קיים (למשל priority-lite) — לברר עם המשתמש כשיתחיל פיתוח בפועל.
-- כללי ייחודיות (uniqueness) של `PACKAGEID`/`REFERENCEORDER` בסביבת ה-test מול Orian לא ידועים במדויק — כרגע פותר ע"י תוספת סיומת ייחודית (timestamp) לכל ניסיון; `PACKAGEID` מוגבל ל-11 תווים לפי המסמך אם משתמשים בהדפסת תווית דרך ה-API.
+- כללי ייחודיות (uniqueness) של `PACKAGEID`/`REFERENCEORDER` בסביבת ה-test מול Orian לא ידועים במדויק — פותר בפועל ע"י תוספת סיומת ייחודית (timestamp) לכל ניסיון, ועם `PACKAGEID` בן 11 תווים בדיוק (המגבלה המתועדת) ההזמנה הצליחה.
+- תגובת ה-`CreateTransportationOrder` המוצלחת מחזירה שדות שלא מתועדים במסמך כלל: `CARRIER`, `DELIVERYMETHOD`, `EXTERNALCHUTE`, `PIN` — לא ידוע אם אלו קבועים או משתנים לפי כתובת/סוג הזמנה; לא נבדק עדיין GetTransporttaionOrderLabel על ההזמנה שנוצרה בהצלחה.
 
 ## Session Log
 
@@ -33,4 +34,10 @@ CONSIGNEE (מספר לקוח קבוע אצל Orian) בדוגמאות: `30000060`
 - **What was done:** המשתמש הריץ `CreateTransportationOrder` (test env) עם קובץ הדוגמה "One Package to One Order" (XML גולמי בגוף + `Content-Type: application/x-www-form-urlencoded`, בדיוק כפי שהמסמך מגדיר). התקבלה תשובה **מובנית** (`STATUSCODE 100`, `RESPONSEERROR: "One of the packages already exists: PackageID 1988880823"`) — כלומר הבקשה עצמה התקבלה ונפרסרה כהלכה ע"י Orian; זו שגיאה עסקית (PACKAGEID כבר קיים במערכת מבדיקה קודמת), לא שגיאת פורמט/content-type.
 - **Decisions:** אושרה סופית **הסתירה הפוטנציאלית** מהרשומה הקודמת (Content-Type מוצהר כ-urlencoded עם גוף XML גולמי) — Orian אכן מקבלת את זה כמו שהמסמך מתאר, אין צורך בעטיפת `data=<xml>` חלופית. לכל ניסיון חוזר יש להטמיע מזהה ייחודי (למשל timestamp) גם ב-`PACKAGEID` וגם ב-`REFERENCEORDER`/`HOSTORDERID` כדי לא להתנגש בבדיקות קודמות.
 - **Notes / Caveats:** `PACKAGEID` מוגבל ל-11 תווים אם משתמשים בהדפסת תווית דרך ה-API (לפי המסמך) — יש להיזהר לא לחרוג כשמוסיפים סיומת ייחודית.
+- **Related:** none חדשים
+
+### 2026-09-08 — CreateTransportationOrder הצליח מקצה לקצה + שדות תגובה לא מתועדים [shipped]
+- **What was done:** ניסיון חוזר עם `PACKAGEID` ייחודי בן 11 תווים (`19888808230`) ו-`REFERENCEORDER`/`HOSTORDERID` עם סיומת timestamp — הצליח במלואו: `SUCCESS:true`, `STATUSCODE:200`. זו ההוכחה הראשונה שההזמנה נוצרת בפועל אצל Orian (test environment), לא רק ש-הבקשה מתקבלת.
+- **Decisions:** תבנית ה-uniqueness (timestamp suffix + הקפדה על 11 תווים ב-PACKAGEID) עובדת ומספיקה לבדיקות ידניות חוזרות; לאינטגרציה אמיתית יידרש generator מסודר יותר (למשל מונה/UUID מקוצר).
+- **Notes / Caveats:** התגובה המוצלחת כוללת 4 שדות שלא קיימים בכלל בדוגמת ה-Response של המסמך: `CARRIER` (Orian), `DELIVERYMETHOD` (POD), `EXTERNALCHUTE` (מרכז), `PIN` (TRUE) — ככל הנראה מטא-דאטה על שיוך ההזמנה למרכז מיון/שיטת מסירה, לא תועדו כי המסמך מציג רק דוגמת תגובה חלקית. עדיין לא נבדק `GetTransporttaionOrderLabel` על ההזמנה הזו כדי לוודא שגם שליפת התווית עובדת בפועל.
 - **Related:** none חדשים
