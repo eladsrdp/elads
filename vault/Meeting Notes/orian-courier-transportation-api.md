@@ -1,7 +1,7 @@
 # Orian CourierExpert™ API — אינטגרציית שילוח
 
 ## Overview
-מסמך API חיצוני (Orian CourierExpert™, גרסה 1.4) לאינטגרציה עם מערכת השילוח של Orian — יצירת הזמנות הובלה (Home Delivery), הדפסת תוויות, מעקב סטטוס חבילות, ואיתור נקודות PUDO (חנויות/לוקרים). המסמך והדוגמאות המקוריות נמצאים מחוץ לריפו, ב-OneDrive: `דוקומנטציות/API description.docx` + 2 קבצי XML לדוגמה (One Package / MultiPackage to One Order). **סטטוס: שלב תיעוד/הכנת בדיקות בלבד — אין עדיין קוד אינטגרציה בפרויקט.**
+מסמך API חיצוני (Orian CourierExpert™, גרסה 1.4) לאינטגרציה עם מערכת השילוח של Orian — יצירת הזמנות הובלה (Home Delivery), הדפסת תוויות, מעקב סטטוס חבילות, ואיתור נקודות PUDO (חנויות/לוקרים). המסמך והדוגמאות המקוריות נמצאים מחוץ לריפו, ב-OneDrive: `דוקומנטציות/API description.docx` + 2 קבצי XML לדוגמה (One Package / MultiPackage to One Order). **סטטוס: שלבי בדיקה ידנית מול test environment — Login ו-CreateTransportationOrder אומתו חי ועובדים (הפורמט תואם למסמך); אין עדיין קוד אינטגרציה בפרויקט.**
 
 **Base URLs:** Test = `https://disapiTest.orian.com`, Production = `https://disapi.orian.com`.
 
@@ -10,9 +10,10 @@
 CONSIGNEE (מספר לקוח קבוע אצל Orian) בדוגמאות: `30000060`.
 
 ## Open Questions
-- עדיין לא אומת: `CreateTransportationOrder` עם `Content-Type: x-www-form-urlencoded` וגוף XML גולמי — Login כן אומת חי (ראו Session Log), שאר הקריאות טרם נבדקו.
+- שאר הקריאות (GetTransporttaionOrderLabel, GetPackageStatus, GetPudos) עדיין לא נבדקו חי — רק Login ו-CreateTransportationOrder אומתו עד כה.
 - אין עדיין credentials (username/password) שמורים ב-.env — כשתתחיל אינטגרציה בקוד, יש להוסיף `ORIAN_USERNAME`/`ORIAN_PASSWORD` ל-.env (לא לצ'אט/git), ראו [[env-config]].
 - לא ידוע אם זו אינטגרציה עצמאית חדשה או קשורה לפרויקט קיים (למשל priority-lite) — לברר עם המשתמש כשיתחיל פיתוח בפועל.
+- כללי ייחודיות (uniqueness) של `PACKAGEID`/`REFERENCEORDER` בסביבת ה-test מול Orian לא ידועים במדויק — כרגע פותר ע"י תוספת סיומת ייחודית (timestamp) לכל ניסיון; `PACKAGEID` מוגבל ל-11 תווים לפי המסמך אם משתמשים בהדפסת תווית דרך ה-API.
 
 ## Session Log
 
@@ -26,4 +27,10 @@ CONSIGNEE (מספר לקוח קבוע אצל Orian) בדוגמאות: `30000060`
 - **What was done:** המשתמש הריץ את קריאת `Login` (test env) בפועל וקיבל 200. **פורמט התגובה שונה מהמסמך**: המסמך תיאר גוף JSON ‏`{AuthToken: ...}`, אך בפועל הגוף הוא המחרוזת `"Authorized"` בלבד, וה-AuthToken חוזר ב-**response header** בשם `authtoken` (וגם `tokenexpiry` header, שחזר ריק בבדיקה זו).
 - **Decisions:** יש לקרוא את הטוקן מה-header `authtoken` (case-insensitive) ולא מגוף התגובה, בכל מימוש עתידי של הקריאה הזו.
 - **Notes / Caveats:** הטוקן שהתקבל בבדיקה זו לא נשמר בשום קובץ — חי ל-1 שעה לפי המסמך, נמסר למשתמש דרך הצ'אט בלבד להמשך בדיקות ידניות.
+- **Related:** none חדשים
+
+### 2026-09-08 — CreateTransportationOrder אומת חי — הפורמט תקין, נחסם ע"י PackageID כפול [debug]
+- **What was done:** המשתמש הריץ `CreateTransportationOrder` (test env) עם קובץ הדוגמה "One Package to One Order" (XML גולמי בגוף + `Content-Type: application/x-www-form-urlencoded`, בדיוק כפי שהמסמך מגדיר). התקבלה תשובה **מובנית** (`STATUSCODE 100`, `RESPONSEERROR: "One of the packages already exists: PackageID 1988880823"`) — כלומר הבקשה עצמה התקבלה ונפרסרה כהלכה ע"י Orian; זו שגיאה עסקית (PACKAGEID כבר קיים במערכת מבדיקה קודמת), לא שגיאת פורמט/content-type.
+- **Decisions:** אושרה סופית **הסתירה הפוטנציאלית** מהרשומה הקודמת (Content-Type מוצהר כ-urlencoded עם גוף XML גולמי) — Orian אכן מקבלת את זה כמו שהמסמך מתאר, אין צורך בעטיפת `data=<xml>` חלופית. לכל ניסיון חוזר יש להטמיע מזהה ייחודי (למשל timestamp) גם ב-`PACKAGEID` וגם ב-`REFERENCEORDER`/`HOSTORDERID` כדי לא להתנגש בבדיקות קודמות.
+- **Notes / Caveats:** `PACKAGEID` מוגבל ל-11 תווים אם משתמשים בהדפסת תווית דרך ה-API (לפי המסמך) — יש להיזהר לא לחרוג כשמוסיפים סיומת ייחודית.
 - **Related:** none חדשים
