@@ -15,7 +15,7 @@ project אחד. `server/` נשאר בריפו בלי להימחק (בכוונה,
 |---|---|---|---|
 | POST | `/api/webhooks/signup` | `Authorization: Bearer $SIGNUP_WEBHOOK_SECRET` | יוצר נרשם חדש |
 | POST | `/api/webhooks/make/button-click` | `Authorization: Bearer $MAKE_WEBHOOK_SECRET` | Make מעביר לחיצת כפתור |
-| GET/POST | `/api/cron/generate-daily` | `Authorization: Bearer $CRON_SECRET` | ריצה יומית — Vercel Cron מובנה, 00:05 |
+| GET/POST | `/api/cron/generate-daily` | `Authorization: Bearer $CRON_SECRET` | ריצה יומית — יוצרת רק את ה-trigger (לא message_deliveries, ראו למטה) — Vercel Cron מובנה, 00:05 |
 | GET/POST | `/api/cron/send-triggers` | `Authorization: Bearer $CRON_SECRET` | טריגר בוקר — cron-job.org, 06:45 מדויק |
 | GET/POST | `/api/cron/drip` | `Authorization: Bearer $CRON_SECRET` | שליחה בזמן אמת — cron-job.org, כל 5 דקות (כולל הודעות יעד, ראו למטה) |
 | POST | `/api/webhooks/goal-answer` | `Authorization: Bearer $MAKE_WEBHOOK_SECRET` | Make מעביר תשובת "יעד" מכל שגרת שאלון (טלפון+מספר שאלון+תשובה) — לא endpoint נשלח בפועל, רק מתזמן |
@@ -101,6 +101,18 @@ insert into mentors (user_id, full_name) values ('<uuid מהשלב הקודם>',
    ה-endpoints שברשימה למעלה עובדים על הפריסה החדשה. ראו את צ'קליסט המעבר
    ב-`docs/plans/2026-08-05-unify-into-single-app-plan.md` (Task 9) לפני כל שינוי
    בהגדרות Make.com/cron-job.org — המערכת הקיימת שולחת הודעות אמיתיות ל-14 נרשמים.
+
+## תוכן נערך בכל שעה — message_deliveries נוצרים lazily, לא ב-00:05 (2026-09-16)
+
+`generate-daily` (00:05) יוצר **רק** את ה-`daily_trigger` של כל נרשם (כדי שכפתור הבוקר
+יישלח). הוא **לא** יוצר `message_deliveries` יותר — אלה נוצרים lazily ע"י
+`syncDeliveriesForTrigger` (`engine/jobs/delivery-sync.ts`), שמשווה בין ה-`messages`
+שקיימות **עכשיו** ליום-התוכן לבין מה שכבר יש לו delivery, ומשלים את החסר. זה נקרא בשני
+מקומות: (1) בכל לחיצה על כפתור הבוקר (`webhooks/make/button-click`), (2) בכל ריצת `drip`
+עבור כל trigger שכבר נלחץ היום — כדי שגם תוכן שנוסף/נערך **אחרי** שהנרשם כבר לחץ יגיע
+בלי לחיצה נוספת. המשמעות: אפשר לערוך/להוסיף הודעות בכל שעה במהלך היום, בלי תלות בזמן
+ריצת ה-cron של חצות. תוקן בעקבות תקלת production (ראו vault, 2026-09-14) שבה תוכן שנוסף
+אחרי 00:05 יצר trigger בלי אף delivery.
 
 ## מגבלות ידועות (בכוונה, ראו design doc)
 

@@ -190,6 +190,10 @@ export function createLocalDb(): AppDB {
       return row
     },
 
+    async getDeliveriesForTrigger(dailyTriggerId) {
+      return [...messageDeliveries.values()].filter((d) => d.daily_trigger_id === dailyTriggerId)
+    },
+
     async getPendingDeliveriesForTrigger(dailyTriggerId, upTo) {
       // הערה: השוואת מחרוזות ISO תקינה כרונולוגית רק כי כל התאריכים באותו פורמט UTC (toISOString()).
       // מיון מפורש לפי scheduled_for — לא מסתמכים על סדר הוספה ל-Map (ראו code

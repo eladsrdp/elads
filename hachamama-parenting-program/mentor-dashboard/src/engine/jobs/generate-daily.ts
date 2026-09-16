@@ -1,12 +1,14 @@
 // ריצה יומית (JIT) — לא בזמן ההרשמה. ראו design doc: "מנוע התזמון — Just-In-Time".
-// תוכן שנערך היום חל אוטומטית על מי שעדיין לא הגיע לאותו יום, כי קוראים את התוכן
-// העדכני כאן, לא בזמן ההרשמה.
+// יוצרת רק את ה-daily_trigger (כדי שכפתור הבוקר יישלח) — לא את ה-message_deliveries.
+// אלה נוצרים lazily ע"י syncDeliveriesForTrigger (delivery-sync.ts), שנקרא מה-click
+// webhook ומ-drip, מול ה-messages שקיימות *באותו רגע*. זה מבטל את התלות ב"התוכן חייב
+// להיות מוכן עד 00:05" — אפשר לערוך/להוסיף הודעות בכל שעה במהלך היום, גם אחרי
+// שהטריגר כבר נשלח/נלחץ (ראו תקלת production 2026-09-14, vault, לסיבה שהניעה את זה).
 import type { AppDB } from '../repository/interface'
-import { calculateProgramDayNumber, combineDateAndTimeInIsrael } from '../domain/scheduling'
+import { calculateProgramDayNumber } from '../domain/scheduling'
 
 export interface GenerateDailyResult {
   triggersCreated: number
-  deliveriesCreated: number
   participantsCompleted: number
   errors: Array<{ participantId: string; error: string }>
 }
@@ -19,7 +21,6 @@ export async function generateDailyDeliveries(
   const participants = await db.getActiveParticipants()
 
   let triggersCreated = 0
-  let deliveriesCreated = 0
   let participantsCompleted = 0
   const errors: GenerateDailyResult['errors'] = []
 
@@ -49,28 +50,16 @@ export async function generateDailyDeliveries(
       const existingTrigger = await db.findDailyTrigger(participant.id, todayDate)
       if (existingTrigger) continue // אידמפוטנטי — כבר רץ היום עבור הנרשם הזה
 
-      const trigger = await db.createDailyTrigger({
+      await db.createDailyTrigger({
         participantId: participant.id,
         calendarDate: todayDate,
         contentDayNumber: dayNumber,
       })
       triggersCreated++
-
-      const messages = await db.getMessagesForContentDay(dayNumber)
-      for (const message of messages) {
-        const scheduledFor = combineDateAndTimeInIsrael(todayDate, message.send_offset_time).toISOString()
-        await db.createMessageDelivery({
-          participantId: participant.id,
-          messageId: message.id,
-          dailyTriggerId: trigger.id,
-          scheduledFor,
-        })
-        deliveriesCreated++
-      }
     } catch (err) {
       errors.push({ participantId: participant.id, error: err instanceof Error ? err.message : String(err) })
     }
   }
 
-  return { triggersCreated, deliveriesCreated, participantsCompleted, errors }
+  return { triggersCreated, participantsCompleted, errors }
 }

@@ -139,6 +139,9 @@ export interface AppDB {
     dailyTriggerId: string
     scheduledFor: string
   }): Promise<MessageDeliveryRow>
+  // כל ה-deliveries של trigger, בכל status/זמן — ל-syncDeliveriesForTrigger, כדי לדעת
+  // אילו message_id כבר קיימים לפני שיוצרים delivery להודעות חדשות שהתווספו מאוחר.
+  getDeliveriesForTrigger(dailyTriggerId: string): Promise<MessageDeliveryRow[]>
   getPendingDeliveriesForTrigger(dailyTriggerId: string, upTo: string): Promise<MessageDeliveryRow[]>
   getDuePendingDeliveriesWithClickedTrigger(now: string): Promise<MessageDeliveryRow[]>
   markDeliverySent(id: string, sentAt: string): Promise<void>

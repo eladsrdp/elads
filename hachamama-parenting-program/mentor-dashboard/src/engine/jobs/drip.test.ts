@@ -83,8 +83,10 @@ describe('runDrip', () => {
       signupAt: '2023-01-05T10:00:00.000Z',
       day1Date: '2023-01-08',
     })
+    // content_day נפרד (2, לא 1) — כדי לא "לזלוג" להודעות/deliveries של הנרשם השני
+    // דרך syncDeliveriesForTrigger (שרץ עכשיו על כל טריגר-שנלחץ, כולל של participant אחר).
     const failingMessage = await db.createMessage({
-      contentDayNumber: 1,
+      contentDayNumber: 2,
       sendOffsetTime: '09:00',
       orderInDay: 1,
       bodyText: 'תיכשל',
@@ -94,7 +96,7 @@ describe('runDrip', () => {
     const failingTrigger = await db.createDailyTrigger({
       participantId: failingParticipant.id,
       calendarDate: '2023-01-08',
-      contentDayNumber: 1,
+      contentDayNumber: 2,
     })
     await db.markDailyTriggerClicked(failingTrigger.id, '2023-01-08T06:00:00.000Z')
     await db.openOrExtendSessionWindow(failingParticipant.id, '2023-01-09T06:00:00.000Z')
@@ -120,6 +122,39 @@ describe('runDrip', () => {
     expect(okDeliveries).toHaveLength(0) // ok delivery נשלחה
     const failingDeliveries = await db.getPendingDeliveriesForTrigger(failingTrigger.id, '2099-01-01T00:00:00.000Z')
     expect(failingDeliveries).toHaveLength(1) // failing delivery נשארה pending, לא סומנה sent בטעות
+  })
+})
+
+describe('runDrip — משלים ושולח תוכן שנוסף אחרי שכבר נלחץ', () => {
+  it('הודעה שנוספה ליום התוכן אחרי הלחיצה נשלחת בריצת drip הבאה, בלי לחיצה נוספת', async () => {
+    const db = createLocalDb()
+    const participant = await db.createParticipant({
+      fullName: 'ישראל',
+      phone: '+972501234567',
+      signupSourceRef: null,
+      signupAt: '2023-01-05T10:00:00.000Z',
+      day1Date: '2023-01-08',
+    })
+    await db.createContentDay({ dayNumber: 1, title: null })
+    const trigger = await db.createDailyTrigger({ participantId: participant.id, calendarDate: '2023-01-08', contentDayNumber: 1 })
+    await db.markDailyTriggerClicked(trigger.id, '2023-01-08T06:00:00.000Z')
+    await db.openOrExtendSessionWindow(participant.id, '2023-01-09T06:00:00.000Z')
+
+    // המנחה מוסיפה הודעה חדשה ליום 1 *אחרי* שהנרשם כבר לחץ על הכפתור בבוקר.
+    await db.createMessage({
+      contentDayNumber: 1,
+      sendOffsetTime: '09:00',
+      orderInDay: 1,
+      bodyText: 'הודעה שנוספה אחרי הלחיצה',
+      mediaUrl: null,
+      mediaType: null,
+    })
+    const makeClient = createFakeMakeClient()
+
+    const result = await runDrip(db, makeClient, '2023-01-08T09:01:00.000Z')
+
+    expect(result.sent).toBe(1)
+    expect(makeClient.sessionMessagesSent[0].bodyText).toBe('הודעה שנוספה אחרי הלחיצה')
   })
 })
 

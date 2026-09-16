@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getDb } from '@/engine/app-context'
 import { engineEnv } from '@/engine/env'
+import { syncDeliveriesForTrigger } from '@/engine/jobs/delivery-sync'
 
 const ButtonClickSchema = z.object({
   phone: z.string().min(1),
@@ -42,6 +43,10 @@ export async function POST(request: Request) {
   if (!trigger.clicked_at) {
     await db.markDailyTriggerClicked(trigger.id, now)
   }
+
+  // משלים deliveries להודעות שנוספו/נערכו אחרי שה-trigger נוצר (ואפילו אחרי לחיצה
+  // קודמת) — כדי שהתוכן העדכני ביותר יגיע, לא רק מה שהיה קיים ב-00:05. ראו delivery-sync.ts.
+  await syncDeliveriesForTrigger(db, trigger)
 
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
   await db.openOrExtendSessionWindow(participant.id, expiresAt)

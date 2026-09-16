@@ -53,7 +53,7 @@ describe('POST /api/webhooks/make/button-click', () => {
   })
 
   it('מסמן clicked_at, פותח session window, ומחזיר הודעות pending', async () => {
-    const trigger = { id: 't1', participant_id: 'p1', clicked_at: null }
+    const trigger = { id: 't1', participant_id: 'p1', clicked_at: null, calendar_date: '2023-01-08', content_day_number: 1 }
     const participant = { id: 'p1', phone: '+972501234567' }
     const markDailyTriggerClicked = vi.fn()
     const openOrExtendSessionWindow = vi.fn()
@@ -63,6 +63,8 @@ describe('POST /api/webhooks/make/button-click', () => {
       getParticipant: async () => participant,
       markDailyTriggerClicked,
       openOrExtendSessionWindow,
+      getMessagesForContentDay: async () => [],
+      getDeliveriesForTrigger: async () => [],
       getPendingDeliveriesForTrigger: async () => [{ id: 'd1', message_id: 'm1' }],
       getMessage: async () => ({ body_text: 'הי', media_url: null, media_type: null }),
       markDeliverySent,
@@ -78,18 +80,50 @@ describe('POST /api/webhooks/make/button-click', () => {
   })
 
   it('מזהה את בעל ה-trigger גם כש-Make שולח את הטלפון בלי + (כמו wa_id של Meta)', async () => {
-    const trigger = { id: 't1', participant_id: 'p1', clicked_at: null }
+    const trigger = { id: 't1', participant_id: 'p1', clicked_at: null, calendar_date: '2023-01-08', content_day_number: 1 }
     const participant = { id: 'p1', phone: '+972501234567' }
     vi.mocked(getDb).mockResolvedValue({
       getDailyTrigger: async () => trigger,
       getParticipant: async () => participant,
       markDailyTriggerClicked: vi.fn(),
       openOrExtendSessionWindow: vi.fn(),
+      getMessagesForContentDay: async () => [],
+      getDeliveriesForTrigger: async () => [],
       getPendingDeliveriesForTrigger: async () => [],
       markDeliverySent: vi.fn(),
     } as never)
 
     const res = await POST(makeRequest({ phone: '972501234567', buttonPayload: 't1' }, 'Bearer test-secret'))
     expect(res.status).toBe(200)
+  })
+
+  it('משלים delivery להודעה שנוספה ליום התוכן אחרי שה-trigger נוצר, ומחזיר אותה מיד', async () => {
+    // בדיוק התרחיש של תקלת ה-production: תוכן נוסף מאוחר מדי בשביל שexpectedgenerate-daily
+    // ייצור לו delivery — עכשיו לחיצת כפתור עצמה משלימה את מה שחסר.
+    const trigger = { id: 't1', participant_id: 'p1', clicked_at: null, calendar_date: '2023-01-08', content_day_number: 1 }
+    const participant = { id: 'p1', phone: '+972501234567' }
+    const createMessageDelivery = vi.fn(async (input) => ({ id: 'new-delivery', ...input }))
+    vi.mocked(getDb).mockResolvedValue({
+      getDailyTrigger: async () => trigger,
+      getParticipant: async () => participant,
+      markDailyTriggerClicked: vi.fn(),
+      openOrExtendSessionWindow: vi.fn(),
+      getMessagesForContentDay: async () => [
+        { id: 'm-new', content_day_number: 1, send_offset_time: '06:00', order_in_day: 0, body_text: 'הודעה שנוספה מאוחר', media_url: null, media_type: null },
+      ],
+      getDeliveriesForTrigger: async () => [], // אין עדיין delivery להודעה הזו
+      createMessageDelivery,
+      getPendingDeliveriesForTrigger: async () => [{ id: 'new-delivery', message_id: 'm-new' }],
+      getMessage: async () => ({ body_text: 'הודעה שנוספה מאוחר', media_url: null, media_type: null }),
+      markDeliverySent: vi.fn(),
+    } as never)
+
+    const res = await POST(makeRequest({ phone: '+972501234567', buttonPayload: 't1' }, 'Bearer test-secret'))
+
+    expect(res.status).toBe(200)
+    expect(createMessageDelivery).toHaveBeenCalledWith(
+      expect.objectContaining({ participantId: 'p1', messageId: 'm-new', dailyTriggerId: 't1' }),
+    )
+    expect(await res.json()).toEqual({ messages: [{ bodyText: 'הודעה שנוספה מאוחר', mediaUrl: null, mediaType: null }] })
   })
 })
