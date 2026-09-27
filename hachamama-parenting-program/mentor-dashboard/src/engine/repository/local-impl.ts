@@ -4,6 +4,7 @@ import type {
   AppDB,
   ContentDayRow,
   DailyTriggerRow,
+  GoalMessageRow,
   MessageDeliveryRow,
   MessageRow,
   ParticipantRow,
@@ -19,6 +20,7 @@ export function createLocalDb(): AppDB {
   const messageDeliveries = new Map<string, MessageDeliveryRow>()
   const sessionWindows = new Map<string, SessionWindowRow>()
   const videoSubmissions = new Map<string, VideoSubmissionRow>()
+  const goalMessages = new Map<string, GoalMessageRow>()
 
   return {
     async ping() {},
@@ -68,6 +70,30 @@ export function createLocalDb(): AppDB {
       }
       videoSubmissions.set(row.id, row)
       return row
+    },
+
+    async createGoalMessage(input) {
+      const row: GoalMessageRow = {
+        id: randomUUID(),
+        participant_id: input.participantId,
+        questionnaire_number: input.questionnaireNumber,
+        goal_answer: input.goalAnswer,
+        scheduled_for: input.scheduledFor,
+        sent_at: null,
+      }
+      goalMessages.set(row.id, row)
+      return row
+    },
+
+    async getDueGoalMessages(now) {
+      return [...goalMessages.values()]
+        .filter((m) => !m.sent_at && m.scheduled_for <= now)
+        .sort((a, b) => (a.scheduled_for < b.scheduled_for ? -1 : a.scheduled_for > b.scheduled_for ? 1 : 0))
+    },
+
+    async markGoalMessageSent(id, sentAt) {
+      const row = goalMessages.get(id)
+      if (row) goalMessages.set(id, { ...row, sent_at: sentAt })
     },
 
     async createContentDay(input) {
@@ -136,6 +162,10 @@ export function createLocalDb(): AppDB {
       return [...dailyTriggers.values()].filter((t) => t.calendar_date === calendarDate && !t.trigger_sent_at)
     },
 
+    async getDailyTriggersForDate(calendarDate) {
+      return [...dailyTriggers.values()].filter((t) => t.calendar_date === calendarDate)
+    },
+
     async markDailyTriggerSent(id, sentAt) {
       const row = dailyTriggers.get(id)
       if (row) dailyTriggers.set(id, { ...row, trigger_sent_at: sentAt })
@@ -158,6 +188,10 @@ export function createLocalDb(): AppDB {
       }
       messageDeliveries.set(row.id, row)
       return row
+    },
+
+    async getDeliveriesForTrigger(dailyTriggerId) {
+      return [...messageDeliveries.values()].filter((d) => d.daily_trigger_id === dailyTriggerId)
     },
 
     async getPendingDeliveriesForTrigger(dailyTriggerId, upTo) {

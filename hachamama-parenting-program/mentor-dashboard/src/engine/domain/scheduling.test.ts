@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   calculateDay1Date,
+  calculateGoalMessageSendDate,
   calculateProgramDayNumber,
+  calculateWeekNumber,
   combineDateAndTimeInIsrael,
   getIsraelDateString,
 } from './scheduling'
@@ -60,5 +62,60 @@ describe('calculateProgramDayNumber', () => {
 
   it('שבוע אחרי day1_date — יום 8', () => {
     expect(calculateProgramDayNumber('2023-01-08', '2023-01-15')).toBe(8)
+  })
+})
+
+// עוגן: 2023-01-01 היה יום ראשון (כל השעות בטסטים האלה הן UTC, מומרות לישראל
+// בפועל ע"י הפונקציה עצמה — בינואר ישראל היא UTC+2, בלי שעון קיץ).
+describe('calculateGoalMessageSendDate', () => {
+  it('ענו בראשון לפני 14:00 (שעון ישראל) → נשלח באותו ראשון', () => {
+    expect(calculateGoalMessageSendDate(new Date('2023-01-01T08:00:00Z'))).toBe('2023-01-01') // 10:00 בישראל
+  })
+
+  it('ענו בראשון אחרי 14:00 → נשלח למחרת (שני)', () => {
+    expect(calculateGoalMessageSendDate(new Date('2023-01-01T13:00:00Z'))).toBe('2023-01-02') // 15:00 בישראל
+  })
+
+  it('ענו בראשון בדיוק ב-14:00 → נחשב "אחרי", נשלח בשני', () => {
+    expect(calculateGoalMessageSendDate(new Date('2023-01-01T12:00:00Z'))).toBe('2023-01-02') // 14:00 בישראל בדיוק
+  })
+
+  it('ענו בשני → נשלח בשלישי', () => {
+    expect(calculateGoalMessageSendDate(new Date('2023-01-02T08:00:00Z'))).toBe('2023-01-03')
+  })
+
+  it('ענו בשלישי → נשלח ברביעי', () => {
+    expect(calculateGoalMessageSendDate(new Date('2023-01-03T08:00:00Z'))).toBe('2023-01-04')
+  })
+
+  it('ענו ברביעי → נשלח בחמישי', () => {
+    expect(calculateGoalMessageSendDate(new Date('2023-01-04T08:00:00Z'))).toBe('2023-01-05')
+  })
+
+  it('ענו בחמישי → קופץ לראשון הקרוב (לא לשישי)', () => {
+    expect(calculateGoalMessageSendDate(new Date('2023-01-05T08:00:00Z'))).toBe('2023-01-08')
+  })
+
+  it('ענו בשישי → קופץ לראשון הקרוב (לא לשבת)', () => {
+    expect(calculateGoalMessageSendDate(new Date('2023-01-06T08:00:00Z'))).toBe('2023-01-08')
+  })
+
+  it('ענו בשבת → נשלח בראשון', () => {
+    expect(calculateGoalMessageSendDate(new Date('2023-01-07T08:00:00Z'))).toBe('2023-01-08')
+  })
+})
+
+describe('calculateWeekNumber', () => {
+  it('ימים 1-7 (ראשון עד שבת) הם שבוע 1', () => {
+    expect(calculateWeekNumber(1)).toBe(1)
+    expect(calculateWeekNumber(7)).toBe(1)
+  })
+
+  it('יום 8 (ראשון הבא) הוא שבוע 2', () => {
+    expect(calculateWeekNumber(8)).toBe(2)
+  })
+
+  it('יום 23 הוא שבוע 4', () => {
+    expect(calculateWeekNumber(23)).toBe(4)
   })
 })

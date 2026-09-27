@@ -1,10 +1,13 @@
-// Endpoint למשיכת כל הנרשמים (שם/טלפון/סטטוס/יום1/מנחה מוצמדת) — למערכת חיצונית
-// (Make.com) שצריכה את הרשימה המלאה. SECURITY: חשוף לאינטרנט, מוגן בסוד משותף
-// ב-Authorization header (אותו סוד ש-Make.com כבר משתמש בו ל-webhook לחיצת הכפתור) —
-// לא רק CORS/רשת. מחזיר PII (שם מלא + טלפון) — לעולם לא בלי הבדיקה הזו.
+// Endpoint למשיכת כל הנרשמים (שם/טלפון/סטטוס/יום1/מנחה מוצמדת) + סטטוס טריגר-הבוקר
+// של היום (נשלח? נלחץ?) — למערכת חיצונית (Make.com) שצריכה גם את מי שלא לחץ היום.
+// SECURITY: חשוף לאינטרנט, מוגן בסוד משותף ב-Authorization header (אותו סוד ש-Make.com
+// כבר משתמש בו ל-webhook לחיצת הכפתור) — לא רק CORS/רשת. מחזיר PII (שם מלא + טלפון) —
+// לעולם לא בלי הבדיקה הזו.
 import { NextResponse } from 'next/server'
 import { getDb } from '@/engine/app-context'
 import { engineEnv } from '@/engine/env'
+import { getIsraelDateString } from '@/engine/domain/scheduling'
+import { buildParticipantsExport } from '@/engine/domain/participants-export'
 
 export async function GET(request: Request) {
   const auth = request.headers.get('authorization')
@@ -13,18 +16,8 @@ export async function GET(request: Request) {
   }
 
   const db = await getDb()
-  const participants = await db.getAllParticipants()
+  const today = getIsraelDateString(new Date())
+  const [participants, todaysTriggers] = await Promise.all([db.getAllParticipants(), db.getDailyTriggersForDate(today)])
 
-  return NextResponse.json({
-    participants: participants.map((p) => ({
-      participantId: p.id,
-      fullName: p.full_name,
-      phone: p.phone,
-      status: p.status,
-      day1Date: p.day1_date,
-      signupAt: p.signup_at,
-      signupSourceRef: p.signup_source_ref,
-      assignedMentorId: p.assigned_mentor_id,
-    })),
-  })
+  return NextResponse.json({ participants: buildParticipantsExport(participants, todaysTriggers) })
 }

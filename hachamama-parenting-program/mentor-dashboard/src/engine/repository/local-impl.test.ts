@@ -211,6 +211,66 @@ describe('createLocalDb — daily triggers ומ-message deliveries', () => {
   })
 })
 
+describe('createLocalDb — goal messages', () => {
+  it('יוצר goal_message עם sent_at=null', async () => {
+    const db = createLocalDb()
+    const row = await db.createGoalMessage({
+      participantId: 'p1',
+      questionnaireNumber: 3,
+      goalAnswer: 'לדבר יותר בשקט',
+      scheduledFor: '2023-01-08T12:00:00.000Z',
+    })
+    expect(row.id).toBeTruthy()
+    expect(row.sent_at).toBeNull()
+    expect(row.goal_answer).toBe('לדבר יותר בשקט')
+  })
+
+  it('getDueGoalMessages מחזיר רק מה שהגיע זמנו וטרם נשלח, ממוין לפי scheduled_for', async () => {
+    const db = createLocalDb()
+    const later = await db.createGoalMessage({
+      participantId: 'p1',
+      questionnaireNumber: 1,
+      goalAnswer: 'יעד מאוחר',
+      scheduledFor: '2023-01-08T13:00:00.000Z',
+    })
+    const earlier = await db.createGoalMessage({
+      participantId: 'p1',
+      questionnaireNumber: 1,
+      goalAnswer: 'יעד מוקדם',
+      scheduledFor: '2023-01-08T09:00:00.000Z',
+    })
+    await db.createGoalMessage({
+      participantId: 'p2',
+      questionnaireNumber: 1,
+      goalAnswer: 'עדיין לא הגיע הזמן',
+      scheduledFor: '2023-01-15T12:00:00.000Z',
+    })
+    const alreadySent = await db.createGoalMessage({
+      participantId: 'p3',
+      questionnaireNumber: 1,
+      goalAnswer: 'כבר נשלח',
+      scheduledFor: '2023-01-08T08:00:00.000Z',
+    })
+    await db.markGoalMessageSent(alreadySent.id, '2023-01-08T14:00:00.000Z')
+
+    const result = await db.getDueGoalMessages('2023-01-08T14:00:00.000Z')
+    expect(result.map((r) => r.id)).toEqual([earlier.id, later.id])
+  })
+
+  it('markGoalMessageSent מעדכן sent_at', async () => {
+    const db = createLocalDb()
+    const row = await db.createGoalMessage({
+      participantId: 'p1',
+      questionnaireNumber: 1,
+      goalAnswer: 'יעד',
+      scheduledFor: '2023-01-08T12:00:00.000Z',
+    })
+    await db.markGoalMessageSent(row.id, '2023-01-08T14:00:00.000Z')
+    const due = await db.getDueGoalMessages('2023-01-08T14:00:00.000Z')
+    expect(due).toHaveLength(0)
+  })
+})
+
 describe('createLocalDb — session windows', () => {
   it('חלון סגור כברירת מחדל למי שלא לחץ מעולם', async () => {
     const db = createLocalDb()

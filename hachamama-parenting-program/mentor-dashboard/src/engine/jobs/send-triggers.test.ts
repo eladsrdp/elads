@@ -25,7 +25,7 @@ describe('sendMorningTriggers', () => {
 
     expect(result.sent).toBe(1)
     expect(makeClient.morningTriggersSent).toEqual([
-      { phone: '+972501234567', fullName: 'ישראל ישראלי', dayOfWeekName: 'יום שלישי', buttonPayload: trigger.id },
+      { phone: '+972501234567', fullName: 'ישראל ישראלי', dayOfWeekName: 'יום שלישי', weekNumber: 1, buttonPayload: trigger.id },
     ])
     const updated = await db.getDailyTrigger(trigger.id)
     expect(updated?.trigger_sent_at).toBeTruthy()
@@ -50,8 +50,29 @@ describe('sendMorningTriggers', () => {
     await sendMorningTriggers(db, makeClient, '2023-01-07')
 
     expect(makeClient.morningTriggersSent).toEqual([
-      { phone: '+972501234567', fullName: 'ישראל', dayOfWeekName: 'מוצ"ש', buttonPayload: trigger.id },
+      { phone: '+972501234567', fullName: 'ישראל', dayOfWeekName: 'מוצ"ש', weekNumber: 1, buttonPayload: trigger.id },
     ])
+  })
+
+  it('שולח weekNumber מחושב מ-content_day_number של הטריגר (יום 10 → שבוע 2)', async () => {
+    const db = createLocalDb()
+    const participant = await db.createParticipant({
+      fullName: 'ישראל',
+      phone: '+972501234567',
+      signupSourceRef: null,
+      signupAt: '2023-01-05T10:00:00.000Z',
+      day1Date: '2023-01-08',
+    })
+    const trigger = await db.createDailyTrigger({
+      participantId: participant.id,
+      calendarDate: '2023-01-17',
+      contentDayNumber: 10,
+    })
+    const makeClient = createFakeMakeClient()
+
+    await sendMorningTriggers(db, makeClient, '2023-01-17')
+
+    expect(makeClient.morningTriggersSent[0]).toMatchObject({ buttonPayload: trigger.id, weekNumber: 2 })
   })
 
   it('לא שולח שוב טריגר שכבר נשלח', async () => {

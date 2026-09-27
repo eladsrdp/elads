@@ -65,6 +65,15 @@ export interface VideoSubmissionRow {
   submitted_at: string
 }
 
+export interface GoalMessageRow {
+  id: string
+  participant_id: string
+  questionnaire_number: number
+  goal_answer: string
+  scheduled_for: string
+  sent_at: string | null
+}
+
 export interface AppDB {
   ping(): Promise<void>
 
@@ -82,6 +91,18 @@ export interface AppDB {
   getAllParticipants(): Promise<ParticipantRow[]>
   markParticipantCompleted(id: string): Promise<void>
   createVideoSubmission(input: { participantId: string; videoUrl: string }): Promise<VideoSubmissionRow>
+
+  // goal messages (Plan C — הודעת מעקב מותאמת לתשובת "יעד" בשאלון). נשלחות ע"י drip.ts,
+  // לא cron נפרד — getDueGoalMessages מחזיר לפי scheduled_for<=now בלבד; בדיקת חלון-session
+  // פתוח נעשית ב-drip.ts עצמו (כמו ל-message_deliveries).
+  createGoalMessage(input: {
+    participantId: string
+    questionnaireNumber: number
+    goalAnswer: string
+    scheduledFor: string
+  }): Promise<GoalMessageRow>
+  getDueGoalMessages(now: string): Promise<GoalMessageRow[]>
+  markGoalMessageSent(id: string, sentAt: string): Promise<void>
 
   // content
   createContentDay(input: { dayNumber: number; title: string | null }): Promise<ContentDayRow>
@@ -107,6 +128,7 @@ export interface AppDB {
   findDailyTrigger(participantId: string, calendarDate: string): Promise<DailyTriggerRow | undefined>
   getDailyTrigger(id: string): Promise<DailyTriggerRow | undefined>
   getUnsentDailyTriggers(calendarDate: string): Promise<DailyTriggerRow[]>
+  getDailyTriggersForDate(calendarDate: string): Promise<DailyTriggerRow[]>
   markDailyTriggerSent(id: string, sentAt: string): Promise<void>
   markDailyTriggerClicked(id: string, clickedAt: string): Promise<void>
 
@@ -117,6 +139,9 @@ export interface AppDB {
     dailyTriggerId: string
     scheduledFor: string
   }): Promise<MessageDeliveryRow>
+  // כל ה-deliveries של trigger, בכל status/זמן — ל-syncDeliveriesForTrigger, כדי לדעת
+  // אילו message_id כבר קיימים לפני שיוצרים delivery להודעות חדשות שהתווספו מאוחר.
+  getDeliveriesForTrigger(dailyTriggerId: string): Promise<MessageDeliveryRow[]>
   getPendingDeliveriesForTrigger(dailyTriggerId: string, upTo: string): Promise<MessageDeliveryRow[]>
   getDuePendingDeliveriesWithClickedTrigger(now: string): Promise<MessageDeliveryRow[]>
   markDeliverySent(id: string, sentAt: string): Promise<void>

@@ -27,7 +27,7 @@ describe('GET /api/webhooks/participants', () => {
     expect(res.status).toBe(401)
   })
 
-  it('מחזיר את כל הנרשמים עם Authorization תקין', async () => {
+  it('מחזיר את כל הנרשמים, כולל סטטוס טריגר-הבוקר של היום, עם Authorization תקין', async () => {
     vi.mocked(getDb).mockResolvedValue({
       getAllParticipants: async () => [
         {
@@ -41,6 +41,7 @@ describe('GET /api/webhooks/participants', () => {
           assigned_mentor_id: 'm1',
         },
       ],
+      getDailyTriggersForDate: async () => [],
     } as never)
 
     const res = await GET(makeRequest('Bearer test-secret'))
@@ -57,8 +58,43 @@ describe('GET /api/webhooks/participants', () => {
           signupAt: '2026-08-02T10:00:00.000Z',
           signupSourceRef: 'ext-1',
           assignedMentorId: 'm1',
+          triggerSentToday: false,
+          clickedToday: false,
         },
       ],
     })
+  })
+
+  it('מסמן clickedToday=true כשיש טריגר-להיום עם clicked_at', async () => {
+    vi.mocked(getDb).mockResolvedValue({
+      getAllParticipants: async () => [
+        {
+          id: 'p1',
+          full_name: 'ישראל ישראלי',
+          phone: '+972501234567',
+          signup_source_ref: null,
+          signup_at: '2026-08-02T10:00:00.000Z',
+          day1_date: '2026-08-09',
+          status: 'active',
+          assigned_mentor_id: null,
+        },
+      ],
+      getDailyTriggersForDate: async () => [
+        {
+          id: 't1',
+          participant_id: 'p1',
+          calendar_date: '2026-08-16',
+          content_day_number: 29,
+          trigger_sent_at: '2026-08-16T03:45:00.000Z',
+          clicked_at: '2026-08-16T07:02:00.000Z',
+        },
+      ],
+    } as never)
+
+    const res = await GET(makeRequest('Bearer test-secret'))
+    const body = await res.json()
+
+    expect(body.participants[0].triggerSentToday).toBe(true)
+    expect(body.participants[0].clickedToday).toBe(true)
   })
 })

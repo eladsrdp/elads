@@ -33,7 +33,7 @@ async function seedTwoDayProgram(db: ReturnType<typeof createLocalDb>) {
 }
 
 describe('generateDailyDeliveries', () => {
-  it('יוצר daily_trigger אחד + message_delivery לכל הודעה, ליום המתאים לנרשם', async () => {
+  it('יוצר daily_trigger אחד ליום המתאים לנרשם, בלי message_deliveries (נוצרים lazily)', async () => {
     const db = createLocalDb()
     await seedTwoDayProgram(db)
     const participant = await db.createParticipant({
@@ -46,11 +46,12 @@ describe('generateDailyDeliveries', () => {
 
     const result = await generateDailyDeliveries(db, '2023-01-08', 60) // היום = day1_date שלו = יום 1
 
-    expect(result).toEqual({ triggersCreated: 1, deliveriesCreated: 2, participantsCompleted: 0, errors: [] })
+    expect(result).toEqual({ triggersCreated: 1, participantsCompleted: 0, errors: [] })
     const trigger = await db.findDailyTrigger(participant.id, '2023-01-08')
     expect(trigger?.content_day_number).toBe(1)
-    const deliveries = await db.getPendingDeliveriesForTrigger(trigger!.id, '2099-01-01T00:00:00.000Z')
-    expect(deliveries).toHaveLength(2)
+    // message_deliveries לא נוצרים כאן יותר — נוצרים lazily ע"י syncDeliveriesForTrigger
+    // (ראו delivery-sync.test.ts), בזמן לחיצה/drip, לא ב-generate-daily.
+    expect(await db.getDeliveriesForTrigger(trigger!.id)).toHaveLength(0)
   })
 
   it('אידמפוטנטי — ריצה כפולה לאותו יום לא יוצרת כפילויות', async () => {
@@ -67,7 +68,7 @@ describe('generateDailyDeliveries', () => {
     await generateDailyDeliveries(db, '2023-01-08', 60)
     const second = await generateDailyDeliveries(db, '2023-01-08', 60)
 
-    expect(second).toEqual({ triggersCreated: 0, deliveriesCreated: 0, participantsCompleted: 0, errors: [] })
+    expect(second).toEqual({ triggersCreated: 0, participantsCompleted: 0, errors: [] })
   })
 
   it('נרשם שעדיין לא הגיע ה-day1_date שלו לא מקבל כלום', async () => {
@@ -83,7 +84,7 @@ describe('generateDailyDeliveries', () => {
 
     const result = await generateDailyDeliveries(db, '2023-01-07', 60) // יום לפני day1_date
 
-    expect(result).toEqual({ triggersCreated: 0, deliveriesCreated: 0, participantsCompleted: 0, errors: [] })
+    expect(result).toEqual({ triggersCreated: 0, participantsCompleted: 0, errors: [] })
   })
 
   it('שגיאה עבור נרשם אחד לא עוצרת את הריצה עבור נרשמים אחרים', async () => {
@@ -157,7 +158,7 @@ describe('generateDailyDeliveries', () => {
     // עדיין content_day מאושר עבורו.
     const result = await generateDailyDeliveries(db, '2023-01-12', 60)
 
-    expect(result).toEqual({ triggersCreated: 0, deliveriesCreated: 0, participantsCompleted: 0, errors: [] })
+    expect(result).toEqual({ triggersCreated: 0, participantsCompleted: 0, errors: [] })
     const updated = await db.getParticipant(participant.id)
     expect(updated?.status).toBe('active') // לא completed בטעות
     expect(await db.findDailyTrigger(participant.id, '2023-01-12')).toBeUndefined()

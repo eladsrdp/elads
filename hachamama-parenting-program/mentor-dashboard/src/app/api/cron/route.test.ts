@@ -41,7 +41,6 @@ describe('cron route handlers', () => {
     vi.mocked(getDb).mockResolvedValue({} as never)
     vi.mocked(generateDailyDeliveries).mockResolvedValue({
       triggersCreated: 0,
-      deliveriesCreated: 0,
       participantsCompleted: 0,
       errors: [],
     })
@@ -63,7 +62,6 @@ describe('cron route handlers', () => {
     expect(res.status).toBe(200)
     expect(await res.json()).toEqual({
       triggersCreated: 0,
-      deliveriesCreated: 0,
       participantsCompleted: 0,
       errors: [],
     })

@@ -6,6 +6,7 @@ import type {
   AppDB,
   ContentDayRow,
   DailyTriggerRow,
+  GoalMessageRow,
   MessageDeliveryRow,
   MessageRow,
   ParticipantRow,
@@ -91,6 +92,30 @@ export function createSupabaseDb(url: string, key: string): AppDB {
       })
     },
 
+    async createGoalMessage(input) {
+      return insertAndReturn<GoalMessageRow>('goal_messages', {
+        participant_id: input.participantId,
+        questionnaire_number: input.questionnaireNumber,
+        goal_answer: input.goalAnswer,
+        scheduled_for: input.scheduledFor,
+      })
+    },
+
+    async getDueGoalMessages(now) {
+      const { data, error } = await supabase
+        .from('goal_messages')
+        .select()
+        .is('sent_at', null)
+        .lte('scheduled_for', now)
+        .order('scheduled_for', { ascending: true })
+      if (error) throw new Error(`[supabase] goal_messages: ${error.message}`)
+      return data ?? []
+    },
+
+    async markGoalMessageSent(id, sentAt) {
+      await updateRow('goal_messages', id, { sent_at: sentAt })
+    },
+
     async createContentDay(input) {
       return insertAndReturn<ContentDayRow>('content_days', { day_number: input.dayNumber, title: input.title })
     },
@@ -169,6 +194,12 @@ export function createSupabaseDb(url: string, key: string): AppDB {
       return data ?? []
     },
 
+    async getDailyTriggersForDate(calendarDate) {
+      const { data, error } = await supabase.from('daily_triggers').select().eq('calendar_date', calendarDate)
+      if (error) throw new Error(`[supabase] daily_triggers: ${error.message}`)
+      return data ?? []
+    },
+
     async markDailyTriggerSent(id, sentAt) {
       await updateRow('daily_triggers', id, { trigger_sent_at: sentAt })
     },
@@ -184,6 +215,12 @@ export function createSupabaseDb(url: string, key: string): AppDB {
         daily_trigger_id: input.dailyTriggerId,
         scheduled_for: input.scheduledFor,
       })
+    },
+
+    async getDeliveriesForTrigger(dailyTriggerId) {
+      const { data, error } = await supabase.from('message_deliveries').select().eq('daily_trigger_id', dailyTriggerId)
+      if (error) throw new Error(`[supabase] message_deliveries: ${error.message}`)
+      return data ?? []
     },
 
     async getPendingDeliveriesForTrigger(dailyTriggerId, upTo) {
