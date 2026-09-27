@@ -23,8 +23,13 @@ export async function api<T>(path: string, init?: RequestInit & { json?: unknown
       },
       body: json !== undefined ? JSON.stringify(json) : rest.body,
     })
-  } catch {
-    throw new ApiError(0, 'אין חיבור לשרת — בדוק את הרשת')
+  } catch (err) {
+    // אבחון: fetch() יכול להיכשל מכמה סיבות שונות מאוד (רשת אמיתית, בקשה שבוטלה
+    // כי הדף עבר ברקע/החלון נסגר, בעיית CORS, וכו') — כולן נראות זהות למשתמש
+    // בלי הפירוט הזה. חושפים את err.name/err.message כדי לאבחן בפעם הבאה שזה קורה.
+    const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err)
+    console.error('[api] fetch נכשל:', path, detail)
+    throw new ApiError(0, `אין חיבור לשרת — בדוק את הרשת (${detail})`)
   }
 
   if (res.status === 401) window.dispatchEvent(new Event(UNAUTHORIZED_EVENT))
