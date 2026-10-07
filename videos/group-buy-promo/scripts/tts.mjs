@@ -19,9 +19,9 @@ function loadKey() {
 
 const LINES = [
   "כולם רוצים את ארץ קיר. אבל מה קורה מאחורי הקלעים?",
-  "רוצים לפתוח קבוצה? מיד מגיעה הודעת וואטסאפ עם קישור אישי וקוד קופון. 160 שקלים במקום 229.",
+  "פותחים קבוצה, ומיד מגיעה הודעת וואטסאפ עם קישור אישי וקוד קופון. 160 במקום 229.",
   "על כל מי שרכש, המארגן מקבל הודעה. הקבוצה מתמלאת, והוא רואה הכול.",
-  "הקבוצה נתקעה? תזכורות, דחיפה לסגירה, או ביטול מסודר עם זיכוי לכל הרוכשים. והכול יודע לנוח בשבת ובחגים.",
+  "הקבוצה נתקעה? תזכורות, דחיפה לסגירה, או ביטול עם זיכוי לכולם. והכול נח בשבת ובחגים.",
   "עשר הזמנות, והמשחק של המארגן מגיע במתנה. ההזמנה נפתחת בקלות.",
   "עדכוני משלוח מגיעים לכולם בקלות, כולל מספר מעקב. כשהמשחק מגיע, כל רוכש מקבל כתובת איסוף ולוחץ: אספתי.",
   "ואחרי האיסוף? רואים בקלות מי אסף ומי לא, ומחזירים את הרוכשים לקבוצה הבאה.",
@@ -29,9 +29,9 @@ const LINES = [
   "וכל זה בלי הודעה ידנית אחת. רוצים מערכת כזו? דברו איתנו."
 ];
 
-const VOICE = process.env.TTS_VOICE || "coral";
+const VOICE = process.env.TTS_VOICE || "ash";
 const INSTRUCTIONS =
-  "Speak native Israeli Hebrew. Warm, calm, confident, conversational commercial voice-over. " +
+  "Speak native Israeli Hebrew. Male voice. Warm, calm, confident, conversational commercial voice-over. " +
   "Natural pace around 150 words per minute, friendly smile in the voice.";
 
 function wavSeconds(buf) {
