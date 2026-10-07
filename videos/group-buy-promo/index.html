@@ -90,18 +90,19 @@
       <section data-hf-id="hf-3wzz" id="s8" class="clip scene" data-start="74" data-duration="7.4" data-track-index="2"><div data-hf-id="hf-hbtg" class="stage" id="s8-stage"></div></section>
       <section data-hf-id="hf-1tih" id="s9" class="clip scene" data-start="81" data-duration="9" data-track-index="1"><div data-hf-id="hf-t7pl" class="stage" id="s9-stage"></div></section>
 
-      <div data-hf-id="hf-ylwm" id="cap1" class="clip cap" data-start="0.6" data-duration="5.1" data-track-index="5"><div data-hf-id="hf-p66r" class="cap-in"><span data-hf-id="hf-9gry" class="dot"></span>ארץ קיר – המתנה שכולם רוצים</div></div>
+      <div data-hf-id="hf-ylwm" id="cap1" class="clip cap" data-start="0.6" data-duration="3.2" data-track-index="5"><div data-hf-id="hf-p66r" class="cap-in"><span data-hf-id="hf-9gry" class="dot"></span>מעל 30,000 אנשים בחרו בארץ קיר</div></div>
+      <div id="cap1b" class="clip cap" data-start="4.0" data-duration="1.9" data-track-index="5"><div class="cap-in"><span class="dot"></span>מה קורה מאחורי הקלעים?</div></div>
       <div data-hf-id="hf-lw31" id="cap2" class="clip cap" data-start="6.5" data-duration="9.2" data-track-index="5"><div data-hf-id="hf-p0qk" class="cap-in"><span data-hf-id="hf-zcc2" class="dot"></span>וואטסאפ מיידי: קישור אישי וקוד קופון</div></div>
-      <div data-hf-id="hf-fjm2" id="cap3" class="clip cap" data-start="16.5" data-duration="11.2" data-track-index="5"><div data-hf-id="hf-a43j" class="cap-in"><span data-hf-id="hf-zqn3" class="dot"></span>הודעה על כל רכישה</div></div>
+      <div data-hf-id="hf-fjm2" id="cap3" class="clip cap" data-start="16.5" data-duration="11.2" data-track-index="5"><div data-hf-id="hf-a43j" class="cap-in"><span data-hf-id="hf-zqn3" class="dot"></span>קונים יחד · משלוח אחד לכולם</div></div>
       <div data-hf-id="hf-7sys" id="cap4" class="clip cap" data-start="28.5" data-duration="11.2" data-track-index="5"><div data-hf-id="hf-xo2b" class="cap-in"><span data-hf-id="hf-04y4" class="dot"></span>מעקב חכם – גם בשבת ובחגים</div></div>
       <div data-hf-id="hf-iypw" id="cap5" class="clip cap" data-start="40.5" data-duration="7.2" data-track-index="5"><div data-hf-id="hf-xb53" class="cap-in"><span data-hf-id="hf-0j95" class="dot"></span>10 הזמנות = משחק במתנה · הזמנה בקלות</div></div>
       <div data-hf-id="hf-47yl" id="cap6" class="clip cap" data-start="48.5" data-duration="16.2" data-track-index="5"><div data-hf-id="hf-0pj9" class="cap-in"><span data-hf-id="hf-0xk6" class="dot"></span>עדכוני משלוח – בקלות</div></div>
       <div data-hf-id="hf-12gq" id="cap7" class="clip cap" data-start="65.5" data-duration="8.2" data-track-index="5"><div data-hf-id="hf-ge4v" class="cap-in"><span data-hf-id="hf-1bv7" class="dot"></span>מי אסף? רואים בקלות</div></div>
       <div data-hf-id="hf-tni1" id="cap8" class="clip cap" data-start="74.5" data-duration="6.2" data-track-index="5"><div data-hf-id="hf-ich9" class="cap-in"><span data-hf-id="hf-1q68" class="dot"></span>AI שקורא מיילים בשבילך</div></div>
       <div data-hf-id="hf-ascm" id="cap9" class="clip cap" data-start="81.5" data-duration="4.6" data-track-index="5"><div data-hf-id="hf-eoh8" class="cap-in"><span data-hf-id="hf-vrkt" class="dot"></span>בלי הודעה ידנית אחת</div></div>
-      <audio id="vo1" src="assets/vo/vo-01.wav" data-start="0.40" data-duration="5.55" data-track-index="8"></audio>
+      <audio id="vo1" src="assets/vo/vo-01.wav" data-start="0.1" data-duration="6.1" data-track-index="8"></audio>
       <audio id="vo2" src="assets/vo/vo-02.wav" data-start="6.10" data-duration="10.049999999999999" data-track-index="8"></audio>
-      <audio id="vo3" src="assets/vo/vo-03.wav" data-start="16.40" data-duration="8" data-track-index="8"></audio>
+      <audio id="vo3" src="assets/vo/vo-03.wav" data-start="16.40" data-duration="10.9" data-track-index="8"></audio>
       <audio id="vo4" src="assets/vo/vo-04.wav" data-start="28.40" data-duration="11.399999999999999" data-track-index="8"></audio>
       <audio id="vo5" src="assets/vo/vo-05.wav" data-start="40.40" data-duration="7.7" data-track-index="8"></audio>
       <audio id="vo6" src="assets/vo/vo-06.wav" data-start="48.40" data-duration="12.799999999999999" data-track-index="8"></audio>
@@ -258,6 +259,7 @@
       tl.fromTo("#bg-dots", { x: 0, y: 0 }, { x: 44, y: 44, duration: 90, ease: "none" }, 0);
 
       // ---------- captions ----------
+      { const c = document.getElementById("cap1b").firstElementChild; tl.fromTo(c, { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "back.out(1.6)" }, 4.0); tl.to(c, { y: 16, opacity: 0, duration: 0.3, ease: "power2.in" }, 5.6); }
       for (let n = 1; n <= 9; n++) {
         const c = document.getElementById("cap" + n).firstElementChild;
         const start = Number(document.getElementById("cap" + n).dataset.start);
@@ -272,41 +274,28 @@
       // =========================================================
       (() => {
         const st = sceneFrame(tl, 1);
-        const cam = el(st, "layer", { transformOrigin: "44% 48%" }, null, "s1-cam");
-        // warm wooden table
-        el(cam, "abs", { inset: "0", background: "radial-gradient(ellipse at 45% 45%, #F1E6D3 0%, #E4D3B8 70%, #D9C5A6 100%)" });
-        el(cam, "abs", { inset: "0", opacity: "0.35", background: "repeating-linear-gradient(176deg, transparent 0 46px, rgba(150,110,60,0.18) 46px 49px, transparent 49px 120px)" });
-        const ph = makePhone(cam, 740, 150, 360, 720, "s1-phone");
-        el(ph.scr, "abs", { left: "110px", right: "110px", top: "60px", height: "34px", borderRadius: "10px", background: "rgba(19,35,63,0.14)" });
-        const notifs = [];
-        for (let k = 0; k < 8; k++) {
-          const n = el(ph.scr, "abs", {
-            left: "14px", right: "14px", top: px(118 + (7 - k) * 64), height: "56px", borderRadius: "16px",
-            background: "#fff", boxShadow: "0 4px 12px rgba(19,35,63,0.1)", display: "flex", alignItems: "center", gap: "10px", padding: "0 12px", direction: "rtl",
-          }, `<span style="display:block;width:30px;height:30px;border-radius:9px;background:#25C26E;flex:none"></span><div style="flex:1">${lines([150 - (k % 3) * 25, 90 + (k % 2) * 40], "l")}</div>`);
-          notifs.push(n);
-          const t = 0.35 + k * 0.3;
-          tl.fromTo(n, { scale: 0.7, opacity: 0, y: -20 }, { scale: 1, opacity: 1, y: 0, duration: 0.28, ease: "back.out(2)" }, t);
-          tl.fromTo(ph.glow, { opacity: 0.9 }, { opacity: 0, duration: 0.3, ease: "power1.out", immediateRender: false }, t);
-          tl.fromTo("#s1-phone", { rotation: -1.2 }, { rotation: 1.2, duration: 0.05, yoyo: true, repeat: 3, ease: "none", immediateRender: false }, t);
-        }
-        // the "reach for it… no, coffee" beat
-        const cup = el(cam, "abs", { left: "1240px", top: "560px" }, `<div style="width:220px;height:220px;border-radius:50%;background:#fff;box-shadow:0 20px 50px rgba(19,35,63,0.18);display:flex;align-items:center;justify-content:center">${icon("coffee", 130, NAVY)}</div>`);
-        const steam = el(cam, "abs", { left: "1300px", top: "470px", width: "100px", height: "90px" },
-          `<svg width="100" height="90" viewBox="0 0 100 90"><path d="M30 85c-14-16 14-26 0-44S30 12 30 4M60 85c-14-16 14-26 0-44S60 12 60 4" stroke="${NAVY}" stroke-opacity="0.35" stroke-width="5" fill="none" stroke-linecap="round"/></svg>`);
-        tl.fromTo(cup, { x: 420, opacity: 0, rotation: 8 }, { x: 0, opacity: 1, rotation: 0, duration: 0.8, ease: "power3.out" }, 2.6);
-        tl.fromTo(steam, { y: 20, opacity: 0 }, { y: -10, opacity: 1, duration: 1.4, ease: "sine.out" }, 3.2);
-        const smile = el(cam, "abs", { left: "1192px", top: "380px" }, `<div style="width:88px;height:88px;border-radius:50%;background:${TEAL};display:flex;align-items:center;justify-content:center;box-shadow:0 10px 26px rgba(20,184,166,0.45)"><svg width="54" height="54" viewBox="0 0 48 48"><circle cx="17" cy="19" r="3" fill="#fff"/><circle cx="31" cy="19" r="3" fill="#fff"/><path d="M14 29c5 6 15 6 20 0" stroke="#fff" stroke-width="3.5" fill="none" stroke-linecap="round"/></svg></div>`);
-        tl.fromTo(smile, { scale: 0, rotation: -30 }, { scale: 1, rotation: 0, duration: 0.5, ease: "back.out(2.4)" }, 3.5);
-        tl.fromTo(cam, { scale: 1 }, { scale: 1.14, duration: 4.5, ease: "sine.inOut" }, 0);
-        // whip-pan to the automation canvas
-        tl.to(cam, { x: -2300, filter: "blur(26px)", duration: 0.5, ease: "power3.in" }, 4.5);
+        const cam = el(st, "layer", { transformOrigin: "50% 50%" }, null, "s1-cam");
+        // the product on the wall, and how many people chose it
+        const shot = el(cam, "abs", { left: "400px", top: "60px", width: "390px", height: "826px", borderRadius: "28px", overflow: "hidden", border: "8px solid #fff", boxShadow: "0 30px 70px rgba(19,35,63,0.28)" },
+          '<img src="assets/product.jpg" alt="" style="width:100%;height:100%;object-fit:cover;display:block" />');
+        const big = el(cam, "bignum", { left: "900px", top: "230px", fontSize: "230px" }, "0", "s1-num");
+        const bar = el(cam, "abs", { left: "900px", top: "500px", width: "620px", height: "10px", borderRadius: "5px", background: TEAL, transformOrigin: "0% 50%" });
+        const sub = el(cam, "abs", { left: "900px", top: "540px", width: "720px", fontSize: "76px", fontWeight: "700", color: NAVY, direction: "rtl", textAlign: "left" }, "אנשים בחרו בארץ קיר");
+        tl.fromTo(shot, { y: 90, opacity: 0, rotation: -2 }, { y: 0, opacity: 1, rotation: 0, duration: 0.9, ease: "power3.out" }, 0.1);
+        tl.fromTo(shot, { scale: 1 }, { scale: 1.05, duration: 3.6, ease: "sine.inOut", immediateRender: false }, 0.9);
+        tl.fromTo(big, { opacity: 0, x: 40 }, { opacity: 1, x: 0, duration: 0.6, ease: "power3.out" }, 0.7);
+        const cnt = { v: 0 };
+        tl.to(cnt, { v: 30000, duration: 2.2, ease: "power2.out", onUpdate: () => { const n = Math.round(cnt.v); big.textContent = (n >= 1000 ? Math.floor(n / 1000) + "," + String(n % 1000).padStart(3, "0") : String(n)) + "+"; } }, 0.8);
+        tl.fromTo(bar, { scaleX: 0 }, { scaleX: 1, duration: 0.7, ease: "power3.out" }, 1.2);
+        tl.fromTo(sub, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }, 1.5);
+        // "but what happens behind the scenes?" — whip to the automation canvas
+        tl.to(cam, { x: -2300, filter: "blur(26px)", duration: 0.5, ease: "power3.in" }, 3.9);
         const canvasL = el(st, "layer", null, null, "s1-canvas");
         const N = [[560, 330, 46], [900, 230, 38], [1250, 320, 46], [1460, 560, 40], [1180, 700, 50], [820, 640, 44], [500, 640, 34], [1000, 460, 60], [1560, 260, 30]];
         const E = [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 0], [7, 0], [7, 2], [7, 4], [7, 5], [2, 8], [1, 7]];
-        const cv = buildCanvas(canvasL, N, E, tl, 4.9, 6.4);
+        const cv = buildCanvas(canvasL, N, E, tl, 4.4, 6.4);
         el(cv.nodeEls[7], "abs", { inset: "0", display: "flex", alignItems: "center", justifyContent: "center" }, icon("chat", 56, "#fff"));
-        tl.fromTo(canvasL, { x: 2300, filter: "blur(26px)" }, { x: 0, filter: "blur(0px)", duration: 0.55, ease: "power3.out" }, 4.75);
+        tl.fromTo(canvasL, { x: 2300, filter: "blur(26px)" }, { x: 0, filter: "blur(0px)", duration: 0.55, ease: "power3.out" }, 4.15);
       })();
 
       // =========================================================
