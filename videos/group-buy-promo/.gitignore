@@ -3,3 +3,4 @@ snapshots/
 node_modules/
 renders/
 assets/vo/
+.thumbnails/
