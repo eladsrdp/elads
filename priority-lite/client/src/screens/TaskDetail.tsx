@@ -190,15 +190,15 @@ export function TaskDetail({ id, onBack }: Props) {
       </div>
 
       <div className="space-y-2">
-        <p className="text-xs text-slate-500">עדכון פנימי (נשמר בפריוריטי · שמירה מחליפה את הקיים)</p>
-        {/* ה"עדכון הפנימי" (INTERNALDIALOGTEXT) הוא השדה היחיד שניתן לכתיבה — שמירה דורסת את
+        <p className="text-xs text-slate-500">דו שיח פנימי (נשמר בפריוריטי · שמירה מחליפה את הקיים)</p>
+        {/* ה"דו שיח הפנימי" (לשונית באותו שם בפריוריטי = INTERNALDIALOGTEXT) הוא השדה היחיד שניתן לכתיבה — שמירה דורסת את
             הטקסט הקיים, לא מוסיפה לצידו (אומת חי). הטקסטרה מציגה תמיד את הטקסט הנוכחי.
             התקציר עצמו (למעלה) הוא CUSTNOTESTEXT, לקריאה בלבד. */}
         <textarea
           value={descriptionText}
           onChange={(e) => setDescriptionText(e.target.value)}
           disabled={saving}
-          placeholder="הערה פנימית…"
+          placeholder="דו שיח פנימי…"
           rows={4}
           className="w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100 disabled:opacity-50"
         />
@@ -207,7 +207,7 @@ export function TaskDetail({ id, onBack }: Props) {
           disabled={saving || !descriptionText.trim()}
           className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
         >
-          שמור עדכון
+          שמור
         </button>
       </div>
 
