@@ -5,8 +5,9 @@ import { todayISO } from '../lib/date'
 import { diffMinutes, fmtMin, parseDuration, roundUpToQuarterHour } from '../lib/duration'
 import { useAuth } from '../state/useAuth'
 import { addDraft, updateDraft } from '../state/useEntries'
-import type { CustNote, LocalTimeEntry, ProjectSite, TaskSummary } from '../types'
+import type { CustNote, EmployeeSummary, LocalTimeEntry, ProjectSite, TaskSummary } from '../types'
 import type { ParsedEntry } from './AiEntryModal'
+import { AssigneePicker } from './AssigneePicker'
 import { Field, PrimaryButton, TextInput } from './forms'
 import { Modal } from './Modal'
 import { TaskPicker } from './TaskPicker'
@@ -48,6 +49,9 @@ export function ManualEntryModal({ open, onClose, editing, initialValues }: Prop
   const [newTaskSubject, setNewTaskSubject] = useState('')
   const [newTaskTillDate, setNewTaskTillDate] = useState('')
   const [newTaskLoading, setNewTaskLoading] = useState(false)
+  // "לטיפול" במשימה חדשה — null = אני (ברירת מחדל של השרת)
+  const [newTaskHandler, setNewTaskHandler] = useState<EmployeeSummary | null>(null)
+  const [handlerPickerOpen, setHandlerPickerOpen] = useState(false)
 
   useEffect(() => {
     if (!open) return
@@ -104,6 +108,7 @@ export function ManualEntryModal({ open, onClose, editing, initialValues }: Prop
     setShowNewTask(false)
     setNewTaskSubject('')
     setNewTaskTillDate('')
+    setNewTaskHandler(null)
   }, [open, editing, initialValues])
 
   // סינון "שלי" לפי איש "לטיפול". משימה שכבר מקושרת לדיווח (עריכת טיוטה) נשארת ברשימה
@@ -141,13 +146,18 @@ export function ManualEntryModal({ open, onClose, editing, initialValues }: Prop
     try {
       const created = await api<CustNote>(`/api/tasks/${encodeURIComponent(task.id)}/custnotes`, {
         method: 'POST',
-        json: { subject: newTaskSubject.trim(), tillDate: newTaskTillDate || undefined },
+        json: {
+          subject: newTaskSubject.trim(),
+          tillDate: newTaskTillDate || undefined,
+          handlerEmpId: newTaskHandler?.priorityEmpId,
+        },
       })
       setCustNotes((prev) => [created, ...prev])
       setCustnoteId(created.id)
       setShowNewTask(false)
       setNewTaskSubject('')
       setNewTaskTillDate('')
+      setNewTaskHandler(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'שגיאה ביצירת המשימה')
     } finally {
@@ -315,6 +325,15 @@ export function ManualEntryModal({ open, onClose, editing, initialValues }: Prop
                         onChange={(e) => setNewTaskTillDate(e.target.value)}
                       />
                     </Field>
+                    <Field label="לטיפול">
+                      <button
+                        type="button"
+                        onClick={() => setHandlerPickerOpen(true)}
+                        className="w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-right text-slate-100"
+                      >
+                        {newTaskHandler?.name ?? `${me?.name ?? 'אני'} (אני)`}
+                      </button>
+                    </Field>
                     <div className="flex gap-2">
                       <PrimaryButton
                         onClick={createNewTask}
@@ -324,7 +343,7 @@ export function ManualEntryModal({ open, onClose, editing, initialValues }: Prop
                       </PrimaryButton>
                       <button
                         type="button"
-                        onClick={() => { setShowNewTask(false); setNewTaskSubject(''); setNewTaskTillDate('') }}
+                        onClick={() => { setShowNewTask(false); setNewTaskSubject(''); setNewTaskTillDate(''); setNewTaskHandler(null) }}
                         className="rounded-xl border border-slate-700 px-3 py-2 text-sm text-slate-400 hover:text-slate-200 transition"
                       >
                         ביטול
@@ -451,6 +470,11 @@ export function ManualEntryModal({ open, onClose, editing, initialValues }: Prop
       </div>
 
       <TaskPicker open={pickerOpen} onClose={() => setPickerOpen(false)} onSelect={setTask} />
+      <AssigneePicker
+        open={handlerPickerOpen}
+        onClose={() => setHandlerPickerOpen(false)}
+        onSelect={setNewTaskHandler}
+      />
     </Modal>
   )
 }

@@ -2,6 +2,8 @@
 import { describe, expect, it } from 'vitest'
 import type { Me } from '@priority-lite/shared'
 import {
+  createCustNote,
+  createCustNoteSchema,
   getCustNoteDetail,
   listEmployees,
   searchCustNotes,
@@ -63,6 +65,26 @@ describe('updateCustNote action', () => {
 
   it('עדיפות מחוץ לטווח נדחית', () => {
     expect(() => updateCustNoteSchema.parse({ priority: 150 })).toThrow()
+  })
+})
+
+describe('createCustNote action', () => {
+  const base = { custName: 'P-100', subject: 'משימה חדשה' }
+
+  it('בלי handlerEmpId — המשימה משויכת ליוצר', async () => {
+    const adapter = createMockAdapter()
+    const created = await createCustNote(adapter, me, createCustNoteSchema.parse(base))
+    expect(created.handlerEmpId).toBe('42')
+  })
+
+  it('עם handlerEmpId — המשימה משויכת לעובד שנבחר, לא ליוצר', async () => {
+    const adapter = createMockAdapter()
+    const created = await createCustNote(adapter, me, createCustNoteSchema.parse({ ...base, handlerEmpId: '99' }))
+    expect(created.handlerEmpId).toBe('99')
+  })
+
+  it('handlerEmpId ריק נדחה', () => {
+    expect(() => createCustNoteSchema.parse({ ...base, handlerEmpId: '' })).toThrow()
   })
 })
 

@@ -111,10 +111,14 @@ export const createCustNoteSchema = z.object({
   subject: z.string().min(2).max(52),
   projDocNo: z.string().optional(),
   tillDate: z.string().regex(dateRe).optional(),
+  // "לטיפול" — ברירת מחדל: היוצר. USERLOGIN הוא גם היוצר וגם "לטיפול" (ראה mapping.ts),
+  // לכן שיוך בעת יצירה = שליחת ה-login של העובד ב-USERLOGIN.
+  handlerEmpId: z.string().min(1).optional(),
 })
 
 export async function createCustNote(adapter: PriorityAdapter, me: Me, input: z.infer<typeof createCustNoteSchema>) {
-  return adapter.createCustNote({ ...input, userLogin: me.priorityEmpId })
+  const { handlerEmpId, ...rest } = input
+  return adapter.createCustNote({ ...rest, userLogin: handlerEmpId ?? me.priorityEmpId })
 }
 
 export const getTimeEntriesSchema = z.object({
