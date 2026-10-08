@@ -49,7 +49,8 @@ export interface CustNote {
   projDocNo?: string // PROJDOCNO — פרויקט מקושר
   hoursReported?: number // ZRDP_HOURS
   priority?: number      // PRIO (0-99)
-  description?: string   // INTERNALDIALOGTEXT.TEXT — התיאור המלא הנוכחי
+  summary?: string       // CUSTNOTESTEXT.TEXT — "תקציר המשימה" (לקריאה בלבד; רק ב-getCustNoteDetail)
+  description?: string   // INTERNALDIALOGTEXT.TEXT — העדכון הפנימי הנוכחי (ניתן לכתיבה, דריסה)
   ownerName?: string     // ZRDP_TASKOWNER ("אחראי משימה") — לצפייה בלבד
   handlerEmpId?: string  // "לטיפול"
   handlerName?: string

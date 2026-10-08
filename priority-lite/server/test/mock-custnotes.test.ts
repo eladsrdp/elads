@@ -69,6 +69,15 @@ describe('getCustNoteDetail (mock)', () => {
     expect(detail?.history?.length).toBeGreaterThan(0)
   })
 
+  it('מחזיר תקציר (summary) נפרד מהעדכון הפנימי (description); משימה חדשה בלי תקציר', async () => {
+    const adapter = createMockAdapter()
+    const withSummary = await adapter.getCustNoteDetail(5001)
+    expect(withSummary?.summary).toContain('\n')
+    expect(withSummary?.summary).not.toBe(withSummary?.description)
+    const without = await adapter.getCustNoteDetail(5007)
+    expect(without?.summary).toBeUndefined()
+  })
+
   it('מזהה לא קיים — מחזיר null', async () => {
     const adapter = createMockAdapter()
     expect(await adapter.getCustNoteDetail(999999)).toBeNull()

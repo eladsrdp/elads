@@ -33,7 +33,7 @@ function escapeOData(value: string): string {
 }
 
 /**
- * פריוריטי עוטפת אוטומטית כל טקסט שנשלח ל-INTERNALDIALOGTEXT_SUBFORM ב-HTML/CSS
+ * פריוריטי עוטפת אוטומטית טקסט בתתי-הטפסים של המשימה (INTERNALDIALOGTEXT / CUSTNOTESTEXT) ב-HTML/CSS
  * (‏<style>...</style><p dir=rtl>...טקסט...</p>‏) — מסירים את זה כדי להציג טקסט נקי
  * למשתמש. אומת חי מול פריוריטי אמיתי (2026-08-19), ראה mapping.ts custNoteTextSubform.
  *
@@ -45,7 +45,7 @@ function escapeOData(value: string): string {
  * מרובות (רק מבנה ה-wrapper וסמנטיקת הדריסה אומתו) — אם יתגלה קלט שמתעוות בדריסה
  * חוזרת, יש לבדוק חי ולעדכן כאן.
  */
-function stripInternalDialogHtml(raw: string): string {
+function stripPriorityHtml(raw: string): string {
   return raw
     .replace(/<style[\s\S]*?<\/style>/gi, '')
     .replace(/<br\s*\/?>/gi, '\n')
@@ -182,21 +182,28 @@ export function createODataAdapter(cfg: ODataConfig): PriorityAdapter {
     const base = rowToCustNote(row)
     base.ownerName = row[cf.owner] != null ? String(row[cf.owner]) : undefined
 
-    // INTERNALDIALOGTEXT_SUBFORM הוא navigation property יחיד (לא Collection) — פריוריטי
-    // מחזירה ישות בודדת ($entity), לא {value:[...]}. אומת חי 2026-08-19.
-    const textData = await request<Row>(
-      `${m.entities.custNotes}(CUSTNOTE=${id})/${m.custNoteTextSubform}?$select=${m.custNoteTextFields.text}`,
-    ).catch(() => null)
-    base.description = textData?.[m.custNoteTextFields.text] != null
-      ? stripInternalDialogHtml(String(textData[m.custNoteTextFields.text]))
-      : undefined
+    // שני תתי-הטפסים הטקסטואליים הם navigation property יחיד (לא Collection) — פריוריטי
+    // מחזירה ישות בודדת ($entity), לא {value:[...]}; ו-404 פירושו "אין טקסט" (לא שגיאה).
+    // נשלפים במקביל (המגביל ב-createLimiter מקסימום 2 בו-זמנית) — מקצר את טעינת המסך.
+    const readText = (subform: string) =>
+      request<Row>(`${m.entities.custNotes}(CUSTNOTE=${id})/${subform}?$select=${m.custNoteTextFields.text}`)
+        .then((t) => (t?.[m.custNoteTextFields.text] != null ? stripPriorityHtml(String(t[m.custNoteTextFields.text])) : undefined))
+        .catch(() => undefined)
 
-    const logData = await request<{ value: Row[] }>(
-      `${m.entities.custNotes}(CUSTNOTE=${id})/${m.custNoteLogSubform}` +
-        `?$select=${m.custNoteLogFields.date},${m.custNoteLogFields.status},${m.custNoteLogFields.handler},${m.custNoteLogFields.initiator}` +
-        `&$orderby=${m.custNoteLogFields.date} desc`,
-    ).catch(() => ({ value: [] as Row[] }))
-    base.history = logData.value.map((r) => ({
+    const [summary, description, logData] = await Promise.all([
+      // תקציר המשימה — CUSTNOTESTEXT, לקריאה בלבד (אומת חי 2026-10-08 על משימות אמיתיות)
+      readText(m.custNoteSummarySubform),
+      // עדכון פנימי — INTERNALDIALOGTEXT, ניתן לכתיבה (דריסה)
+      readText(m.custNoteTextSubform),
+      request<{ value?: Row[] }>(
+        `${m.entities.custNotes}(CUSTNOTE=${id})/${m.custNoteLogSubform}` +
+          `?$select=${m.custNoteLogFields.date},${m.custNoteLogFields.status},${m.custNoteLogFields.handler},${m.custNoteLogFields.initiator}` +
+          `&$orderby=${m.custNoteLogFields.date} desc`,
+      ).catch(() => ({ value: [] as Row[] })),
+    ])
+    base.summary = summary || undefined
+    base.description = description || undefined
+    base.history = (logData.value ?? []).map((r) => ({
       date: String(r[m.custNoteLogFields.date] ?? '').slice(0, 10),
       status: String(r[m.custNoteLogFields.status] ?? ''),
       handlerName: r[m.custNoteLogFields.handler] != null ? String(r[m.custNoteLogFields.handler]) : undefined,

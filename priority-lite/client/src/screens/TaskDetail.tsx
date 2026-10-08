@@ -101,6 +101,19 @@ export function TaskDetail({ id, onBack }: Props) {
 
       {error && <p className="text-sm text-rose-400">{error}</p>}
 
+      {/* תקציר המשימה (CUSTNOTESTEXT) — לקריאה בלבד: פריוריטי לא מאפשרת לעדכן אותו מה-API.
+          הטקסט יכול להיות ארוך (התכתבות) — גובה מוגבל עם גלילה. */}
+      <div className="space-y-1">
+        <p className="text-xs text-slate-500">תקציר המשימה</p>
+        {note.summary ? (
+          <p className="max-h-72 overflow-y-auto whitespace-pre-wrap rounded-xl bg-slate-800/60 p-3 text-sm text-slate-300">
+            {note.summary}
+          </p>
+        ) : (
+          <p className="rounded-xl bg-slate-800/30 p-3 text-sm text-slate-600">אין תקציר למשימה הזו בפריוריטי</p>
+        )}
+      </div>
+
       <div className="space-y-1">
         <p className="text-xs text-slate-500">סטטוס</p>
         {/* סטטוסים מפריוריטי שאינם בתת-הקבוצה הנבחרת (TASK_STATUSES) לא מקבלים צ'יפ —
@@ -177,14 +190,15 @@ export function TaskDetail({ id, onBack }: Props) {
       </div>
 
       <div className="space-y-2">
-        <p className="text-xs text-slate-500">תיאור</p>
-        {/* עריכת התיאור המלא — שמירה דורסת את התיאור הקיים בפריוריטי, לא מוסיפה
-            לצידו (אומת חי). הטקסטרה מציגה תמיד את הטקסט הנוכחי, לא שדה "תוספת" ריק. */}
+        <p className="text-xs text-slate-500">עדכון פנימי (נשמר בפריוריטי · שמירה מחליפה את הקיים)</p>
+        {/* ה"עדכון הפנימי" (INTERNALDIALOGTEXT) הוא השדה היחיד שניתן לכתיבה — שמירה דורסת את
+            הטקסט הקיים, לא מוסיפה לצידו (אומת חי). הטקסטרה מציגה תמיד את הטקסט הנוכחי.
+            התקציר עצמו (למעלה) הוא CUSTNOTESTEXT, לקריאה בלבד. */}
         <textarea
           value={descriptionText}
           onChange={(e) => setDescriptionText(e.target.value)}
           disabled={saving}
-          placeholder="תיאור המשימה…"
+          placeholder="הערה פנימית…"
           rows={4}
           className="w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100 disabled:opacity-50"
         />
@@ -193,7 +207,7 @@ export function TaskDetail({ id, onBack }: Props) {
           disabled={saving || !descriptionText.trim()}
           className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
         >
-          שמור תיאור
+          שמור עדכון
         </button>
       </div>
 

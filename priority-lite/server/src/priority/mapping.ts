@@ -86,7 +86,13 @@ export const priorityMapping = {
   // סמנטיקה מאומתת: **דריסה (overwrite), לא הוספה (append)** — POST שני דרס את הראשון
   // לגמרי (רק הטקסט האחרון הופיע ב-GET לאחר מכן). פריוריטי גם עוטפת את הטקסט
   // אוטומטית ב-HTML/CSS (<style>...</style><p dir=rtl>...) — יש להסיר את זה בקריאה
-  // (ראה stripInternalDialogHtml ב-odata.ts) לפני הצגה למשתמש.
+  // (ראה stripPriorityHtml ב-odata.ts) לפני הצגה למשתמש.
+  // "תקציר המשימה" האמיתי — CUSTNOTESTEXT_SUBFORM. אומת חי 2026-10-08: זה השדה שמכיל את
+  // תוכן המשימה (מייל שנפתח ממנו, התכתבות וכו' — עד אלפי תווים), והוא לקריאה בלבד דרך ה-API.
+  // משימה חדשה בלי תקציר מחזירה 404 (= "אין טקסט", לא שגיאה).
+  // ⚠️ אסור לקרוא/להציג CUSTOMERSTEXT_SUBFORM: זה טקסט ברמת *הלקוח* (פרטי חיבור — כתובות VPN
+  // וסיסמאות בטקסט גלוי), זהה בכל משימות אותו לקוח, ולא קשור לתקציר המשימה.
+  custNoteSummarySubform: 'CUSTNOTESTEXT_SUBFORM',
   custNoteTextSubform: 'INTERNALDIALOGTEXT_SUBFORM',
   custNoteTextFields: { text: 'TEXT' },
   /** תת-טופס לוג הסטטוסים ("לוג סטטוסים") — כל השדות read-only בפריוריטי. */

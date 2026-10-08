@@ -194,6 +194,8 @@ export function createMockAdapter(opts: { failRate?: number } = {}): PriorityAda
       return {
         ...found,
         ownerName: found.ownerName ?? 'אלעד (מוק)',
+        // 5007 = משימה בלי תקציר (כמו משימה חדשה בפריוריטי, שם CUSTNOTESTEXT מחזיר 404)
+        summary: found.summary ?? (found.id === 5007 ? undefined : 'בקשה מהלקוח לעדכון הטמעה.\nמצורף מסמך אפיון.\nתודה, ישראל'),
         description: found.description ?? 'תיאור לדוגמה שנוסף לאחרונה.',
         history: found.history ?? [
           { date: '2026-08-01', status: 'טיוטא', handlerName: found.handlerEmpId },
