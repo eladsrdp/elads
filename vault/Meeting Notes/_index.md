@@ -30,3 +30,4 @@
 - [[make-issues-dashboard]] — webhook receiver + לוח בקרה לתקלות סנריו מ-Make.com (make-issues/) — Hono+React+Neon, בפרודקשן
 - [[make-mcp-connection]] — חיבור MCP ברמת הפרויקט מול Make.com (`.mcp.json`, OAuth), עדיין דורש אישור בטרמינל
 - [[orian-courier-transportation-api]] — Orian CourierExpert™ API — הזמנות הובלה, תוויות, מעקב חבילות, PUDO (שלב תיעוד/curl בלבד)
+- [[group-buy-promo-video]] — סרטון פרומו HyperFrames לאוטומציות קבוצות הרכישה של ארץ-קיר (videos/group-buy-promo/)

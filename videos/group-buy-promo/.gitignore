@@ -1,0 +1,6 @@
+snapshots/
+.hyperframes/
+node_modules/
+renders/
+assets/vo/
+.thumbnails/
