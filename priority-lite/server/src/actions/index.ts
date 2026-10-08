@@ -134,7 +134,8 @@ export const searchCustNotesSchema = z.object({
   q: z.string().default(''),
   mine: z.boolean().default(false),
   status: z.array(z.enum([...TASK_STATUSES])).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  // 2000 = תקרת ה-$top של השליפה מפריוריטי; תצוגת "לפי אדם" צריכה את כל המשימות הפתוחות.
+  limit: z.coerce.number().int().min(1).max(2000).default(50),
 })
 
 /** חיפוש משימות לקוח — "mine" ממופה ל-handlerEmpId (הסינון בפועל הוא לפי "לטיפול"). */

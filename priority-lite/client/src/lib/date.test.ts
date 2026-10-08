@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fmtDateHe, rangeMonth, rangeWeek, toISODate, workDaysElapsed } from './date'
+import { fmtDateHe, fmtShortDate, rangeMonth, rangeWeek, toISODate, workDaysElapsed } from './date'
 
 describe('toISODate', () => {
   it('פורמט מקומי עם אפסים מובילים', () => {
@@ -62,5 +62,12 @@ describe('workDaysElapsed', () => {
 describe('fmtDateHe', () => {
   it('שם יום בעברית + תאריך קצר', () => {
     expect(fmtDateHe('2026-06-10')).toBe('יום רביעי, 10.6')
+  })
+})
+
+describe('fmtShortDate', () => {
+  it('יום.חודש.שנה בשתי ספרות, בלי אפסים מובילים', () => {
+    expect(fmtShortDate('2026-06-10')).toBe('10.6.26')
+    expect(fmtShortDate('2026-01-05')).toBe('5.1.26')
   })
 })

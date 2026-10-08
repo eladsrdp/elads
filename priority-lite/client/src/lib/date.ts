@@ -73,3 +73,9 @@ export function fmtDateHe(iso: string): string {
   const date = new Date(y, m - 1, d)
   return `יום ${DAY_NAMES[date.getDay()]}, ${d}.${m}`
 }
+
+/** "10.6.26" מתוך YYYY-MM-DD — קומפקטי לשורות רשימה. */
+export function fmtShortDate(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number)
+  return `${d}.${m}.${String(y).slice(-2)}`
+}

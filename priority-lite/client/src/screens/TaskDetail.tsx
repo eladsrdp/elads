@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { AssigneePicker } from '../components/AssigneePicker'
 import { ChecklistSection } from '../components/ChecklistSection'
 import { DraftsSection } from '../components/DraftsSection'
+import { fmtShortDate } from '../lib/date'
 import { getCustNoteDetail, updateCustNote } from '../state/useCustNotes'
 import { TASK_STATUSES } from '../types'
 import type { CustNote, EmployeeSummary, UpdateCustNoteInput } from '../types'
@@ -85,8 +86,14 @@ export function TaskDetail({ id, onBack }: Props) {
       </button>
 
       <div className="rounded-2xl bg-slate-800/40 p-4 ring-1 ring-slate-700/50">
-        <h2 className="text-lg font-bold text-slate-100">{note.subject}</h2>
-        <p className="text-sm text-slate-500">{note.custDes}</p>
+        <h2 className="text-lg font-bold text-slate-100">
+          <span className="ml-2 text-sm font-normal text-slate-500">#{note.id}</span>
+          {note.subject}
+        </h2>
+        <p className="text-sm text-slate-500">
+          {note.custDes}
+          {note.openDate ? ` · נפתחה ${fmtShortDate(note.openDate)}` : ''}
+        </p>
         {note.hoursReported != null && (
           <p className="mt-1 text-xs text-slate-500">שעות שדווחו: {note.hoursReported}</p>
         )}

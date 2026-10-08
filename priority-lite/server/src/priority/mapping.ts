@@ -63,8 +63,10 @@ export const priorityMapping = {
     custName: 'CUSTNAME',  // קוד הלקוח
     custDes: 'CUSTDES',    // שם הלקוח
     statDes: 'STATDES',    // סטטוס
-    closed: 'CLOSED',      // "Y" = סגורה, "N" = פתוחה
+    // "Y" = סגורה; במשימה פתוחה הערך הוא null (לא 'N' — אומת חי 2026-08-19), לכן מסננים 'ne Y'
+    closed: 'CLOSED',
     tillDate: 'TILLDATE',  // תאריך יעד
+    openDate: 'CURDATE',   // תאריך פתיחה
     userLogin: 'USERLOGIN', // בעל המשימה (יוצר) — נשלח רק ביצירה
     projDocNo: 'PROJDOCNO', // מזהה הפרויקט המקושר
     hours: 'ZRDP_HOURS',   // שעות שדווחו

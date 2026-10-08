@@ -34,6 +34,11 @@ describe('searchCustNotes action', () => {
   it('סטטוס לא חוקי נדחה בסכימה', () => {
     expect(() => searchCustNotesSchema.parse({ status: ['לא-קיים'] })).toThrow()
   })
+
+  it('limit עד 2000 מותר (תצוגת "לפי אדם"), מעל זה נדחה', () => {
+    expect(searchCustNotesSchema.parse({ limit: 2000 }).limit).toBe(2000)
+    expect(() => searchCustNotesSchema.parse({ limit: 2001 })).toThrow()
+  })
 })
 
 describe('getCustNoteDetail action', () => {

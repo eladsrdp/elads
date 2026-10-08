@@ -55,12 +55,13 @@ const TASKS: TaskDetail[] = [
 ]
 
 const MOCK_CUSTNOTES: CustNote[] = [
-  { id: 5001, subject: 'הטמעה ראשונית — הגדרת סביבה', custName: 'P-100', custDes: 'לקוח אלפא', statDes: 'לפיתוח', tillDate: '2026-07-31', projDocNo: 'P-100', hoursReported: 4, priority: 50, handlerEmpId: '42' },
-  { id: 5002, subject: 'בדיקות קבלה שלב א׳', custName: 'P-100', custDes: 'לקוח אלפא', statDes: 'טיוטא', projDocNo: 'P-100', hoursReported: 0, priority: 10, handlerEmpId: '99' },
-  { id: 5003, subject: 'ממשק WMS — תיקון דילוגי שורות', custName: 'P-200', custDes: 'שדרוג לוגיסטיקה', statDes: 'לפיתוח', tillDate: '2026-06-30', projDocNo: 'P-200', hoursReported: 2, priority: 70, handlerEmpId: '42' },
-  { id: 5004, subject: 'הדרכת צוות כספים', custName: 'P-500', custDes: 'הדרכות', statDes: 'ממתינה לאישור', projDocNo: 'P-500', hoursReported: 0, priority: 20, handlerEmpId: '99' },
-  { id: 5005, subject: 'עיצוב מסך ניהול ספקים', custName: 'P-300', custDes: 'פורטל ספקים', statDes: 'במעקב', projDocNo: 'P-300', hoursReported: 6, priority: 40, handlerEmpId: '42' },
-  { id: 5006, subject: 'תיקון תקלת גיבוי לילי', custName: 'P-400', custDes: 'תחזוקה שוטפת', statDes: 'בוצעה', projDocNo: 'P-400', hoursReported: 3, priority: 5, handlerEmpId: '99' },
+  { id: 5001, subject: 'הטמעה ראשונית — הגדרת סביבה', custName: 'P-100', custDes: 'לקוח אלפא', statDes: 'לפיתוח', tillDate: '2026-07-31', openDate: '2026-05-04', projDocNo: 'P-100', hoursReported: 4, priority: 50, handlerEmpId: '42' },
+  { id: 5002, subject: 'בדיקות קבלה שלב א׳', custName: 'P-100', custDes: 'לקוח אלפא', statDes: 'טיוטא', openDate: '2026-05-11', projDocNo: 'P-100', hoursReported: 0, priority: 10, handlerEmpId: '99' },
+  { id: 5003, subject: 'ממשק WMS — תיקון דילוגי שורות', custName: 'P-200', custDes: 'שדרוג לוגיסטיקה', statDes: 'לפיתוח', tillDate: '2026-06-30', openDate: '2026-05-18', projDocNo: 'P-200', hoursReported: 2, priority: 70, handlerEmpId: '42' },
+  { id: 5004, subject: 'הדרכת צוות כספים', custName: 'P-500', custDes: 'הדרכות', statDes: 'ממתינה לאישור', openDate: '2026-05-20', projDocNo: 'P-500', hoursReported: 0, priority: 20, handlerEmpId: '99' },
+  { id: 5005, subject: 'עיצוב מסך ניהול ספקים', custName: 'P-300', custDes: 'פורטל ספקים', statDes: 'במעקב', openDate: '2026-06-02', projDocNo: 'P-300', hoursReported: 6, priority: 40, handlerEmpId: '42' },
+  { id: 5006, subject: 'תיקון תקלת גיבוי לילי', custName: 'P-400', custDes: 'תחזוקה שוטפת', statDes: 'בוצעה', openDate: '2026-06-09', projDocNo: 'P-400', hoursReported: 3, priority: 5, handlerEmpId: '99' },
+  { id: 5007, subject: 'משימה ללא שיוך — לבדיקה', custName: 'P-300', custDes: 'פורטל ספקים', statDes: 'טיוטא', openDate: '2026-06-12', projDocNo: 'P-300', hoursReported: 0, priority: 0 },
 ]
 
 export function createMockAdapter(opts: { failRate?: number } = {}): PriorityAdapter {
@@ -161,6 +162,7 @@ export function createMockAdapter(opts: { failRate?: number } = {}): PriorityAda
         custDes: project?.name ?? input.custName,
         statDes: 'טיוטא',
         tillDate: input.tillDate,
+        openDate: new Date().toISOString().slice(0, 10),
         projDocNo: input.projDocNo,
         hoursReported: 0,
         // בפריוריטי האמיתי handler ו-userLogin הם אותה עמודה (USERLOGIN) — משימה

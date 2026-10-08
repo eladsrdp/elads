@@ -45,6 +45,7 @@ export interface CustNote {
   custDes: string    // CUSTDES — שם הלקוח
   statDes?: string   // STATDES — סטטוס
   tillDate?: string  // TILLDATE — תאריך יעד (YYYY-MM-DD)
+  openDate?: string  // CURDATE — תאריך פתיחה (YYYY-MM-DD)
   projDocNo?: string // PROJDOCNO — פרויקט מקושר
   hoursReported?: number // ZRDP_HOURS
   priority?: number      // PRIO (0-99)

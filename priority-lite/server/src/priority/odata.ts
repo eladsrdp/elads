@@ -161,6 +161,7 @@ export function createODataAdapter(cfg: ODataConfig): PriorityAdapter {
       custDes: String(row[cf.custDes] ?? ''),
       statDes: row[cf.statDes] != null ? String(row[cf.statDes]) : undefined,
       tillDate: row[cf.tillDate] != null ? String(row[cf.tillDate]).slice(0, 10) : undefined,
+      openDate: row[cf.openDate] != null ? String(row[cf.openDate]).slice(0, 10) : undefined,
       projDocNo: row[cf.projDocNo] != null ? String(row[cf.projDocNo]).trim() || undefined : undefined,
       hoursReported: row[cf.hours] != null ? Number(row[cf.hours]) : undefined,
       priority: row[cf.priority] != null ? Number(row[cf.priority]) : undefined,
@@ -170,7 +171,7 @@ export function createODataAdapter(cfg: ODataConfig): PriorityAdapter {
 
   async function fetchCustNoteDetail(id: number): Promise<CustNote | null> {
     const cf = m.custNoteFields
-    const select = [cf.id, cf.subject, cf.custName, cf.custDes, cf.statDes, cf.tillDate, cf.projDocNo, cf.hours, cf.priority, cf.owner, cf.handler].join(',')
+    const select = [cf.id, cf.subject, cf.custName, cf.custDes, cf.statDes, cf.tillDate, cf.openDate, cf.projDocNo, cf.hours, cf.priority, cf.owner, cf.handler].join(',')
     // SECURITY/יציבות: `?.` על value — פריוריטי נצפתה חי מחזירה מדי-פעם תשובת 200 בלי
     // מבנה {value:[...]} התקין (חוסר יציבות זמנית בשירות), מה שהיה קורס באינדקס [0] ישיר.
     const data = await request<{ value?: Row[] }>(
@@ -310,7 +311,7 @@ export function createODataAdapter(cfg: ODataConfig): PriorityAdapter {
 
     async listCustNotes(custName) {
       const cf = m.custNoteFields
-      const select = [cf.id, cf.subject, cf.custDes, cf.statDes, cf.tillDate, cf.projDocNo, cf.hours].join(',')
+      const select = [cf.id, cf.subject, cf.custDes, cf.statDes, cf.tillDate, cf.openDate, cf.projDocNo, cf.hours, cf.handler].join(',')
       // CLOSED הוא null במשימות פתוחות בפועל (לא המחרוזת 'N' כפי שהונח במקור) — אומת
       // חי 2026-08-19. 'ne' תופס גם null נכון בפריוריטי; '(eq null or eq \'N\')' נכשל
       // עם 500 (Object reference not set) — ה-OData של פריוריטי לא אוהב את הצירוף.
@@ -325,8 +326,10 @@ export function createODataAdapter(cfg: ODataConfig): PriorityAdapter {
         custDes: String(row[cf.custDes] ?? ''),
         statDes: row[cf.statDes] != null ? String(row[cf.statDes]) : undefined,
         tillDate: row[cf.tillDate] != null ? String(row[cf.tillDate]).slice(0, 10) : undefined,
+        openDate: row[cf.openDate] != null ? String(row[cf.openDate]).slice(0, 10) : undefined,
         projDocNo: row[cf.projDocNo] != null ? String(row[cf.projDocNo]).trim() || undefined : undefined,
         hoursReported: row[cf.hours] != null ? Number(row[cf.hours]) : undefined,
+        handlerEmpId: row[cf.handler] != null ? String(row[cf.handler]) : undefined,
       }))
     },
 
@@ -349,23 +352,27 @@ export function createODataAdapter(cfg: ODataConfig): PriorityAdapter {
         custName: input.custName,
         custDes: String(row[cf.custDes] ?? ''),
         statDes: row[cf.statDes] != null ? String(row[cf.statDes]) : undefined,
+        openDate: row[cf.openDate] != null ? String(row[cf.openDate]).slice(0, 10) : undefined,
         projDocNo: input.projDocNo,
+        // USERLOGIN הוא גם היוצר וגם "לטיפול" בפריוריטי (ראה mapping.ts) — משימה חדשה משויכת ליוצר
+        handlerEmpId: input.userLogin,
       }
     },
 
     async searchCustNotes(query, opts, limitN = 50) {
       const cf = m.custNoteFields
-      const select = [cf.id, cf.subject, cf.custName, cf.custDes, cf.statDes, cf.tillDate, cf.projDocNo, cf.hours, cf.priority, cf.handler].join(',')
+      const select = [cf.id, cf.subject, cf.custName, cf.custDes, cf.statDes, cf.tillDate, cf.openDate, cf.projDocNo, cf.hours, cf.priority, cf.handler].join(',')
       // ראה הערה ב-listCustNotes — CLOSED הוא null בפועל, לא 'N'; 'ne' תופס גם null.
       const filters = [`${cf.closed} ne 'Y'`]
       if (opts.handlerEmpId) filters.push(`${cf.handler} eq '${escapeOData(opts.handlerEmpId)}'`)
       if (opts.status && opts.status.length > 0) {
         filters.push('(' + opts.status.map((s) => `${cf.statDes} eq '${escapeOData(s)}'`).join(' or ') + ')')
       }
-      // OData לא תומך ב-contains() — טוענים עד 500 עם הפילטרים המבניים, ומסננים טקסט חופשי אצלנו
+      // OData לא תומך ב-contains() — טוענים עד 2000 עם הפילטרים המבניים, ומסננים טקסט חופשי אצלנו
+      // (אומת חי 2026-10-08: 912 משימות פתוחות בחברה, נשלפות בבקשה אחת ב-~2 שניות; 500 קיצץ אותן)
       // (אותו דפוס כמו fetchAllTasks למעלה).
       const data = await request<{ value: Row[] }>(
-        `${m.entities.custNotes}?$select=${select}&$filter=${encodeURI(filters.join(' and '))}&$orderby=${cf.id} desc&$top=500`,
+        `${m.entities.custNotes}?$select=${select}&$filter=${encodeURI(filters.join(' and '))}&$orderby=${cf.id} desc&$top=2000`,
       )
       const needle = query.trim()
       const rows = needle

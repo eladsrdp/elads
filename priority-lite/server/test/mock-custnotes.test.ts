@@ -29,6 +29,36 @@ describe('searchCustNotes (mock)', () => {
     expect(hits.length).toBeGreaterThan(0)
     expect(hits[0].subject).toContain('גיבוי')
   })
+
+  it('כל משימה כוללת תאריך פתיחה (YYYY-MM-DD)', async () => {
+    const adapter = createMockAdapter()
+    const all = await adapter.searchCustNotes('', {})
+    for (const n of all) expect(n.openDate).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+  })
+
+  it('יש לפחות משימה אחת ללא שיוך — לבדיקת קבוצת "ללא שיוך"', async () => {
+    const adapter = createMockAdapter()
+    const all = await adapter.searchCustNotes('', {})
+    expect(all.some((n) => !n.handlerEmpId)).toBe(true)
+  })
+})
+
+describe('listCustNotes (mock)', () => {
+  it('מחזיר handlerEmpId ו-openDate — נדרש לסינון "שלי" בבורר דיווח השעות', async () => {
+    const adapter = createMockAdapter()
+    const notes = await adapter.listCustNotes('P-100')
+    expect(notes.length).toBeGreaterThan(0)
+    expect(notes.some((n) => n.handlerEmpId === '42')).toBe(true)
+    for (const n of notes) expect(n.openDate).toBeTruthy()
+  })
+})
+
+describe('createCustNote (mock)', () => {
+  it('משימה חדשה מקבלת תאריך פתיחה של היום', async () => {
+    const adapter = createMockAdapter()
+    const created = await adapter.createCustNote({ subject: 'בדיקה', custName: 'P-100', userLogin: '42' })
+    expect(created.openDate).toBe(new Date().toISOString().slice(0, 10))
+  })
 })
 
 describe('getCustNoteDetail (mock)', () => {

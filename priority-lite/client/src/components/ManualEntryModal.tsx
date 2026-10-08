@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
 import { todayISO } from '../lib/date'
 import { diffMinutes, fmtMin, parseDuration, roundUpToQuarterHour } from '../lib/duration'
+import { useAuth } from '../state/useAuth'
 import { addDraft, updateDraft } from '../state/useEntries'
 import type { CustNote, LocalTimeEntry, ProjectSite, TaskSummary } from '../types'
 import type { ParsedEntry } from './AiEntryModal'
@@ -22,6 +23,8 @@ interface Props {
 type Mode = 'duration' | 'range'
 
 export function ManualEntryModal({ open, onClose, editing, initialValues }: Props) {
+  const { me } = useAuth()
+  const [mineOnly, setMineOnly] = useState(true)
   const [task, setTask] = useState<TaskSummary | null>(null)
   const [date, setDate] = useState(todayISO())
   const [mode, setMode] = useState<Mode>('duration')
@@ -97,10 +100,17 @@ export function ManualEntryModal({ open, onClose, editing, initialValues }: Prop
       setCustnoteId(null)
     }
     setError('')
+    setMineOnly(true)
     setShowNewTask(false)
     setNewTaskSubject('')
     setNewTaskTillDate('')
   }, [open, editing, initialValues])
+
+  // סינון "שלי" לפי איש "לטיפול". משימה שכבר מקושרת לדיווח (עריכת טיוטה) נשארת ברשימה
+  // גם אם היא משויכת לאחר — אחרת ה-select היה מציג ריק ומנתק את הקישור בשקט.
+  const visibleNotes = custNotes.filter(
+    (n) => !mineOnly || n.handlerEmpId === me?.priorityEmpId || n.id === custnoteId,
+  )
 
   // טעינת אתרי הלקוח (DCODE) ומשימות פתוחות (CUSTNOTESA) לפרויקט הנבחר
   useEffect(() => {
@@ -256,9 +266,9 @@ export function ManualEntryModal({ open, onClose, editing, initialValues }: Prop
                     className="flex-1 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-slate-100 outline-none focus:border-emerald-500"
                   >
                     <option value="">ללא משימה</option>
-                    {custNotes.map((n) => (
+                    {visibleNotes.map((n) => (
                       <option key={n.id} value={n.id}>
-                        {n.subject}{n.statDes ? ` · ${n.statDes}` : ''}
+                        #{n.id} · {n.subject}{n.statDes ? ` · ${n.statDes}` : ''}
                       </option>
                     ))}
                   </select>
@@ -271,6 +281,21 @@ export function ManualEntryModal({ open, onClose, editing, initialValues }: Prop
                     +
                   </button>
                 </div>
+
+                <label className="mt-2 flex items-center gap-2 text-sm text-slate-400">
+                  <input
+                    type="checkbox"
+                    checked={mineOnly}
+                    onChange={(e) => setMineOnly(e.target.checked)}
+                    className="h-4 w-4 accent-emerald-500"
+                  />
+                  רק המשימות שלי
+                </label>
+                {mineOnly && custNotes.length > 0 && visibleNotes.length === 0 && (
+                  <p className="mt-1 text-xs text-slate-500">
+                    אין ללקוח הזה משימות שמשויכות אליך ({custNotes.length} משימות של אחרים) — בטל את הסינון כדי לראות אותן.
+                  </p>
+                )}
 
                 {showNewTask && (
                   <div className="mt-2 rounded-xl border border-slate-600 bg-slate-800/50 p-3 space-y-2">
