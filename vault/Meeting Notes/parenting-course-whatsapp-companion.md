@@ -342,3 +342,7 @@
 - **Decisions:** הכלל מזהה לפי שעה מדויקת `13:45` (קבוע `SEND_ONLY_IF_CLICKED_BEFORE`) — לא עמודה במסד; שינוי שעת הודעה מנטרל אותו. 20:00 ושאר השעות לא נגעו.
 - **Notes / Caveats:** **המיגרציה 0009 טרם אומתה שהורצה** — נמסר SQL למשתמש. ה-UI החדש לא נבדק בדפדפן אמיתי. `vercel login` פג שוב והושלם דרך device flow (הקוד נכתב לקובץ, לא `| tail`, כי הוא מחכה לסיום). curl מקומי נכשל ב-TLS (schannel) — האימות נעשה עם Node fetch. כיבוי ה-cron-job.org ל-`send-triggers`/`drip` מ-27.9 הודלק מחדש ע"י המשתמש ב-4.10.
 - **Related:** [[project-overview]]
+
+### 2026-10-13 — מיגרציה 0009 הורצה [shipped]
+- **What was done:** המשתמש דיווח שהריץ את `0009_deliveries_cascade_on_message_delete.sql` ב-Supabase. לא אומת בפועל שמחיקת הודעה עם deliveries עובדת (אין לי גישת DB/דפדפן מחובר) — ממתין לדיווח שלו מ-`/content`.
+- **Related:** [[project-overview]]
