@@ -56,35 +56,43 @@
 }
 
 /*
-  ===== רידיזיין מותג RDP =====
-  טריק Tailwind v4: דורסים את סולמות הצבע הקיימים (slate / emerald / violet)
-  בגווני המותג של RDP. כך כל ה-bg-slate-900 / text-emerald-400 וכו' שבקומפוננטות
-  מקבלים אוטומטית את צבעי RDP — בלי לגעת בעשרות קבצים. שומר על אותה בהירות
-  יחסית (כהה נשאר כהה, בהיר נשאר בהיר) כדי לא לשבור ניגודיות.
+  ===== מיתוג Priority Lite =====
+  טריק Tailwind v4: דורסים את סולמות הצבע הקיימים (slate / emerald / amber / violet)
+  בגווני המותג. כך כל ה-bg-slate-900 / text-emerald-400 וכו' שבקומפוננטות מקבלים
+  אוטומטית את הצבעים החדשים — בלי לגעת בעשרות קבצים.
+    slate   → ניטרלי פחם (רקעים, כרטיסים, מסגרות, טקסט משני)
+    emerald → כתום המותג #F55514 (כפתורים ראשיים, הדגשות, טאב פעיל)
+    success → ירוק הצלחה (סטטוס "בפריוריטי", שמירה שהצליחה) — נפרד מהכתום
+    amber   → צהוב (אזהרות, תג ממתינים) — כדי לא להתבלבל עם הכתום
+  ניגודיות (WCAG AA) נאכפת ב-src/lib/brandPalette.test.ts.
 */
 @theme {
-  /* slate → ניטרלים בגוון נייבי של RDP (בסיס כהה-מותגי) */
-  --color-slate-50: #f3f8fd;
-  --color-slate-100: #e7f1fb;
-  --color-slate-200: #c9def2;
-  --color-slate-300: #a3c4e2;
-  --color-slate-400: #6f97c2;
-  --color-slate-500: #4f739b;
-  --color-slate-600: #33598a;
-  --color-slate-700: #244674;
-  --color-slate-800: #14315c;
-  --color-slate-900: #0c2347;
-  --color-slate-950: #071831;
+  --color-slate-50: #f6f6f7;
+  --color-slate-100: #ececef;
+  --color-slate-200: #d9d9de;
+  --color-slate-300: #b8b8c0;
+  --color-slate-400: #92929c;
+  --color-slate-500: #80808a;
+  --color-slate-600: #5a5a64;
+  --color-slate-700: #2e2e34;
+  --color-slate-800: #1f1f23;
+  --color-slate-900: #151517;
+  --color-slate-950: #0d0d0f;
 
-  /* emerald → כחול RDP (כפתורים ראשיים, סכומים, הדגשות) */
-  --color-emerald-300: #5cc6f5;
-  --color-emerald-400: #36b0ef;
-  --color-emerald-500: #1ca0e0;
-  --color-emerald-600: #1684c4;
-  --color-emerald-700: #136ca3;
-  --color-emerald-900: #0b3a5e;
+  --color-emerald-300: #ff9a6b;
+  --color-emerald-400: #ff7a3d;
+  --color-emerald-500: #f55514;
+  --color-emerald-600: #c7440b;
+  --color-emerald-700: #a53808;
+  --color-emerald-900: #4a1c0a;
 
-  /* violet → נייבי מלכותי (כפתור ה-AI) — נשאר מובחן מהכחול הראשי */
+  --color-success-400: #3fb97a;
+  --color-success-500: #2fa46a;
+
+  --color-amber-400: #facc15;
+  --color-amber-500: #eab308;
+
+  /* violet → גוון קר נפרד לכפתור ה-AI (נשאר כמו שהיה) */
   --color-violet-500: #2f5bd0;
   --color-violet-600: #2848b0;
 
@@ -106,8 +114,8 @@ body,
 body {
   margin: 0;
   font-family: var(--font-sans);
-  background-color: #0c2347;
-  color: #e7f1fb;
+  background-color: #151517;
+  color: #ececef;
   -webkit-tap-highlight-color: transparent;
 }
 

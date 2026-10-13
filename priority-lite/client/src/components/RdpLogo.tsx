@@ -1,73 +1,31 @@
-// לוגו RDP — שחזור SVG נקי של הסמל: מסגרת כפולה כחולה, "RDP", מגן דוד, "עם ישראל חי!".
-// להחלפה בקובץ המקורי: שים PNG/SVG ב-public/ והחלף את הקומפוננטה ב-<img>.
+// לוגו Priority Lite — הסמל החדש (משושה פרוס). צבע המותג מגיע מ-CSS (text-emerald-500 = #F55514).
+// הצורה משוחזרת בקירוב מהתמונה שסופקה; אם יתקבל קובץ וקטורי מקורי — מחליפים את ה-paths כאן וב-public/logo.svg.
 
-function StarOfDavid({ size = 10, color = '#0c2347' }: { size?: number; color?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden>
-      <path
-        d="M12 1l3.5 6h-7L12 1zm0 22l-3.5-6h7L12 23zM2 7l6.9.0 3.5 6-3.5 6L2 19l3.5-6L2 7zm20 0l-3.5 6 3.5 6-6.9 0-3.5-6 3.5-6L22 7z"
-        fill="none"
-        stroke={color}
-        strokeWidth="1.6"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
-
-/** סמל הלוגו המרובע (badge) — מתאים לשימוש קומפקטי בכותרת. */
-export function RdpBadge({ size = 44 }: { size?: number }) {
+/** הסמל לבדו — מתאים לכותרת, למסך כניסה ולכל שימוש קומפקטי. */
+export function BrandMark({ size = 34 }: { size?: number }) {
   return (
     <svg
       width={size}
-      height={size}
-      viewBox="0 0 100 100"
+      height={Math.round((size * 1171) / 1056)}
+      viewBox="0 0 1056 1171"
       role="img"
-      aria-label="RDP — עם ישראל חי"
-      className="shrink-0"
+      aria-label="Priority Lite"
+      fill="currentColor"
+      className="shrink-0 text-emerald-500"
     >
-      {/* מסגרת חיצונית */}
-      <rect x="3" y="3" width="94" height="94" rx="10" fill="none" stroke="#1ca0e0" strokeWidth="3" />
-      {/* רקע כחול פנימי */}
-      <rect x="11" y="11" width="78" height="78" rx="6" fill="#1ca0e0" />
-      {/* מסגרת פנימית לבנה */}
-      <rect x="11" y="11" width="78" height="78" rx="6" fill="none" stroke="#ffffff" strokeWidth="2.5" />
-      {/* RDP */}
-      <text
-        x="50"
-        y="52"
-        textAnchor="middle"
-        fontFamily="'Suez One', 'Secular One', serif"
-        fontSize="34"
-        fontWeight="700"
-        fill="#0c2347"
-      >
-        RDP
-      </text>
-      {/* מגן דוד קטן */}
-      <g transform="translate(45,60)">
-        <StarOfDavid size={10} color="#0c2347" />
-      </g>
-      {/* עם ישראל חי */}
-      <text
-        x="50"
-        y="82"
-        textAnchor="middle"
-        fontFamily="'Secular One', sans-serif"
-        fontSize="13"
-        fill="#0c2347"
-      >
-        עם ישראל חי!
-      </text>
+      <path d="M202 163L448 22Q527 -20 607 22L664 56L452 182Q380 212 338 198Z" />
+      <path d="M774 118L1045 275Q1056 285 1045 296L746 477Q670 515 620 490L560 470Q505 450 452 482L1 745L1 406L50 376Q105 348 160 360L246 382Q300 395 347 370Z" />
+      <path d="M1055 419L1055 764L1020 786Q945 820 890 797L835 779Q780 765 727 790L279 1049L5 892Q-5 882 5 872L329 679Q390 650 440 662L527 684Q580 695 627 670Z" />
+      <path d="M390 1114L603 988Q660 960 715 971L852 1006L607 1148Q528 1190 448 1148Z" />
     </svg>
   )
 }
 
-/** לוקאפ אופקי מלא: badge + שם המוצר — לשימוש בראש המסך. */
+/** לוקאפ אופקי: סמל + שם המוצר — לראש המסך. */
 export function RdpLogo() {
   return (
     <div className="flex items-center gap-3">
-      <RdpBadge size={42} />
+      <BrandMark size={34} />
       <div className="leading-tight">
         <div className="font-display text-lg text-slate-100">Priority Lite</div>
         <div className="text-[11px] text-emerald-400">RDP · דיווחי שעות</div>

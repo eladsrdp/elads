@@ -68,7 +68,7 @@ export function Summary() {
             </div>
             <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-700/60">
               <div
-                className={`h-full rounded-full transition-all ${diffMin >= 0 ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                className={`h-full rounded-full transition-all ${diffMin >= 0 ? 'bg-success-500' : 'bg-amber-500'}`}
                 style={{ width: `${pct}%` }}
               />
             </div>
