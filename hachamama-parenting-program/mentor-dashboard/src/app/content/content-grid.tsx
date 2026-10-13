@@ -1,7 +1,7 @@
 // hachamama-parenting-program/mentor-dashboard/src/app/content/content-grid.tsx
 'use client'
 
-import { useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import { createSupabaseContentDataSource } from '@/lib/content-data-source'
 import { calculateWeekdayName, calculateWeekNumber } from '@/lib/program-day'
@@ -16,11 +16,12 @@ const MEDIA_TYPE_ICON: Record<string, string> = {
 }
 
 const HEADER_ROW_HEIGHT = 34
+const SELECTED_WEEK_STORAGE_KEY = 'content-selected-week'
 const DEFAULT_COL_WIDTHS = { time: 70, media: 44, actions: 108 }
 // עמודות היום עצמו (מס"ד/שבוע/יום-בשבוע/כותרת) — מחושבות ונעולות מתוך מספר היום
 // (יום 1 הוא תמיד ראשון, ראו program-day.ts), לא ניתנות לעריכה נפרדת מכוונת.
 const DAY_COLS_GRID = '70px 70px 90px 1fr'
-const MONTH_OF_DAYS = 30
+const DAYS_PER_WEEK = 7
 
 // קו מפריד עדין בין עמודות — מיושם על כל עמודה חוץ מהאחרונה בכל שורה/כותרת, כדי ששתי
 // הרשתות השונות (מידע-יום מול הודעות) ייראו כל אחת כטבלה אחידה בפני עצמה, במקום טקסט צף.
@@ -51,6 +52,66 @@ export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
   const [editingTimeMessageId, setEditingTimeMessageId] = useState<string | null>(null)
   const [panelMessageId, setPanelMessageId] = useState<string | null>(null)
   const [colWidths, setColWidths] = useState(DEFAULT_COL_WIDTHS)
+
+  // כרטיסיות שבוע: ברירת מחדל — השבוע האחרון שיש בו הודעות (שם בדרך כלל עובדים). הבחירה האחרונה
+  // נשמרת ב-localStorage (per-viewer, לא קריטי — עטוף ב-try/catch).
+  const weekNumbers = useMemo(
+    () => [...new Set(groups.map((g) => calculateWeekNumber(g.dayNumber)))].sort((a, b) => a - b),
+    [groups],
+  )
+  const [selectedWeek, setSelectedWeek] = useState<number>(() => {
+    const weeksWithMessages = groups.filter((g) => g.messages.length > 0).map((g) => calculateWeekNumber(g.dayNumber))
+    return weeksWithMessages.length ? Math.max(...weeksWithMessages) : (weekNumbers[0] ?? 1)
+  })
+  // ימים מכווצים (ברירת מחדל — הכל פתוח)
+  const [collapsedDays, setCollapsedDays] = useState<Set<number>>(new Set())
+
+  useEffect(() => {
+    try {
+      const saved = Number(window.localStorage.getItem(SELECTED_WEEK_STORAGE_KEY))
+      if (saved && weekNumbers.includes(saved)) setSelectedWeek(saved)
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  function selectWeek(week: number) {
+    setSelectedWeek(week)
+    try {
+      window.localStorage.setItem(SELECTED_WEEK_STORAGE_KEY, String(week))
+    } catch {}
+  }
+
+  const weekGroups = groups.filter((g) => calculateWeekNumber(g.dayNumber) === selectedWeek)
+
+  function toggleDay(dayNumber: number) {
+    setCollapsedDays((prev) => {
+      const next = new Set(prev)
+      if (next.has(dayNumber)) next.delete(dayNumber)
+      else next.add(dayNumber)
+      return next
+    })
+  }
+
+  function expandAll() {
+    setCollapsedDays((prev) => {
+      const next = new Set(prev)
+      weekGroups.forEach((g) => next.delete(g.dayNumber))
+      return next
+    })
+  }
+
+  function collapseAll() {
+    setCollapsedDays((prev) => new Set([...prev, ...weekGroups.map((g) => g.dayNumber)]))
+  }
+
+  function jumpToDay(dayNumber: number) {
+    setCollapsedDays((prev) => {
+      const next = new Set(prev)
+      next.delete(dayNumber)
+      return next
+    })
+    setTimeout(() => document.getElementById(`day-${dayNumber}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0)
+  }
   const dragState = useRef<{ col: ResizableColumn; startX: number; startWidth: number } | null>(null)
   const dataSource = createSupabaseContentDataSource(createSupabaseBrowserClient())
 
@@ -124,10 +185,13 @@ export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
     }
   }
 
-  async function handleAddMonth() {
-    const nextDay = Math.max(0, ...groups.map((g) => g.dayNumber)) + 1
-    if (!window.confirm(`להוסיף ${MONTH_OF_DAYS} ימים ריקים, מיום ${nextDay} עד יום ${nextDay + MONTH_OF_DAYS - 1}?`)) return
-    const dayNumbers = Array.from({ length: MONTH_OF_DAYS }, (_, i) => nextDay + i)
+  // כרטיסיה חדשה = שבוע חדש (7 ימים ריקים) אחרי השבוע האחרון הקיים.
+  async function handleAddWeek() {
+    const nextWeek = Math.max(0, ...weekNumbers) + 1
+    const firstDay = (nextWeek - 1) * DAYS_PER_WEEK + 1
+    const dayNumbers = Array.from({ length: DAYS_PER_WEEK }, (_, i) => firstDay + i).filter(
+      (n) => !groups.some((g) => g.dayNumber === n),
+    )
     try {
       const created = await dataSource.createContentDays(dayNumbers)
       setGroups((prev) =>
@@ -135,8 +199,9 @@ export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
           (a, b) => a.dayNumber - b.dayNumber,
         ),
       )
+      selectWeek(nextWeek)
     } catch (err) {
-      window.alert(`הוספת הימים נכשלה: ${err instanceof Error ? err.message : String(err)}`)
+      window.alert(`הוספת השבוע נכשלה: ${err instanceof Error ? err.message : String(err)}`)
     }
   }
 
@@ -165,11 +230,16 @@ export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
   }
 
   async function handleDelete(messageId: string, dayNumber: number) {
-    const hasDeliveries = await dataSource.hasDeliveries(messageId)
-    if (hasDeliveries && !window.confirm('ההודעה הזו כבר נשלחה/מתוזמנת למישהו. למחוק בכל זאת?')) return
-    if (!hasDeliveries && !window.confirm('למחוק את ההודעה?')) return
-    await dataSource.deleteMessage(messageId)
-    setGroups((prev) => prev.map((g) => (g.dayNumber !== dayNumber ? g : { ...g, messages: g.messages.filter((m) => m.id !== messageId) })))
+    try {
+      const hasDeliveries = await dataSource.hasDeliveries(messageId)
+      if (hasDeliveries && !window.confirm('ההודעה הזו כבר נשלחה/מתוזמנת למישהו. למחוק בכל זאת? (תימחק גם היסטוריית השליחה שלה)')) return
+      if (!hasDeliveries && !window.confirm('למחוק את ההודעה?')) return
+      await dataSource.deleteMessage(messageId)
+      if (panelMessageId === messageId) setPanelMessageId(null)
+      setGroups((prev) => prev.map((g) => (g.dayNumber !== dayNumber ? g : { ...g, messages: g.messages.filter((m) => m.id !== messageId) })))
+    } catch (err) {
+      window.alert(`מחיקת ההודעה נכשלה: ${err instanceof Error ? err.message : String(err)}`)
+    }
   }
 
   function handleMediaSaved(messageId: string, dayNumber: number, mediaUrl: string | null, mediaType: string | null) {
@@ -189,11 +259,82 @@ export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
 
   return (
     <div>
+      {/* כרטיסיות שבועות (כמו חוצצים בקלסר) + בחירת יום + פתח/כווץ הכל — דביק בראש המסך */}
+      <div style={{ position: 'sticky', top: 0, zIndex: 4, background: BRAND.white, paddingTop: 4 }}>
+        <div role="tablist" style={{ display: 'flex', gap: 4, overflowX: 'auto', borderBottom: `2px solid ${BRAND.greenDark}` }}>
+          {weekNumbers.map((week) => {
+            const active = week === selectedWeek
+            return (
+              <button
+                key={week}
+                role="tab"
+                aria-selected={active}
+                onClick={() => selectWeek(week)}
+                style={{
+                  padding: '8px 16px',
+                  border: `1px solid ${BRAND.border}`,
+                  borderBottom: active ? `2px solid ${BRAND.white}` : `1px solid ${BRAND.border}`,
+                  marginBottom: -2,
+                  borderRadius: '8px 8px 0 0',
+                  background: active ? BRAND.greenDark : BRAND.paper,
+                  color: active ? BRAND.white : BRAND.greenDark,
+                  fontWeight: active ? 700 : 500,
+                  fontSize: 14,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                שבוע {week}
+              </button>
+            )
+          })}
+          <button
+            onClick={handleAddWeek}
+            title="הוסף שבוע חדש (7 ימים ריקים)"
+            style={{ ...buttonSecondaryStyle, borderRadius: '8px 8px 0 0', marginBottom: -2, whiteSpace: 'nowrap' }}
+          >
+            + שבוע
+          </button>
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            gap: 6,
+            padding: '8px 0',
+            background: BRAND.white,
+            borderBottom: `1px solid ${BRAND.border}`,
+          }}
+        >
+          <span style={{ fontSize: 13, color: BRAND.greenMuted }}>קפוץ ליום:</span>
+          {weekGroups.map((g) => (
+            <button
+              key={g.dayNumber}
+              onClick={() => jumpToDay(g.dayNumber)}
+              style={{
+                ...buttonSecondaryStyle,
+                padding: '3px 10px',
+                fontSize: 13,
+                opacity: collapsedDays.has(g.dayNumber) ? 0.6 : 1,
+              }}
+            >
+              {calculateWeekdayName(g.dayNumber)} · {g.dayNumber}
+            </button>
+          ))}
+          <span style={{ marginInlineStart: 'auto', display: 'flex', gap: 6 }}>
+            <button style={{ ...buttonSecondaryStyle, padding: '3px 10px', fontSize: 13 }} onClick={expandAll}>
+              ▾ הרחב הכל
+            </button>
+            <button style={{ ...buttonSecondaryStyle, padding: '3px 10px', fontSize: 13 }} onClick={collapseAll}>
+              ▸ כווץ הכל
+            </button>
+          </span>
+        </div>
+      </div>
+
       <div
         style={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 2,
           display: 'grid',
           gridTemplateColumns: DAY_COLS_GRID,
           gap: 8,
@@ -215,9 +356,6 @@ export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
 
       <div
         style={{
-          position: 'sticky',
-          top: HEADER_ROW_HEIGHT,
-          zIndex: 2,
           display: 'grid',
           gridTemplateColumns: rowGridColumns,
           gap: 8,
@@ -244,12 +382,22 @@ export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
         <span style={colDividerStyle(true)}>פעולות</span>
       </div>
 
-      {groups.map((group) => (
-        <div key={group.dayNumber}>
+      {weekGroups.map((group) => {
+        const collapsed = collapsedDays.has(group.dayNumber)
+        return (
+        <div key={group.dayNumber} id={`day-${group.dayNumber}`} style={{ scrollMarginTop: 110 }}>
           <div
+            role="button"
+            tabIndex={0}
+            aria-expanded={!collapsed}
+            onClick={() => toggleDay(group.dayNumber)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                toggleDay(group.dayNumber)
+              }
+            }}
             style={{
-              position: 'sticky',
-              top: HEADER_ROW_HEIGHT * 2,
               display: 'grid',
               gridTemplateColumns: DAY_COLS_GRID,
               gap: 8,
@@ -258,15 +406,21 @@ export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
               fontWeight: 600,
               padding: '6px 8px',
               borderBottom: `1px solid ${BRAND.border}`,
-              zIndex: 1,
+              cursor: 'pointer',
+              userSelect: 'none',
             }}
           >
-            <span style={colDividerStyle(false)}>{group.dayNumber}</span>
+            <span style={colDividerStyle(false)}>
+              {collapsed ? '▸' : '▾'} {group.dayNumber}
+            </span>
             <span style={colDividerStyle(false)}>{calculateWeekNumber(group.dayNumber)}</span>
             <span style={colDividerStyle(false)}>{calculateWeekdayName(group.dayNumber)}</span>
-            <span style={colDividerStyle(true)}>{group.title ?? '—'}</span>
+            <span style={colDividerStyle(true)}>
+              {group.title ?? '—'}
+              {collapsed && group.messages.length > 0 ? ` (${group.messages.length} הודעות)` : ''}
+            </span>
           </div>
-          {group.messages.map((message) => (
+          {!collapsed && group.messages.map((message) => (
             <div
               key={message.id}
               style={{
@@ -350,28 +504,8 @@ export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
             </div>
           ))}
         </div>
-      ))}
-
-      <button
-        style={{
-          ...buttonSecondaryStyle,
-          position: 'fixed',
-          bottom: 152,
-          left: 24,
-          borderRadius: '50%',
-          width: 52,
-          height: 52,
-          fontSize: 14,
-          fontWeight: 700,
-          background: BRAND.white,
-          boxShadow: '0 2px 10px rgba(47, 95, 71, 0.25)',
-          zIndex: 3,
-        }}
-        title={`הוסף עוד ${MONTH_OF_DAYS} ימים ריקים`}
-        onClick={handleAddMonth}
-      >
-        📅+{MONTH_OF_DAYS}
-      </button>
+        )
+      })}
 
       <button
         style={{

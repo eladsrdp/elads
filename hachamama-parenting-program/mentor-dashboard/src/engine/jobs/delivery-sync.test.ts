@@ -121,3 +121,37 @@ describe('syncDeliveriesForTrigger', () => {
     expect(delivery.scheduled_for).toBe('2023-01-08T05:00:00.000Z') // 07:00 בישראל בחורף = 05:00 UTC
   })
 })
+
+describe('syncDeliveriesForTrigger — הודעת 13:45 רק למי שלחץ לפניה', () => {
+  async function setup(clickedAt: string) {
+    const db = createLocalDb()
+    const participant = await db.createParticipant({
+      fullName: 'ישראל',
+      phone: '+972501234567',
+      signupSourceRef: null,
+      signupAt: '2023-01-05T10:00:00.000Z',
+      day1Date: '2023-01-08',
+    })
+    await db.createContentDay({ dayNumber: 1, title: null })
+    await db.createMessage({ contentDayNumber: 1, sendOffsetTime: '06:45', orderInDay: 0, bodyText: 'בוקר', mediaUrl: null, mediaType: null })
+    await db.createMessage({ contentDayNumber: 1, sendOffsetTime: '13:45', orderInDay: 1, bodyText: 'תזכורת', mediaUrl: null, mediaType: null })
+    await db.createMessage({ contentDayNumber: 1, sendOffsetTime: '20:00', orderInDay: 2, bodyText: 'ערב', mediaUrl: null, mediaType: null })
+    const trigger = await db.createDailyTrigger({ participantId: participant.id, calendarDate: '2023-01-08', contentDayNumber: 1 })
+    return { db, trigger: { ...trigger, clicked_at: clickedAt } }
+  }
+
+  it('לחץ לפני 13:45 — מקבל את תזכורת הצהריים', async () => {
+    const { db, trigger } = await setup('2023-01-08T10:00:00.000Z') // 12:00 בישראל
+    await syncDeliveriesForTrigger(db, trigger)
+    expect(await db.getDeliveriesForTrigger(trigger.id)).toHaveLength(3)
+  })
+
+  it('לחץ אחרי 13:45 — לא מקבל את תזכורת הצהריים, אבל כן את שאר ההודעות', async () => {
+    const { db, trigger } = await setup('2023-01-08T12:30:00.000Z') // 14:30 בישראל
+    await syncDeliveriesForTrigger(db, trigger)
+    const deliveries = await db.getDeliveriesForTrigger(trigger.id)
+    expect(deliveries).toHaveLength(2)
+    const bodies = await Promise.all(deliveries.map(async (d) => (await db.getMessage(d.message_id))?.body_text))
+    expect(bodies.sort()).toEqual(['בוקר', 'ערב'].sort())
+  })
+})

@@ -46,7 +46,9 @@ export async function POST(request: Request) {
 
   // משלים deliveries להודעות שנוספו/נערכו אחרי שה-trigger נוצר (ואפילו אחרי לחיצה
   // קודמת) — כדי שהתוכן העדכני ביותר יגיע, לא רק מה שהיה קיים ב-00:05. ראו delivery-sync.ts.
-  await syncDeliveriesForTrigger(db, trigger)
+  // clicked_at של האובייקט ישן (נקרא לפני ה-mark) — מעבירים את זמן הלחיצה בפועל, כדי שהודעת
+  // 13:45 תדלג על מי שלוחץ אחרי 13:45.
+  await syncDeliveriesForTrigger(db, { ...trigger, clicked_at: trigger.clicked_at ?? now })
 
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
   await db.openOrExtendSessionWindow(participant.id, expiresAt)
