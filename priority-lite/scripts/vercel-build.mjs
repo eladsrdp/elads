@@ -21,7 +21,7 @@ await build({
   platform: 'node',
   format: 'cjs',
   outfile: '.vercel/output/functions/api/index.func/index.js',
-  target: 'node20',
+  target: 'node22',
   footer: { js: 'if (typeof module.exports.default === "function") module.exports = module.exports.default;' },
 })
 
@@ -29,7 +29,7 @@ await build({
 await writeFile(
   '.vercel/output/functions/api/index.func/.vc-config.json',
   JSON.stringify({
-    runtime: 'nodejs20.x',
+    runtime: 'nodejs22.x',
     handler: 'index.js',
     launcherType: 'Nodejs',
     shouldAddHelpers: false,

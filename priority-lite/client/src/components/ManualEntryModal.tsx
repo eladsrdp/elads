@@ -3,9 +3,11 @@ import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
 import { todayISO } from '../lib/date'
 import { diffMinutes, fmtMin, parseDuration, roundUpToQuarterHour } from '../lib/duration'
+import { useAuth } from '../state/useAuth'
 import { addDraft, updateDraft } from '../state/useEntries'
-import type { CustNote, LocalTimeEntry, ProjectSite, TaskSummary } from '../types'
+import type { CustNote, EmployeeSummary, LocalTimeEntry, ProjectSite, TaskSummary } from '../types'
 import type { ParsedEntry } from './AiEntryModal'
+import { AssigneePicker } from './AssigneePicker'
 import { Field, PrimaryButton, TextInput } from './forms'
 import { Modal } from './Modal'
 import { TaskPicker } from './TaskPicker'
@@ -22,6 +24,8 @@ interface Props {
 type Mode = 'duration' | 'range'
 
 export function ManualEntryModal({ open, onClose, editing, initialValues }: Props) {
+  const { me } = useAuth()
+  const [mineOnly, setMineOnly] = useState(true)
   const [task, setTask] = useState<TaskSummary | null>(null)
   const [date, setDate] = useState(todayISO())
   const [mode, setMode] = useState<Mode>('duration')
@@ -45,6 +49,9 @@ export function ManualEntryModal({ open, onClose, editing, initialValues }: Prop
   const [newTaskSubject, setNewTaskSubject] = useState('')
   const [newTaskTillDate, setNewTaskTillDate] = useState('')
   const [newTaskLoading, setNewTaskLoading] = useState(false)
+  // "לטיפול" במשימה חדשה — null = אני (ברירת מחדל של השרת)
+  const [newTaskHandler, setNewTaskHandler] = useState<EmployeeSummary | null>(null)
+  const [handlerPickerOpen, setHandlerPickerOpen] = useState(false)
 
   useEffect(() => {
     if (!open) return
@@ -97,10 +104,18 @@ export function ManualEntryModal({ open, onClose, editing, initialValues }: Prop
       setCustnoteId(null)
     }
     setError('')
+    setMineOnly(true)
     setShowNewTask(false)
     setNewTaskSubject('')
     setNewTaskTillDate('')
+    setNewTaskHandler(null)
   }, [open, editing, initialValues])
+
+  // סינון "שלי" לפי איש "לטיפול". משימה שכבר מקושרת לדיווח (עריכת טיוטה) נשארת ברשימה
+  // גם אם היא משויכת לאחר — אחרת ה-select היה מציג ריק ומנתק את הקישור בשקט.
+  const visibleNotes = custNotes.filter(
+    (n) => !mineOnly || n.handlerEmpId === me?.priorityEmpId || n.id === custnoteId,
+  )
 
   // טעינת אתרי הלקוח (DCODE) ומשימות פתוחות (CUSTNOTESA) לפרויקט הנבחר
   useEffect(() => {
@@ -131,13 +146,18 @@ export function ManualEntryModal({ open, onClose, editing, initialValues }: Prop
     try {
       const created = await api<CustNote>(`/api/tasks/${encodeURIComponent(task.id)}/custnotes`, {
         method: 'POST',
-        json: { subject: newTaskSubject.trim(), tillDate: newTaskTillDate || undefined },
+        json: {
+          subject: newTaskSubject.trim(),
+          tillDate: newTaskTillDate || undefined,
+          handlerEmpId: newTaskHandler?.priorityEmpId,
+        },
       })
       setCustNotes((prev) => [created, ...prev])
       setCustnoteId(created.id)
       setShowNewTask(false)
       setNewTaskSubject('')
       setNewTaskTillDate('')
+      setNewTaskHandler(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'שגיאה ביצירת המשימה')
     } finally {
@@ -256,9 +276,9 @@ export function ManualEntryModal({ open, onClose, editing, initialValues }: Prop
                     className="flex-1 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-slate-100 outline-none focus:border-emerald-500"
                   >
                     <option value="">ללא משימה</option>
-                    {custNotes.map((n) => (
+                    {visibleNotes.map((n) => (
                       <option key={n.id} value={n.id}>
-                        {n.subject}{n.statDes ? ` · ${n.statDes}` : ''}
+                        #{n.id} · {n.subject}{n.statDes ? ` · ${n.statDes}` : ''}
                       </option>
                     ))}
                   </select>
@@ -271,6 +291,21 @@ export function ManualEntryModal({ open, onClose, editing, initialValues }: Prop
                     +
                   </button>
                 </div>
+
+                <label className="mt-2 flex items-center gap-2 text-sm text-slate-400">
+                  <input
+                    type="checkbox"
+                    checked={mineOnly}
+                    onChange={(e) => setMineOnly(e.target.checked)}
+                    className="h-4 w-4 accent-emerald-500"
+                  />
+                  רק המשימות שלי
+                </label>
+                {mineOnly && custNotes.length > 0 && visibleNotes.length === 0 && (
+                  <p className="mt-1 text-xs text-slate-500">
+                    אין ללקוח הזה משימות שמשויכות אליך ({custNotes.length} משימות של אחרים) — בטל את הסינון כדי לראות אותן.
+                  </p>
+                )}
 
                 {showNewTask && (
                   <div className="mt-2 rounded-xl border border-slate-600 bg-slate-800/50 p-3 space-y-2">
@@ -290,6 +325,15 @@ export function ManualEntryModal({ open, onClose, editing, initialValues }: Prop
                         onChange={(e) => setNewTaskTillDate(e.target.value)}
                       />
                     </Field>
+                    <Field label="לטיפול">
+                      <button
+                        type="button"
+                        onClick={() => setHandlerPickerOpen(true)}
+                        className="w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-right text-slate-100"
+                      >
+                        {newTaskHandler?.name ?? `${me?.name ?? 'אני'} (אני)`}
+                      </button>
+                    </Field>
                     <div className="flex gap-2">
                       <PrimaryButton
                         onClick={createNewTask}
@@ -299,7 +343,7 @@ export function ManualEntryModal({ open, onClose, editing, initialValues }: Prop
                       </PrimaryButton>
                       <button
                         type="button"
-                        onClick={() => { setShowNewTask(false); setNewTaskSubject(''); setNewTaskTillDate('') }}
+                        onClick={() => { setShowNewTask(false); setNewTaskSubject(''); setNewTaskTillDate(''); setNewTaskHandler(null) }}
                         className="rounded-xl border border-slate-700 px-3 py-2 text-sm text-slate-400 hover:text-slate-200 transition"
                       >
                         ביטול
@@ -426,6 +470,11 @@ export function ManualEntryModal({ open, onClose, editing, initialValues }: Prop
       </div>
 
       <TaskPicker open={pickerOpen} onClose={() => setPickerOpen(false)} onSelect={setTask} />
+      <AssigneePicker
+        open={handlerPickerOpen}
+        onClose={() => setHandlerPickerOpen(false)}
+        onSelect={setNewTaskHandler}
+      />
     </Modal>
   )
 }

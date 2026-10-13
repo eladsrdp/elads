@@ -6,12 +6,14 @@ export interface SearchCustNotesParams {
   q?: string
   mine?: boolean
   status?: TaskStatus[]
+  limit?: number
 }
 
 export function buildQuery(params: SearchCustNotesParams): string {
   const usp = new URLSearchParams()
   if (params.q) usp.set('q', params.q)
   if (params.mine) usp.set('mine', 'true')
+  if (params.limit) usp.set('limit', String(params.limit))
   for (const s of params.status ?? []) usp.append('status', s)
   return usp.toString()
 }

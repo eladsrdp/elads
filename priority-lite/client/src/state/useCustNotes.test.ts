@@ -21,6 +21,11 @@ describe('buildQuery', () => {
     expect(params.getAll('status')).toEqual(['לפיתוח', 'בוצעה'])
   })
 
+  it('limit מתווסף רק כשמוגדר', () => {
+    expect(buildQuery({ limit: 500 })).toBe('limit=500')
+    expect(buildQuery({})).toBe('')
+  })
+
   it('שילוב של כל הפרמטרים יחד', () => {
     const qs = buildQuery({ q: 'x', mine: true, status: ['טיוטא'] })
     const params = new URLSearchParams(qs)

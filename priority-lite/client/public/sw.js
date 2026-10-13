@@ -20,6 +20,23 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin) return
   if (url.pathname.startsWith('/api/')) return
 
+  // ניווט (index.html) — רשת קודם, מטמון רק כשאין רשת. אחרת אחרי כל פריסה המשתמש רואה את
+  // הגרסה הישנה בטעינה הראשונה (stale-while-revalidate מגיש את הישן ומעדכן ברקע).
+  // קבצי JS/CSS עם hash בשם — בטוחים ל-stale-while-revalidate למטה.
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      caches.open(CACHE).then((cache) =>
+        fetch(event.request)
+          .then((res) => {
+            if (res.ok) cache.put(event.request, res.clone())
+            return res
+          })
+          .catch(async () => (await cache.match(event.request)) ?? (await cache.match('/')) ?? Response.error()),
+      ),
+    )
+    return
+  }
+
   event.respondWith(
     caches.open(CACHE).then(async (cache) => {
       const cached = await cache.match(event.request)

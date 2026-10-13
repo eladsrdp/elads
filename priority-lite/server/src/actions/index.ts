@@ -111,10 +111,14 @@ export const createCustNoteSchema = z.object({
   subject: z.string().min(2).max(52),
   projDocNo: z.string().optional(),
   tillDate: z.string().regex(dateRe).optional(),
+  // "לטיפול" — ברירת מחדל: היוצר. USERLOGIN הוא גם היוצר וגם "לטיפול" (ראה mapping.ts),
+  // לכן שיוך בעת יצירה = שליחת ה-login של העובד ב-USERLOGIN.
+  handlerEmpId: z.string().min(1).optional(),
 })
 
 export async function createCustNote(adapter: PriorityAdapter, me: Me, input: z.infer<typeof createCustNoteSchema>) {
-  return adapter.createCustNote({ ...input, userLogin: me.priorityEmpId })
+  const { handlerEmpId, ...rest } = input
+  return adapter.createCustNote({ ...rest, userLogin: handlerEmpId ?? me.priorityEmpId })
 }
 
 export const getTimeEntriesSchema = z.object({
@@ -134,7 +138,8 @@ export const searchCustNotesSchema = z.object({
   q: z.string().default(''),
   mine: z.boolean().default(false),
   status: z.array(z.enum([...TASK_STATUSES])).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  // 2000 = תקרת ה-$top של השליפה מפריוריטי; תצוגת "לפי אדם" צריכה את כל המשימות הפתוחות.
+  limit: z.coerce.number().int().min(1).max(2000).default(50),
 })
 
 /** חיפוש משימות לקוח — "mine" ממופה ל-handlerEmpId (הסינון בפועל הוא לפי "לטיפול"). */

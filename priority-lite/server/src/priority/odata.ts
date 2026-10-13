@@ -33,7 +33,7 @@ function escapeOData(value: string): string {
 }
 
 /**
- * פריוריטי עוטפת אוטומטית כל טקסט שנשלח ל-INTERNALDIALOGTEXT_SUBFORM ב-HTML/CSS
+ * פריוריטי עוטפת אוטומטית טקסט בתתי-הטפסים של המשימה (INTERNALDIALOGTEXT / CUSTNOTESTEXT) ב-HTML/CSS
  * (‏<style>...</style><p dir=rtl>...טקסט...</p>‏) — מסירים את זה כדי להציג טקסט נקי
  * למשתמש. אומת חי מול פריוריטי אמיתי (2026-08-19), ראה mapping.ts custNoteTextSubform.
  *
@@ -45,7 +45,7 @@ function escapeOData(value: string): string {
  * מרובות (רק מבנה ה-wrapper וסמנטיקת הדריסה אומתו) — אם יתגלה קלט שמתעוות בדריסה
  * חוזרת, יש לבדוק חי ולעדכן כאן.
  */
-function stripInternalDialogHtml(raw: string): string {
+function stripPriorityHtml(raw: string): string {
   return raw
     .replace(/<style[\s\S]*?<\/style>/gi, '')
     .replace(/<br\s*\/?>/gi, '\n')
@@ -161,6 +161,7 @@ export function createODataAdapter(cfg: ODataConfig): PriorityAdapter {
       custDes: String(row[cf.custDes] ?? ''),
       statDes: row[cf.statDes] != null ? String(row[cf.statDes]) : undefined,
       tillDate: row[cf.tillDate] != null ? String(row[cf.tillDate]).slice(0, 10) : undefined,
+      openDate: row[cf.openDate] != null ? String(row[cf.openDate]).slice(0, 10) : undefined,
       projDocNo: row[cf.projDocNo] != null ? String(row[cf.projDocNo]).trim() || undefined : undefined,
       hoursReported: row[cf.hours] != null ? Number(row[cf.hours]) : undefined,
       priority: row[cf.priority] != null ? Number(row[cf.priority]) : undefined,
@@ -170,7 +171,7 @@ export function createODataAdapter(cfg: ODataConfig): PriorityAdapter {
 
   async function fetchCustNoteDetail(id: number): Promise<CustNote | null> {
     const cf = m.custNoteFields
-    const select = [cf.id, cf.subject, cf.custName, cf.custDes, cf.statDes, cf.tillDate, cf.projDocNo, cf.hours, cf.priority, cf.owner, cf.handler].join(',')
+    const select = [cf.id, cf.subject, cf.custName, cf.custDes, cf.statDes, cf.tillDate, cf.openDate, cf.projDocNo, cf.hours, cf.priority, cf.owner, cf.handler].join(',')
     // SECURITY/יציבות: `?.` על value — פריוריטי נצפתה חי מחזירה מדי-פעם תשובת 200 בלי
     // מבנה {value:[...]} התקין (חוסר יציבות זמנית בשירות), מה שהיה קורס באינדקס [0] ישיר.
     const data = await request<{ value?: Row[] }>(
@@ -181,21 +182,28 @@ export function createODataAdapter(cfg: ODataConfig): PriorityAdapter {
     const base = rowToCustNote(row)
     base.ownerName = row[cf.owner] != null ? String(row[cf.owner]) : undefined
 
-    // INTERNALDIALOGTEXT_SUBFORM הוא navigation property יחיד (לא Collection) — פריוריטי
-    // מחזירה ישות בודדת ($entity), לא {value:[...]}. אומת חי 2026-08-19.
-    const textData = await request<Row>(
-      `${m.entities.custNotes}(CUSTNOTE=${id})/${m.custNoteTextSubform}?$select=${m.custNoteTextFields.text}`,
-    ).catch(() => null)
-    base.description = textData?.[m.custNoteTextFields.text] != null
-      ? stripInternalDialogHtml(String(textData[m.custNoteTextFields.text]))
-      : undefined
+    // שני תתי-הטפסים הטקסטואליים הם navigation property יחיד (לא Collection) — פריוריטי
+    // מחזירה ישות בודדת ($entity), לא {value:[...]}; ו-404 פירושו "אין טקסט" (לא שגיאה).
+    // נשלפים במקביל (המגביל ב-createLimiter מקסימום 2 בו-זמנית) — מקצר את טעינת המסך.
+    const readText = (subform: string) =>
+      request<Row>(`${m.entities.custNotes}(CUSTNOTE=${id})/${subform}?$select=${m.custNoteTextFields.text}`)
+        .then((t) => (t?.[m.custNoteTextFields.text] != null ? stripPriorityHtml(String(t[m.custNoteTextFields.text])) : undefined))
+        .catch(() => undefined)
 
-    const logData = await request<{ value: Row[] }>(
-      `${m.entities.custNotes}(CUSTNOTE=${id})/${m.custNoteLogSubform}` +
-        `?$select=${m.custNoteLogFields.date},${m.custNoteLogFields.status},${m.custNoteLogFields.handler},${m.custNoteLogFields.initiator}` +
-        `&$orderby=${m.custNoteLogFields.date} desc`,
-    ).catch(() => ({ value: [] as Row[] }))
-    base.history = logData.value.map((r) => ({
+    const [summary, description, logData] = await Promise.all([
+      // תקציר המשימה — CUSTNOTESTEXT, לקריאה בלבד (אומת חי 2026-10-08 על משימות אמיתיות)
+      readText(m.custNoteSummarySubform),
+      // עדכון פנימי — INTERNALDIALOGTEXT, ניתן לכתיבה (דריסה)
+      readText(m.custNoteTextSubform),
+      request<{ value?: Row[] }>(
+        `${m.entities.custNotes}(CUSTNOTE=${id})/${m.custNoteLogSubform}` +
+          `?$select=${m.custNoteLogFields.date},${m.custNoteLogFields.status},${m.custNoteLogFields.handler},${m.custNoteLogFields.initiator}` +
+          `&$orderby=${m.custNoteLogFields.date} desc`,
+      ).catch(() => ({ value: [] as Row[] })),
+    ])
+    base.summary = summary || undefined
+    base.description = description || undefined
+    base.history = (logData.value ?? []).map((r) => ({
       date: String(r[m.custNoteLogFields.date] ?? '').slice(0, 10),
       status: String(r[m.custNoteLogFields.status] ?? ''),
       handlerName: r[m.custNoteLogFields.handler] != null ? String(r[m.custNoteLogFields.handler]) : undefined,
@@ -310,7 +318,7 @@ export function createODataAdapter(cfg: ODataConfig): PriorityAdapter {
 
     async listCustNotes(custName) {
       const cf = m.custNoteFields
-      const select = [cf.id, cf.subject, cf.custDes, cf.statDes, cf.tillDate, cf.projDocNo, cf.hours].join(',')
+      const select = [cf.id, cf.subject, cf.custDes, cf.statDes, cf.tillDate, cf.openDate, cf.projDocNo, cf.hours, cf.handler].join(',')
       // CLOSED הוא null במשימות פתוחות בפועל (לא המחרוזת 'N' כפי שהונח במקור) — אומת
       // חי 2026-08-19. 'ne' תופס גם null נכון בפריוריטי; '(eq null or eq \'N\')' נכשל
       // עם 500 (Object reference not set) — ה-OData של פריוריטי לא אוהב את הצירוף.
@@ -325,8 +333,10 @@ export function createODataAdapter(cfg: ODataConfig): PriorityAdapter {
         custDes: String(row[cf.custDes] ?? ''),
         statDes: row[cf.statDes] != null ? String(row[cf.statDes]) : undefined,
         tillDate: row[cf.tillDate] != null ? String(row[cf.tillDate]).slice(0, 10) : undefined,
+        openDate: row[cf.openDate] != null ? String(row[cf.openDate]).slice(0, 10) : undefined,
         projDocNo: row[cf.projDocNo] != null ? String(row[cf.projDocNo]).trim() || undefined : undefined,
         hoursReported: row[cf.hours] != null ? Number(row[cf.hours]) : undefined,
+        handlerEmpId: row[cf.handler] != null ? String(row[cf.handler]) : undefined,
       }))
     },
 
@@ -349,23 +359,27 @@ export function createODataAdapter(cfg: ODataConfig): PriorityAdapter {
         custName: input.custName,
         custDes: String(row[cf.custDes] ?? ''),
         statDes: row[cf.statDes] != null ? String(row[cf.statDes]) : undefined,
+        openDate: row[cf.openDate] != null ? String(row[cf.openDate]).slice(0, 10) : undefined,
         projDocNo: input.projDocNo,
+        // USERLOGIN הוא גם היוצר וגם "לטיפול" בפריוריטי (ראה mapping.ts) — משימה חדשה משויכת ליוצר
+        handlerEmpId: input.userLogin,
       }
     },
 
     async searchCustNotes(query, opts, limitN = 50) {
       const cf = m.custNoteFields
-      const select = [cf.id, cf.subject, cf.custName, cf.custDes, cf.statDes, cf.tillDate, cf.projDocNo, cf.hours, cf.priority, cf.handler].join(',')
+      const select = [cf.id, cf.subject, cf.custName, cf.custDes, cf.statDes, cf.tillDate, cf.openDate, cf.projDocNo, cf.hours, cf.priority, cf.handler].join(',')
       // ראה הערה ב-listCustNotes — CLOSED הוא null בפועל, לא 'N'; 'ne' תופס גם null.
       const filters = [`${cf.closed} ne 'Y'`]
       if (opts.handlerEmpId) filters.push(`${cf.handler} eq '${escapeOData(opts.handlerEmpId)}'`)
       if (opts.status && opts.status.length > 0) {
         filters.push('(' + opts.status.map((s) => `${cf.statDes} eq '${escapeOData(s)}'`).join(' or ') + ')')
       }
-      // OData לא תומך ב-contains() — טוענים עד 500 עם הפילטרים המבניים, ומסננים טקסט חופשי אצלנו
+      // OData לא תומך ב-contains() — טוענים עד 2000 עם הפילטרים המבניים, ומסננים טקסט חופשי אצלנו
+      // (אומת חי 2026-10-08: 912 משימות פתוחות בחברה, נשלפות בבקשה אחת ב-~2 שניות; 500 קיצץ אותן)
       // (אותו דפוס כמו fetchAllTasks למעלה).
       const data = await request<{ value: Row[] }>(
-        `${m.entities.custNotes}?$select=${select}&$filter=${encodeURI(filters.join(' and '))}&$orderby=${cf.id} desc&$top=500`,
+        `${m.entities.custNotes}?$select=${select}&$filter=${encodeURI(filters.join(' and '))}&$orderby=${cf.id} desc&$top=2000`,
       )
       const needle = query.trim()
       const rows = needle

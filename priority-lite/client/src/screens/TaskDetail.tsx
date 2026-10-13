@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { AssigneePicker } from '../components/AssigneePicker'
 import { ChecklistSection } from '../components/ChecklistSection'
 import { DraftsSection } from '../components/DraftsSection'
+import { fmtShortDate } from '../lib/date'
 import { getCustNoteDetail, updateCustNote } from '../state/useCustNotes'
 import { TASK_STATUSES } from '../types'
 import type { CustNote, EmployeeSummary, UpdateCustNoteInput } from '../types'
@@ -85,14 +86,33 @@ export function TaskDetail({ id, onBack }: Props) {
       </button>
 
       <div className="rounded-2xl bg-slate-800/40 p-4 ring-1 ring-slate-700/50">
-        <h2 className="text-lg font-bold text-slate-100">{note.subject}</h2>
-        <p className="text-sm text-slate-500">{note.custDes}</p>
+        <h2 className="text-lg font-bold text-slate-100">
+          <span className="ml-2 text-sm font-normal text-slate-500">#{note.id}</span>
+          {note.subject}
+        </h2>
+        <p className="text-sm text-slate-500">
+          {note.custDes}
+          {note.openDate ? ` · נפתחה ${fmtShortDate(note.openDate)}` : ''}
+        </p>
         {note.hoursReported != null && (
           <p className="mt-1 text-xs text-slate-500">שעות שדווחו: {note.hoursReported}</p>
         )}
       </div>
 
       {error && <p className="text-sm text-rose-400">{error}</p>}
+
+      {/* תקציר המשימה (CUSTNOTESTEXT) — לקריאה בלבד: פריוריטי לא מאפשרת לעדכן אותו מה-API.
+          הטקסט יכול להיות ארוך (התכתבות) — גובה מוגבל עם גלילה. */}
+      <div className="space-y-1">
+        <p className="text-xs text-slate-500">תקציר המשימה</p>
+        {note.summary ? (
+          <p className="max-h-72 overflow-y-auto whitespace-pre-wrap rounded-xl bg-slate-800/60 p-3 text-sm text-slate-300">
+            {note.summary}
+          </p>
+        ) : (
+          <p className="rounded-xl bg-slate-800/30 p-3 text-sm text-slate-600">אין תקציר למשימה הזו בפריוריטי</p>
+        )}
+      </div>
 
       <div className="space-y-1">
         <p className="text-xs text-slate-500">סטטוס</p>
@@ -170,14 +190,15 @@ export function TaskDetail({ id, onBack }: Props) {
       </div>
 
       <div className="space-y-2">
-        <p className="text-xs text-slate-500">תיאור</p>
-        {/* עריכת התיאור המלא — שמירה דורסת את התיאור הקיים בפריוריטי, לא מוסיפה
-            לצידו (אומת חי). הטקסטרה מציגה תמיד את הטקסט הנוכחי, לא שדה "תוספת" ריק. */}
+        <p className="text-xs text-slate-500">דו שיח פנימי (נשמר בפריוריטי · שמירה מחליפה את הקיים)</p>
+        {/* ה"דו שיח הפנימי" (לשונית באותו שם בפריוריטי = INTERNALDIALOGTEXT) הוא השדה היחיד שניתן לכתיבה — שמירה דורסת את
+            הטקסט הקיים, לא מוסיפה לצידו (אומת חי). הטקסטרה מציגה תמיד את הטקסט הנוכחי.
+            התקציר עצמו (למעלה) הוא CUSTNOTESTEXT, לקריאה בלבד. */}
         <textarea
           value={descriptionText}
           onChange={(e) => setDescriptionText(e.target.value)}
           disabled={saving}
-          placeholder="תיאור המשימה…"
+          placeholder="דו שיח פנימי…"
           rows={4}
           className="w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100 disabled:opacity-50"
         />
@@ -186,7 +207,7 @@ export function TaskDetail({ id, onBack }: Props) {
           disabled={saving || !descriptionText.trim()}
           className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
         >
-          שמור תיאור
+          שמור
         </button>
       </div>
 
