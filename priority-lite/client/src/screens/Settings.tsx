@@ -87,7 +87,7 @@ export function Settings() {
         </div>
         {importMsg && (
           <p
-            className={`mt-2 text-sm ${importMsg.startsWith('שגיאה') ? 'text-rose-400' : 'text-emerald-400'}`}
+            className={`mt-2 text-sm ${importMsg.startsWith('שגיאה') ? 'text-rose-400' : 'text-success-400'}`}
           >
             {importMsg}
           </p>
@@ -102,7 +102,7 @@ export function Settings() {
             {health === null ? (
               <span className="text-slate-500">בודק…</span>
             ) : health.priorityMode === 'real' ? (
-              <span className="text-emerald-400">אמיתי ✓</span>
+              <span className="text-success-400">אמיתי ✓</span>
             ) : (
               <span className="text-amber-400">מדומה (mock) — לפיתוח</span>
             )}

@@ -13,7 +13,7 @@ interface Props {
 const STATUS_CHIP: Record<LocalTimeEntry['status'], { label: string; cls: string }> = {
   draft: { label: 'טיוטה', cls: 'bg-amber-500/10 text-amber-400' },
   pending: { label: 'נשלח…', cls: 'bg-sky-500/10 text-sky-400' },
-  synced: { label: 'בפריוריטי ✓', cls: 'bg-emerald-500/10 text-emerald-400' },
+  synced: { label: 'בפריוריטי ✓', cls: 'bg-success-500/10 text-success-400' },
   error: { label: 'שגיאה', cls: 'bg-rose-500/10 text-rose-400' },
 }
 
