@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { BottomNav, type Tab } from './components/BottomNav'
-import { RdpLogo } from './components/RdpLogo'
+import { BrandMark } from './components/RdpLogo'
 import { usePendingEntries } from './state/useEntries'
 import { useAuth } from './state/useAuth'
 import { Entries } from './screens/Entries'
@@ -43,29 +43,17 @@ export default function App() {
 
   return (
     <div className="mx-auto flex h-full max-w-md flex-col">
-      {/* ===== כותרת מותגית RDP ===== */}
-      <header className="relative bg-gradient-to-l from-slate-900 to-slate-800 px-4 pt-4">
-        <div className="flex items-center justify-between">
-          <RdpLogo />
-          <span className="text-sm text-slate-300">שלום, {me.name}</span>
-        </div>
-        {/* גל דגל — אקסנט ויזואלי מהבאנר */}
-        <svg
-          className="pointer-events-none -mx-4 mt-3 block w-[calc(100%+2rem)]"
-          viewBox="0 0 400 18"
-          preserveAspectRatio="none"
-          aria-hidden
-        >
-          <path d="M0 9 Q100 1 200 9 T400 9 V18 H0 Z" fill="#1ca0e0" opacity="0.9" />
-          <path d="M0 12 Q100 4 200 12 T400 12 V18 H0 Z" fill="#ffffff" opacity="0.12" />
-        </svg>
+      {/* כותרת קומפקטית: סמל + כותרת המסך + שם המשתמש. מכבדת את אזור ה-notch ב-PWA. */}
+      <header
+        className="flex items-center gap-3 border-b border-slate-800 px-4 pb-3"
+        style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}
+      >
+        <BrandMark size={28} />
+        <h1 className="flex-1 truncate text-xl text-slate-100">{TAB_TITLES[tab]}</h1>
+        <span className="max-w-[40%] truncate text-sm text-slate-400">{me.name}</span>
       </header>
 
-      <div className="px-4 pb-1 pt-3">
-        <h1 className="text-xl text-slate-100">{TAB_TITLES[tab]}</h1>
-      </div>
-
-      <main className="flex-1 overflow-y-auto px-4 pb-6">
+      <main className="flex-1 overflow-y-auto px-4 pb-6 pt-4">
         {tab === 'today' && <Today />}
         {tab === 'entries' && <Entries />}
         {tab === 'tasks' && selectedTaskId == null && <Tasks onOpenTask={setSelectedTaskId} />}

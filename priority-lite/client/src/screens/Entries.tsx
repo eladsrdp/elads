@@ -1,6 +1,7 @@
 // מסך "דיווחים" — טיוטות ממתינות + אישור ושליחה לפריוריטי + היסטוריה מסונכרנת.
 import { useState } from 'react'
 import { EntryRow } from '../components/EntryRow'
+import { SendIcon } from '../components/icons'
 import { ManualEntryModal } from '../components/ManualEntryModal'
 import { fmtDateHe } from '../lib/date'
 import { fmtMin } from '../lib/duration'
@@ -70,9 +71,9 @@ export function Entries() {
           ממתינים לשליחה {sendable.length > 0 && `(${sendable.length})`}
         </h2>
 
-        {pending === undefined && <p className="text-sm text-slate-600">טוען…</p>}
+        {pending === undefined && <p className="text-sm text-slate-500">טוען…</p>}
         {pending && pending.length === 0 && (
-          <p className="rounded-2xl bg-slate-800/40 py-5 text-center text-sm text-slate-600">
+          <p className="rounded-2xl bg-slate-800/40 py-5 text-center text-sm text-slate-500">
             אין טיוטות ממתינות 🎉
           </p>
         )}
@@ -86,23 +87,6 @@ export function Entries() {
           />
         ))}
 
-        {sendable.length > 0 && (
-          <button
-            onClick={() => void handleSync()}
-            disabled={syncing}
-            className="w-full rounded-2xl bg-emerald-500 px-4 py-3 font-semibold text-slate-900 transition hover:bg-emerald-400 disabled:opacity-50"
-          >
-            {syncing
-              ? 'שולח לפריוריטי…'
-              : `אשר ושלח לפריוריטי — ${sendable.length} דיווחים (${fmtMin(totalSendableMin)})`}
-          </button>
-        )}
-
-        {message && (
-          <p className="rounded-xl bg-slate-800/60 px-3 py-2 text-center text-sm text-slate-300">
-            {message}
-          </p>
-        )}
       </section>
 
       {syncedByDate.size > 0 && (
@@ -110,13 +94,36 @@ export function Entries() {
           <h2 className="text-sm font-medium text-slate-400">נשלחו לפריוריטי</h2>
           {[...syncedByDate.entries()].map(([date, list]) => (
             <div key={date} className="space-y-2">
-              <p className="text-xs text-slate-600">{fmtDateHe(date)}</p>
+              <p className="text-xs text-slate-500">{fmtDateHe(date)}</p>
               {list.map((e) => (
                 <EntryRow key={e.id} entry={e} />
               ))}
             </div>
           ))}
         </section>
+      )}
+
+      {/* סרגל שליחה דביק — תמיד גלוי בתחתית המסך, גם כשיש הרבה טיוטות (במקום כפתור בסוף הרשימה) */}
+      {(sendable.length > 0 || message) && (
+        <div className="sticky bottom-0 -mx-4 space-y-2 border-t border-slate-700 bg-slate-900/95 px-4 py-3 backdrop-blur">
+          {message && (
+            <p className="rounded-xl bg-slate-800/60 px-3 py-2 text-center text-sm text-slate-300">
+              {message}
+            </p>
+          )}
+          {sendable.length > 0 && (
+            <button
+              onClick={() => void handleSync()}
+              disabled={syncing}
+              className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-4 py-3 font-semibold text-slate-900 transition hover:bg-emerald-400 disabled:opacity-50"
+            >
+              <SendIcon size={20} />
+              {syncing
+                ? 'שולח לפריוריטי…'
+                : `שלח לפריוריטי — ${sendable.length} דיווחים (${fmtMin(totalSendableMin)})`}
+            </button>
+          )}
+        </div>
       )}
 
       <ManualEntryModal open={editing !== null} onClose={() => setEditing(null)} editing={editing} />

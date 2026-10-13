@@ -83,7 +83,7 @@ export function Summary() {
       </div>
 
       {summary && summary.projects.length === 0 && (
-        <p className="py-6 text-center text-sm text-slate-600">אין דיווחים בטווח הזה</p>
+        <p className="py-6 text-center text-sm text-slate-500">אין דיווחים בטווח הזה</p>
       )}
 
       {(summary?.projects ?? []).map((p) => (
@@ -109,7 +109,7 @@ export function Summary() {
       ))}
 
       {summary && summary.draftMin > 0 && (
-        <p className="text-center text-xs text-slate-600">* כולל שעות בטיוטה</p>
+        <p className="text-center text-xs text-slate-500">* כולל שעות בטיוטה</p>
       )}
     </div>
   )

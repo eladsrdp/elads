@@ -57,7 +57,7 @@ export function TimerCard() {
           onChange={(e) => updateNote(e.target.value)}
           placeholder="תיאור קצר של העבודה (חובה לשליחה)"
           maxLength={500}
-          className="w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-slate-100 outline-none focus:border-emerald-500"
+          className="w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-slate-100 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/25"
         />
       </label>
 

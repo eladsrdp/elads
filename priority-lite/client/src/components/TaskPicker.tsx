@@ -56,7 +56,7 @@ export function TaskPicker({ open, onClose, onSelect }: Props) {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="חפש פרויקט…"
-          className="flex-1 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-slate-100 outline-none focus:border-emerald-500"
+          className="flex-1 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-slate-100 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/25"
         />
         <button
           onClick={handleRefresh}

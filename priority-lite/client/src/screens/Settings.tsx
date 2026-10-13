@@ -62,7 +62,7 @@ export function Settings() {
         <h3 className="mb-3 text-sm font-medium text-slate-400">המשתמש המחובר</h3>
         <p className="text-lg font-semibold text-slate-100">{me?.name}</p>
         <p className="ltr-nums text-sm text-slate-500">{me?.phone}</p>
-        <p className="text-xs text-slate-600">מס׳ עובד בפריוריטי: {me?.priorityEmpId}</p>
+        <p className="text-xs text-slate-500">מס׳ עובד בפריוריטי: {me?.priorityEmpId}</p>
       </div>
 
       <div className="rounded-2xl bg-slate-800/40 p-4 ring-1 ring-slate-700/50">

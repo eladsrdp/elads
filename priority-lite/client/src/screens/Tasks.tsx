@@ -95,7 +95,7 @@ export function Tasks({ onOpenTask }: Props) {
         value={q}
         onChange={(e) => setQ(e.target.value)}
         placeholder="חפש משימה…"
-        className="w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-slate-100 outline-none focus:border-emerald-500"
+        className="w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-slate-100 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/25"
       />
 
       <button
@@ -124,7 +124,7 @@ export function Tasks({ onOpenTask }: Props) {
       {loading && <p className="py-4 text-center text-slate-500">טוען…</p>}
       {error && <p className="text-sm text-rose-400">{error}</p>}
       {!loading && notes.length === 0 && (
-        <p className="py-6 text-center text-sm text-slate-600">לא נמצאו משימות</p>
+        <p className="py-6 text-center text-sm text-slate-500">לא נמצאו משימות</p>
       )}
 
       {scope !== 'byPerson' && (
