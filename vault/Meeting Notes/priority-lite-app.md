@@ -304,3 +304,9 @@
 - **Decisions:** **מבטל** את כל ההשערות הקודמות מהיום: לא "דגל ש'ע השתנה", לא "ORDNAME חסר", לא "הכשל גלובלי/תלוי-זמן" — ה"הבהוב" נבע מכך שבדיקות שלי השתמשו בסדרי מפתחות שונים בלי כוונה (write-test הראשון בנה את הגוף בסדר הנכון ולכן A/B עברו). נוספה הערת ⚠️ ב-`odata.ts:createTimeEntry` שמסבירה שהסדר קריטי. לא נוסף test (אין בדיקות ייעודיות ל-odata.ts, לפי הקונבנציה בקובץ).
 - **Notes / Caveats:** התיקון ב-Make: ב-data structure `646563` לסדר את השדות כך ש-`USERLOGIN, CURDATE, DOCNO, PARTNAME, TQUANT, PDES` יבואו בסדר הזה (Make מוציא JSON לפי סדר השדות במבנה ולא לפי סדר הערכים), או לעבור ל-body גולמי (Raw/JSON) בסדר הנכון. לא נבדק בתוך Make עצמו. לא הוכח איזה זוג שדות בדיוק קובע (PDES אחרי PARTNAME + USERLOGIN לפני PARTNAME) — הסדר המלא של האפליקציה מוכח כעובד. לוגי Vercel אומתו: סנכרון 17:40 נכשל רק בגלל מספר הזמנה "8" שהמשתמש הקליד (שגיאת נתונים).
 - **Related:** [[repo-github-migration]]
+
+### 2026-10-22 — המשך Make: data structure חדש (647680) עדיין נכשל; gzip אינו הסיבה [debug]
+- **What was done:** המשתמש תיקן ב-Make את ה-data structure (החדש 647680) ועדיין קיבל שגיאה. בבקשה שהוא שלח רשימת השדות מופיעה באותו סדר כמו קודם (`PDES, DCODE, DOCNO, TQUANT, CURDATE, PARTNAME, USERLOGIN`) — סדר ייצוג ב-Make, לא בהכרח הסדר שנשלח בפועל. נבדק גם `requestCompressedContent:true`: גוף POST דחוס ב-gzip נדחה בפריוריטי עם "Invalid JSON format" (שגיאה אחרת מזו שהמשתמש מקבל), כלומר Make כנראה לא דוחס את הגוף (האפשרות שלו = Accept-Encoding לתשובה) והשגיאה שלו מגיעה מסדר השדות. אומת שוב: הסדר הנכון בלי דחיסה עובר (TRANS 88325, נמחק).
+- **Decisions:** ההמלצה למשתמש: לעבור ב-Make ל-`JSON string` ולכתוב את הגוף בסדר מפורש (`USERLOGIN, CURDATE, DOCNO, PARTNAME, TQUANT, PDES, DCODE`) במקום data structure, כי סדר ה-JSON שנוצר מ-data structure לא נשלט.
+- **Notes / Caveats:** לא ניתן לראות את ה-data structure או את הבקשה הממשית ש-Make שולח (אין גישה ל-Make — דורש authorization). לא אומת בתוך Make.
+- **Related:** [[repo-github-migration]]
