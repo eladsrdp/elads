@@ -278,6 +278,9 @@ export function createODataAdapter(cfg: ODataConfig): PriorityAdapter {
       // POST ל-collection השטוח עם DOCNO בגוף — המבנה שמאומת שעובד מול פריוריטי.
       // שדות חובה: DOCNO (פרויקט), PARTNAME (מק"ט שירות 'ש'ע'), CURDATE, USERLOGIN, TQUANT.
       // CURDATE כתאריך בלבד (YYYY-MM-DD). ה-PDES (הערה) מתקבל יחד ב-POST בודד.
+      // ⚠️ סדר המפתחות בגוף ה-JSON קריטי — פריוריטי ממלאת את השדות לפי הסדר. אומת חי 2026-10-22:
+      // USERLOGIN, CURDATE, DOCNO, PARTNAME, ...ואז PDES עובד; PDES לפני PARTNAME (או USERLOGIN אחרי
+      // PARTNAME) נכשל ב-400 "אין לשנות תאור מוצר". אל תסדר מחדש / אל תבנה את הגוף ממפה ממוינת.
       const body: Row = {
         [tf.employeeId]: entry.priorityEmpId,
         [tf.date]: entry.date,
