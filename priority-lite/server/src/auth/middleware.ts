@@ -2,6 +2,7 @@
 import { createMiddleware } from 'hono/factory'
 import { getCookie } from 'hono/cookie'
 import type { Me } from '@priority-lite/shared'
+import { withUsageUser } from '../priority/usage'
 import { SESSION_COOKIE, verifySessionToken } from './session'
 
 export type AuthVars = { Variables: { me: Me } }
@@ -12,6 +13,7 @@ export function authRequired(secret: string) {
     const me = token ? await verifySessionToken(token, secret) : null
     if (!me) return c.json({ error: 'נדרשת התחברות' }, 401)
     c.set('me', me)
-    await next()
+    // ספירת שימוש בפריוריטי (usage.ts): קריאות שמתבצעות בהמשך הבקשה נרשמות על שם העובד
+    await withUsageUser(me.priorityEmpId, () => next())
   })
 }

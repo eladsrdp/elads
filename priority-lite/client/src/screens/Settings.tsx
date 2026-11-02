@@ -1,6 +1,7 @@
 // מסך "הגדרות" — פרטי המשתמש, משיכה מפריוריטי, מצב המערכת, יציאה.
 import { useEffect, useState } from 'react'
 import { DangerButton } from '../components/forms'
+import { UsageCard } from '../components/UsageCard'
 import { db } from '../db/db'
 import { rangeMonth, rangeWeek, toISODate } from '../lib/date'
 import { api } from '../lib/api'
@@ -113,6 +114,8 @@ export function Settings() {
           </p>
         </div>
       </div>
+
+      <UsageCard />
 
       <DangerButton onClick={() => void logout()}>התנתקות</DangerButton>
     </div>

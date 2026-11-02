@@ -9,6 +9,7 @@ export type {
   DraftNote,
   EmployeeSummary,
   Me,
+  PriorityUsageRow,
   ProjectSite,
   RemoteTimeEntry,
   SearchCustNotesOptions,

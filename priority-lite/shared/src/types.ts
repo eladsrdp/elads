@@ -121,6 +121,19 @@ export interface UpdateCustNoteInput {
   description?: string // התיאור המלא החדש — דורס את הקיים בפריוריטי, לא מוסיף לצידו (אומת חי)
 }
 
+/**
+ * ספירת קריאות API לפריוריטי, מצטברת ליום / עובד / ישות / שיטה.
+ * לא נשמר שום תוכן בקשה — רק מונים. day = YYYY-MM-DD (שעון ישראל).
+ */
+export interface PriorityUsageRow {
+  day: string
+  empId: string // לוגין העובד שהקריאה בוצעה בשמו; 'system' לקריאות בלי משתמש (למשל cron)
+  entity: string // למשל ZRDP_DOCUMENTS_p או CUSTNOTESA/CUSTNOTESTEXT_SUBFORM
+  method: string // GET / POST / PATCH ...
+  calls: number
+  errors: number // קריאות שנכשלו (סטטוס לא 2xx או שגיאת רשת) — כלולות גם ב-calls
+}
+
 /** עובד לבורר "לטיפול" — רק מה שדרוש, בלי טלפון/totp. */
 export interface EmployeeSummary {
   priorityEmpId: string

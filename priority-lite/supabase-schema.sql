@@ -42,3 +42,34 @@ ALTER TABLE employees DISABLE ROW LEVEL SECURITY;
 ALTER TABLE otp_codes DISABLE ROW LEVEL SECURITY;
 ALTER TABLE local_checklist_items DISABLE ROW LEVEL SECURITY;
 ALTER TABLE local_drafts DISABLE ROW LEVEL SECURITY;
+
+-- ===== ספירת קריאות API לפריוריטי (usage) =====
+-- נצבר ליום / עובד / ישות / שיטה. לא נשמר שום תוכן בקשה — מונים בלבד.
+CREATE TABLE IF NOT EXISTS priority_usage (
+  day     DATE    NOT NULL,
+  emp_id  TEXT    NOT NULL,
+  entity  TEXT    NOT NULL,
+  method  TEXT    NOT NULL,
+  calls   INTEGER NOT NULL DEFAULT 0,
+  errors  INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (day, emp_id, entity, method)
+);
+
+-- הוספה אטומית למונים הקיימים (במקום דריסה) — נקראת מהשרת דרך rpc('bump_priority_usage')
+CREATE OR REPLACE FUNCTION bump_priority_usage(p_rows jsonb) RETURNS void
+LANGUAGE plpgsql AS $$
+DECLARE
+  r jsonb;
+BEGIN
+  FOR r IN SELECT * FROM jsonb_array_elements(p_rows) LOOP
+    INSERT INTO priority_usage (day, emp_id, entity, method, calls, errors)
+    VALUES ((r->>'day')::date, r->>'emp_id', r->>'entity', r->>'method',
+            (r->>'calls')::int, (r->>'errors')::int)
+    ON CONFLICT (day, emp_id, entity, method) DO UPDATE
+      SET calls  = priority_usage.calls  + EXCLUDED.calls,
+          errors = priority_usage.errors + EXCLUDED.errors;
+  END LOOP;
+END;
+$$;
+
+ALTER TABLE priority_usage DISABLE ROW LEVEL SECURITY;

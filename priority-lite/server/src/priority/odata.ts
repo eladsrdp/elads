@@ -3,6 +3,7 @@
 import type { CustNote, TaskSummary, UpdateCustNoteInput } from '@priority-lite/shared'
 import type { NewTimeEntry, PriorityAdapter } from './adapter'
 import { assertMappingComplete, priorityMapping as m } from './mapping'
+import { recordPriorityCall } from './usage'
 
 export interface ODataConfig {
   baseUrl: string
@@ -111,9 +112,22 @@ export function createODataAdapter(cfg: ODataConfig): PriorityAdapter {
   const authHeader = 'Basic ' + Buffer.from(`${cfg.user}:${cfg.password}`).toString('base64')
   const limit = createLimiter(2)
 
+  // כל ניסיון HTTP לפריוריטי (כולל ניסיון חוזר ושגיאת רשת) נספר — ראו usage.ts. נשמרים מונים בלבד.
+  async function counted(path: string, init: RequestInit): Promise<Response> {
+    const method = init.method ?? 'GET'
+    try {
+      const res = await fetch(`${root}/${path}`, init)
+      recordPriorityCall(path, method, res.ok)
+      return res
+    } catch (err) {
+      recordPriorityCall(path, method, false)
+      throw err
+    }
+  }
+
   async function request<T>(path: string, init?: RequestInit, attempt = 0): Promise<T> {
     return limit(async () => {
-      const res = await fetch(`${root}/${path}`, {
+      const res = await counted(path, {
         ...init,
         signal: AbortSignal.timeout(30_000),
         headers: {
