@@ -6,7 +6,7 @@
 // עם ה-message_deliveries הרגילים — לא רק "מתישהו אחרי 14:00" בנפרד מהשאר.
 import type { AppDB, GoalMessageRow, MessageDeliveryRow } from '../repository/interface'
 import type { MakeClient } from '../make/client'
-import { getIsraelDateString } from '../domain/scheduling'
+import { getCandidateLocalDates } from '../domain/scheduling'
 import { syncDeliveriesForTrigger } from './delivery-sync'
 
 export interface DripResult {
@@ -33,11 +33,15 @@ export async function runDrip(db: AppDB, makeClient: MakeClient, now: string): P
   // משלים deliveries להודעות שנוספו/נערכו *אחרי* שהטריגר של היום כבר נלחץ — בלי זה,
   // מי שכבר לחץ בבוקר לא היה מקבל תוכן שהמנחה הוסיפה מאוחר יותר עד ללחיצה נוספת.
   // best-effort: כשל בטריגר אחד לא עוצר את שאר הריצה (ייתפס בטיק הבא).
-  const todaysClickedTriggers = (await db.getDailyTriggersForDate(getIsraelDateString(new Date(now)))).filter(
-    (t) => t.clicked_at,
+  // calendar_date הוא תאריך מקומי של הנרשמת (יכול להיות אתמול/מחר לפי UTC) — לוקחים את שלושת
+  // התאריכים הסמוכים; syncDeliveriesForTrigger idempotent ולכן triggers ישנים לא יוצרים כלום.
+  const nearbyClickedTriggers = (
+    await Promise.all(getCandidateLocalDates(new Date(now)).map((d) => db.getDailyTriggersForDate(d)))
   )
+    .flat()
+    .filter((t) => t.clicked_at)
   await Promise.all(
-    todaysClickedTriggers.map((trigger) => syncDeliveriesForTrigger(db, trigger).catch(() => {})),
+    nearbyClickedTriggers.map((trigger) => syncDeliveriesForTrigger(db, trigger).catch(() => {})),
   )
 
   const [deliveries, goalMessages] = await Promise.all([

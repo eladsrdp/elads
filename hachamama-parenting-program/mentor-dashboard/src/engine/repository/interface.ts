@@ -12,6 +12,8 @@ export interface ParticipantRow {
   day1_date: string
   status: ParticipantStatus
   assigned_mentor_id: string | null
+  /** אזור-זמן IANA של הנרשמת (למשל America/New_York). calendar_date ו-day1_date הם תאריכים מקומיים באזור הזה. */
+  timezone: string
 }
 
 export interface ContentDayRow {
@@ -84,6 +86,7 @@ export interface AppDB {
     signupSourceRef: string | null
     signupAt: string
     day1Date: string
+    timezone?: string
   }): Promise<ParticipantRow>
   getParticipant(id: string): Promise<ParticipantRow | undefined>
   findParticipantByPhone(phone: string): Promise<ParticipantRow | undefined>

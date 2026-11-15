@@ -55,6 +55,7 @@ export function createSupabaseDb(url: string, key: string): AppDB {
         signup_source_ref: input.signupSourceRef,
         signup_at: input.signupAt,
         day1_date: input.day1Date,
+        ...(input.timezone ? { timezone: input.timezone } : {}),
       })
     },
 

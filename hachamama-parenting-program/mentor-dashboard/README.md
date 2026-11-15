@@ -15,8 +15,8 @@ project אחד. `server/` נשאר בריפו בלי להימחק (בכוונה,
 |---|---|---|---|
 | POST | `/api/webhooks/signup` | `Authorization: Bearer $SIGNUP_WEBHOOK_SECRET` | יוצר נרשם חדש |
 | POST | `/api/webhooks/make/button-click` | `Authorization: Bearer $MAKE_WEBHOOK_SECRET` | Make מעביר לחיצת כפתור |
-| GET/POST | `/api/cron/generate-daily` | `Authorization: Bearer $CRON_SECRET` | ריצה יומית — יוצרת רק את ה-trigger (לא message_deliveries, ראו למטה) — Vercel Cron מובנה, 00:05 |
-| GET/POST | `/api/cron/send-triggers` | `Authorization: Bearer $CRON_SECRET` | טריגר בוקר — cron-job.org, 06:45 מדויק |
+| GET/POST | `/api/cron/generate-daily` | `Authorization: Bearer $CRON_SECRET` | יוצרת רק את ה-trigger (לא message_deliveries, ראו למטה). אידמפוטנטית — **cron-job.org, כל שעה**: כל משתתפת מקבלת trigger אחרי חצות לפי אזור-הזמן שלה (`participants.timezone`) |
+| GET/POST | `/api/cron/send-triggers` | `Authorization: Bearer $CRON_SECRET` | טריגר בוקר — **cron-job.org, כל 15 דקות**: שולח לכל משתתפת ב-06:45 *לפי השעון המקומי שלה* (ישראל = 06:45 כמו תמיד) |
 | GET/POST | `/api/cron/drip` | `Authorization: Bearer $CRON_SECRET` | שליחה בזמן אמת — cron-job.org, כל 5 דקות (כולל הודעות יעד, ראו למטה) |
 | POST | `/api/webhooks/goal-answer` | `Authorization: Bearer $MAKE_WEBHOOK_SECRET` | Make מעביר תשובת "יעד" מכל שגרת שאלון (טלפון+מספר שאלון+תשובה) — לא endpoint נשלח בפועל, רק מתזמן |
 | GET/POST | `/video-submit` | — (ציבורי) | לינק להעלאת סרטון ע"י נרשם |
@@ -129,3 +129,14 @@ insert into mentors (user_id, full_name) values ('<uuid מהשלב הקודם>',
   ראו `server/migrations/0008_goal_messages.sql`.
 - בלי component/E2E tests — רק unit tests ללוגיקה הטהורה (`src/lib/*.test.ts`). כיסוי
   התואם לעומק הבדיקות הקיים ב-`server/`.
+
+## אזורי זמן (לכל משתתפת)
+
+לכל משתתפת יש `participants.timezone` (IANA, ברירת מחדל `Asia/Jerusalem`; מיגרציה 0010).
+`calendar_date` של ה-trigger ו-`day1_date` הם תאריכים **מקומיים** שלה, ולכן:
+
+- `generate-daily` מחשב "היום" פר-משתתפת, ולכן חייב לרוץ בתדירות גבוהה (כל שעה, cron-job.org).
+- `send-triggers` שולח כשהשעה המקומית ≥ 06:45 *והתאריך המקומי = calendar_date* (כל 15 דקות).
+- `scheduled_for` של כל הודעה והודעת-יעד (14:00) מחושבים לפי אזור-הזמן שלה — `drip` לא השתנה, הוא משווה instants.
+- משתתפת חדשה בחו"ל: בחרו אזור בטופס "נרשם חדש", או שלחו `timezone` ב-`POST /api/webhooks/signup`.
+- `vercel.json` עדיין מריץ `generate-daily` פעם ביום (לא מזיק — אידמפוטנטי); אפשר להסירו אחרי שה-job השעתי ב-cron-job.org פעיל.

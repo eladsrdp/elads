@@ -2,6 +2,7 @@
 // GET /api/webhooks/participants, שצריך להגיד ל-Make.com לא רק "מי הנרשמים" אלא
 // גם "מי כבר לחץ היום ומי לא" בלי query נוסף מהצד שלהם.
 import type { DailyTriggerRow, ParticipantRow } from '../repository/interface'
+import { getDateStringInZone } from './scheduling'
 
 export interface ParticipantExportRow {
   participantId: string
@@ -12,18 +13,21 @@ export interface ParticipantExportRow {
   signupAt: string
   signupSourceRef: string | null
   assignedMentorId: string | null
+  timezone: string
   triggerSentToday: boolean
   clickedToday: boolean
 }
 
 export function buildParticipantsExport(
   participants: ParticipantRow[],
-  todaysTriggers: DailyTriggerRow[],
+  triggers: DailyTriggerRow[],
+  now: Date = new Date(),
 ): ParticipantExportRow[] {
-  const triggerByParticipant = new Map(todaysTriggers.map((t) => [t.participant_id, t]))
+  // "היום" נקבע פר-משתתפת לפי האזור שלה — מזהים trigger לפי (משתתפת, תאריך מקומי).
+  const triggerByParticipantAndDate = new Map(triggers.map((t) => [`${t.participant_id}|${t.calendar_date}`, t]))
 
   return participants.map((p) => {
-    const trigger = triggerByParticipant.get(p.id)
+    const trigger = triggerByParticipantAndDate.get(`${p.id}|${getDateStringInZone(now, p.timezone)}`)
     return {
       participantId: p.id,
       fullName: p.full_name,
@@ -33,6 +37,7 @@ export function buildParticipantsExport(
       signupAt: p.signup_at,
       signupSourceRef: p.signup_source_ref,
       assignedMentorId: p.assigned_mentor_id,
+      timezone: p.timezone,
       triggerSentToday: Boolean(trigger?.trigger_sent_at),
       clickedToday: Boolean(trigger?.clicked_at),
     }

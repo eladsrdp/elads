@@ -1,7 +1,7 @@
 // לוגיקה טהורה שמעצבת נתונים לתצוגה — מקבלת MentorDataSource, לא יודעת שום דבר על Supabase.
 // זה מה שהופך אותה לניתנת-לבדיקה בקלות מול fake (ראו mentor-view.test.ts).
 import { DateTime } from 'luxon'
-import { calculateMissedStreak, calculateProgramDayNumber, getIsraelDateString } from './program-day'
+import { calculateMissedStreak, calculateProgramDayNumber, getDateStringInZone } from './program-day'
 import type { MentorDataSource } from './mentor-data-source'
 
 const STREAK_LOOKBACK_DAYS = 30
@@ -11,6 +11,7 @@ export interface ParticipantListItem {
   fullName: string
   phone: string
   status: string
+  timezone: string
   programDay: number
   clickedToday: boolean
   missedStreak: number | null
@@ -25,8 +26,10 @@ export async function buildParticipantList(
   dataSource: MentorDataSource,
   now: Date,
 ): Promise<ParticipantListItem[]> {
-  const todayDate = getIsraelDateString(now)
-  const lookbackDate = DateTime.fromISO(todayDate, { zone: 'utc' }).minus({ days: STREAK_LOOKBACK_DAYS }).toISODate() as string
+  // "היום" הוא פר-משתתפת (לפי timezone) ויכול להיות יום לפני/אחרי התאריך לפי UTC — מרחיבים את חלון
+  // השליפה ביום אחד כדי לא לפספס triggers של אזורי זמן קיצוניים.
+  const utcToday = DateTime.fromJSDate(now).toUTC().toISODate() as string
+  const lookbackDate = DateTime.fromISO(utcToday, { zone: 'utc' }).minus({ days: STREAK_LOOKBACK_DAYS + 1 }).toISODate() as string
 
   const [participants, recentTriggers, mentors, deliveryRows, videoRows] = await Promise.all([
     dataSource.listParticipants(),
@@ -60,6 +63,7 @@ export async function buildParticipantList(
 
   return participants.map((p) => {
     const triggerHistory = triggersByParticipant.get(p.id) ?? []
+    const todayDate = getDateStringInZone(now, p.timezone)
     const clickedToday = triggerHistory.some((t) => t.calendarDate === todayDate && t.clickedAt !== null)
     const deliveryCounts = deliveryCountsByParticipant.get(p.id) ?? { sent: 0, total: 0 }
 
@@ -68,6 +72,7 @@ export async function buildParticipantList(
       fullName: p.full_name,
       phone: p.phone,
       status: p.status,
+      timezone: p.timezone,
       programDay: calculateProgramDayNumber(p.day1_date, todayDate),
       clickedToday,
       missedStreak: calculateMissedStreak(triggerHistory, todayDate, p.status),
@@ -110,6 +115,7 @@ export interface ParticipantDetailView {
   fullName: string
   phone: string
   status: string
+  timezone: string
   day1Date: string
   assignedMentorId: string | null
   deliveries: DeliveryHistoryItem[]
@@ -135,6 +141,7 @@ export async function buildParticipantDetail(
     fullName: participant.full_name,
     phone: participant.phone,
     status: participant.status,
+    timezone: participant.timezone,
     day1Date: participant.day1_date,
     assignedMentorId: participant.assigned_mentor_id,
     deliveries: [...deliveries]

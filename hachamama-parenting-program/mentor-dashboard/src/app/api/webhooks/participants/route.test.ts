@@ -1,5 +1,5 @@
 // hachamama-parenting-program/mentor-dashboard/src/app/api/webhooks/participants/route.test.ts
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 
 vi.mock('@/engine/app-context', () => ({
   getDb: vi.fn(),
@@ -20,6 +20,12 @@ function makeRequest(authHeader?: string): Request {
 describe('GET /api/webhooks/participants', () => {
   beforeEach(() => {
     vi.mocked(getDb).mockReset()
+    // "היום" של הטריגרים נקבע לפי השעון — מקבעים אותו (16.8.2026, 12:00 בישראל) כדי שהטסט יהיה דטרמיניסטי.
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-08-16T09:00:00Z'))
+  })
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it('דוחה בקשה בלי Authorization תקין', async () => {

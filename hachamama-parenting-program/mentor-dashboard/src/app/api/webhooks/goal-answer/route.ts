@@ -7,7 +7,7 @@
 // אותו צרכן, Make.com, כבר מחזיק אותו).
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { calculateGoalMessageSendDate, combineDateAndTimeInIsrael } from '@/engine/domain/scheduling'
+import { calculateGoalMessageSendDate, combineDateAndTimeInZone } from '@/engine/domain/scheduling'
 import { getDb } from '@/engine/app-context'
 import { engineEnv } from '@/engine/env'
 
@@ -46,8 +46,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'מספר הטלפון לא נמצא' }, { status: 404 })
   }
 
-  const scheduledDate = calculateGoalMessageSendDate(new Date())
-  const scheduledFor = combineDateAndTimeInIsrael(scheduledDate, GOAL_MESSAGE_SEND_TIME).toISOString()
+  // 14:00 ותאריך השליחה נקבעים לפי אזור-הזמן של המשתתפת, לא לפי ישראל.
+  const zone = participant.timezone ?? 'Asia/Jerusalem'
+  const scheduledDate = calculateGoalMessageSendDate(new Date(), zone)
+  const scheduledFor = combineDateAndTimeInZone(scheduledDate, GOAL_MESSAGE_SEND_TIME, zone).toISOString()
   const goalMessage = await db.createGoalMessage({
     participantId: participant.id,
     questionnaireNumber: parsed.data.questionnaireNumber,

@@ -47,6 +47,26 @@ describe('POST /api/webhooks/signup', () => {
     expect(await res.json()).toEqual({ participantId: 'p1', day1Date: '2026-08-09' })
   })
 
+  it('מעביר timezone תקין ל-createParticipant, ומחשב day1Date לפי האזור', async () => {
+    const createParticipant = vi.fn(async () => ({ id: 'p2', day1_date: '2026-08-09' }))
+    vi.mocked(getDb).mockResolvedValue({ findParticipantByPhone: async () => undefined, createParticipant } as never)
+
+    const res = await POST(
+      makeRequest({ fullName: 'שרה', phone: '+13475550100', timezone: 'America/New_York' }, 'Bearer test-secret'),
+    )
+
+    expect(res.status).toBe(201)
+    expect(createParticipant).toHaveBeenCalledWith(expect.objectContaining({ timezone: 'America/New_York' }))
+  })
+
+  it('דוחה timezone לא תקין ב-400', async () => {
+    vi.mocked(getDb).mockResolvedValue({ findParticipantByPhone: async () => undefined } as never)
+    const res = await POST(
+      makeRequest({ fullName: 'שרה', phone: '+13475550100', timezone: 'Mars/Olympus' }, 'Bearer test-secret'),
+    )
+    expect(res.status).toBe(400)
+  })
+
   it('הרשמה כפולה עם אותו טלפון היא idempotent — מחזירה 200 בלי ליצור כפול', async () => {
     const existing = { id: 'p1', day1_date: '2026-08-09' }
     const createParticipant = vi.fn()

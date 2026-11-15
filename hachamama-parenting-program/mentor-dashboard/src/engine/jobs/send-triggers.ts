@@ -3,7 +3,10 @@
 // "עקרון מרכזי": לחיצה על הכפתור הזה תשחרר בעתיד רק את היום הספציפי הזה.
 import type { AppDB } from '../repository/interface'
 import type { MakeClient } from '../make/client'
-import { calculateWeekNumber } from '../domain/scheduling'
+import { calculateWeekNumber, getCandidateLocalDates, getDateStringInZone, hasReachedLocalTime } from '../domain/scheduling'
+
+// שעת שליחת הודעת הבוקר, בזמן המקומי של כל נרשמת.
+const MORNING_SEND_TIME = '06:45'
 
 export interface SendTriggersResult {
   sent: number
@@ -17,9 +20,19 @@ const DAY_OF_WEEK_HE = ['יום ראשון', 'יום שני', 'יום שלישי
 export async function sendMorningTriggers(
   db: AppDB,
   makeClient: MakeClient,
-  todayDate: string,
+  now: Date,
 ): Promise<SendTriggersResult> {
-  const triggers = await db.getUnsentDailyTriggers(todayDate)
+  // calendar_date הוא תאריך *מקומי* של הנרשמת, ולכן אוספים מועמדים משלושה תאריכים סמוכים
+  // ומסננים פר-נרשמת (תאריך מקומי = calendar_date, והשעה המקומית כבר ≥ 06:45).
+  const candidates = (await Promise.all(getCandidateLocalDates(now).map((d) => db.getUnsentDailyTriggers(d)))).flat()
+  const triggers = []
+  for (const trigger of candidates) {
+    const owner = await db.getParticipant(trigger.participant_id)
+    if (!owner) continue
+    if (getDateStringInZone(now, owner.timezone) !== trigger.calendar_date) continue
+    if (!hasReachedLocalTime(now, MORNING_SEND_TIME, owner.timezone)) continue
+    triggers.push(trigger)
+  }
   let sent = 0
   const errors: SendTriggersResult['errors'] = []
 

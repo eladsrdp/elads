@@ -4,7 +4,7 @@
 // ריצת ה-cron של 00:05. נקרא משני מקומות: בכל לחיצת כפתור (button-click route) וב-drip
 // (לתפוס תוכן שנוסף אחרי שכבר נלחץ, בלי לחיצה נוספת).
 import type { AppDB, DailyTriggerRow } from '../repository/interface'
-import { combineDateAndTimeInIsrael } from '../domain/scheduling'
+import { combineDateAndTimeInZone } from '../domain/scheduling'
 
 // הודעות שהרלוונטיות שלהן תלויה בזמן (תזכורת צהריים): נשלחות אך ורק למי שלחץ על כפתור
 // הבוקר לפני שעת השליחה שלהן. מי שלחץ אחרי — לא מקבל אותן בדיעבד (לא נוצר להן delivery).
@@ -21,11 +21,14 @@ export async function syncDeliveriesForTrigger(db: AppDB, trigger: DailyTriggerR
     db.getDeliveriesForTrigger(trigger.id),
   ])
   const existingMessageIds = new Set(existingDeliveries.map((d) => d.message_id))
+  // שעות השליחה מוגדרות בזמן המקומי של הנרשמת — צריך את אזור-הזמן שלה כדי לחשב scheduled_for.
+  const participant = await db.getParticipant(trigger.participant_id)
+  const zone = participant?.timezone ?? 'Asia/Jerusalem'
 
   let created = 0
   for (const message of messages) {
     if (existingMessageIds.has(message.id)) continue
-    const scheduledFor = combineDateAndTimeInIsrael(trigger.calendar_date, message.send_offset_time).toISOString()
+    const scheduledFor = combineDateAndTimeInZone(trigger.calendar_date, message.send_offset_time, zone).toISOString()
     if (isSkippedForLateClick(message.send_offset_time, scheduledFor, trigger.clicked_at)) continue
     await db.createMessageDelivery({
       participantId: trigger.participant_id,

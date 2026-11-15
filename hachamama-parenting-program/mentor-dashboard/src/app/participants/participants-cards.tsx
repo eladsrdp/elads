@@ -7,6 +7,7 @@ import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import { createSupabaseMentorDataSource } from '@/lib/mentor-data-source'
 import { calculateDay1Date } from '@/lib/program-day'
 import { sortParticipantsByAttention, type ParticipantListItem } from '@/lib/mentor-view'
+import { DEFAULT_TIMEZONE, TIMEZONE_OPTIONS } from '@/lib/timezones'
 import { BRAND, buttonPrimaryStyle } from '@/lib/brand'
 
 const textInputStyle = {
@@ -26,17 +27,19 @@ export function ParticipantsCards({
   const [participants, setParticipants] = useState(initialParticipants)
   const [newName, setNewName] = useState('')
   const [newPhone, setNewPhone] = useState('')
+  const [newTimezone, setNewTimezone] = useState(DEFAULT_TIMEZONE)
   const [onlyMine, setOnlyMine] = useState(false)
   const dataSource = createSupabaseMentorDataSource(createSupabaseBrowserClient())
 
   async function handleAdd() {
     if (!newName || !newPhone) return
-    const day1Date = calculateDay1Date(new Date())
+    const day1Date = calculateDay1Date(new Date(), newTimezone)
     const created = await dataSource.createParticipant({
       fullName: newName,
       phone: newPhone,
       day1Date,
       assignedMentorId: null,
+      timezone: newTimezone,
     })
     setParticipants((prev) => [
       ...prev,
@@ -45,6 +48,7 @@ export function ParticipantsCards({
         fullName: created.full_name,
         phone: created.phone,
         status: created.status,
+        timezone: created.timezone,
         programDay: 1,
         clickedToday: false,
         missedStreak: 0,
@@ -57,6 +61,7 @@ export function ParticipantsCards({
     ])
     setNewName('')
     setNewPhone('')
+    setNewTimezone(DEFAULT_TIMEZONE)
   }
 
   const visible = participants.filter((p) => !onlyMine || p.assignedMentorId === currentMentorUserId)
@@ -67,6 +72,13 @@ export function ParticipantsCards({
       <div style={{ display: 'flex', gap: 8, margin: '16px 0', alignItems: 'center', flexWrap: 'wrap' }}>
         <input style={textInputStyle} placeholder="שם מלא" value={newName} onChange={(e) => setNewName(e.target.value)} />
         <input style={textInputStyle} placeholder="טלפון" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} />
+        <select style={textInputStyle} value={newTimezone} onChange={(e) => setNewTimezone(e.target.value)} aria-label="אזור זמן">
+          {TIMEZONE_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
         <button style={buttonPrimaryStyle} onClick={handleAdd}>
           + נרשם חדש
         </button>

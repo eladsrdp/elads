@@ -35,6 +35,7 @@ export function createLocalDb(): AppDB {
         day1_date: input.day1Date,
         status: 'active',
         assigned_mentor_id: null,
+        timezone: input.timezone ?? 'Asia/Jerusalem',
       }
       participants.set(row.id, row)
       return row

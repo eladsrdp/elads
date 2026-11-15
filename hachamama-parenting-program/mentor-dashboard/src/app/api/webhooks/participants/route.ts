@@ -6,7 +6,7 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/engine/app-context'
 import { engineEnv } from '@/engine/env'
-import { getIsraelDateString } from '@/engine/domain/scheduling'
+import { getCandidateLocalDates } from '@/engine/domain/scheduling'
 import { buildParticipantsExport } from '@/engine/domain/participants-export'
 
 export async function GET(request: Request) {
@@ -16,8 +16,12 @@ export async function GET(request: Request) {
   }
 
   const db = await getDb()
-  const today = getIsraelDateString(new Date())
-  const [participants, todaysTriggers] = await Promise.all([db.getAllParticipants(), db.getDailyTriggersForDate(today)])
+  const now = new Date()
+  // "היום" הוא פר-משתתפת (לפי timezone) — שולפים את שלושת התאריכים הסמוכים, והייצוא בוחר לכל אחת את שלה.
+  const [participants, nearbyTriggers] = await Promise.all([
+    db.getAllParticipants(),
+    Promise.all(getCandidateLocalDates(now).map((d) => db.getDailyTriggersForDate(d))).then((r) => r.flat()),
+  ])
 
-  return NextResponse.json({ participants: buildParticipantsExport(participants, todaysTriggers) })
+  return NextResponse.json({ participants: buildParticipantsExport(participants, nearbyTriggers, now) })
 }

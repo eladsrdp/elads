@@ -155,3 +155,46 @@ describe('syncDeliveriesForTrigger — הודעת 13:45 רק למי שלחץ ל�
     expect(bodies.sort()).toEqual(['בוקר', 'ערב'].sort())
   })
 })
+
+describe('syncDeliveriesForTrigger — אזור זמן של הנרשמת', () => {
+  it('משתתפת בניו יורק: הודעה ל-07:00 מתוזמנת ל-07:00 *שלה* (12:00 UTC בחורף)', async () => {
+    const db = createLocalDb()
+    const participant = await db.createParticipant({
+      fullName: 'שרה',
+      phone: '+13475550100',
+      signupSourceRef: null,
+      signupAt: '2023-01-05T10:00:00.000Z',
+      day1Date: '2023-01-08',
+      timezone: 'America/New_York',
+    })
+    await db.createContentDay({ dayNumber: 1, title: null })
+    await db.createMessage({ contentDayNumber: 1, sendOffsetTime: '07:00', orderInDay: 1, bodyText: 'הודעה', mediaUrl: null, mediaType: null })
+    const trigger = await db.createDailyTrigger({ participantId: participant.id, calendarDate: '2023-01-08', contentDayNumber: 1 })
+
+    await syncDeliveriesForTrigger(db, trigger)
+
+    const [delivery] = await db.getDeliveriesForTrigger(trigger.id)
+    expect(delivery.scheduled_for).toBe('2023-01-08T12:00:00.000Z')
+  })
+
+  it('הודעת 13:45 מקומית: לחצה ב-13:00 בניו יורק (18:00Z) מקבלת; ב-14:30 בניו יורק (19:30Z) לא', async () => {
+    async function run(clickedAt: string) {
+      const db = createLocalDb()
+      const participant = await db.createParticipant({
+        fullName: 'שרה',
+        phone: '+13475550100',
+        signupSourceRef: null,
+        signupAt: '2023-01-05T10:00:00.000Z',
+        day1Date: '2023-01-08',
+        timezone: 'America/New_York',
+      })
+      await db.createContentDay({ dayNumber: 1, title: null })
+      await db.createMessage({ contentDayNumber: 1, sendOffsetTime: '13:45', orderInDay: 1, bodyText: 'תזכורת', mediaUrl: null, mediaType: null })
+      const trigger = await db.createDailyTrigger({ participantId: participant.id, calendarDate: '2023-01-08', contentDayNumber: 1 })
+      await syncDeliveriesForTrigger(db, { ...trigger, clicked_at: clickedAt })
+      return (await db.getDeliveriesForTrigger(trigger.id)).length
+    }
+    expect(await run('2023-01-08T18:00:00.000Z')).toBe(1)
+    expect(await run('2023-01-08T19:30:00.000Z')).toBe(0)
+  })
+})

@@ -4,9 +4,14 @@ import { DateTime } from 'luxon'
 
 const ISRAEL_ZONE = 'Asia/Jerusalem'
 
+/** התאריך המקומי באזור נתון (ברירת מחדל ישראל) של רגע נתון, כ-YYYY-MM-DD. */
+export function getDateStringInZone(instant: Date, zone: string = ISRAEL_ZONE): string {
+  return DateTime.fromJSDate(instant).setZone(zone).toISODate() as string
+}
+
 /** התאריך המקומי בישראל של רגע נתון, כ-YYYY-MM-DD. */
 export function getIsraelDateString(instant: Date): string {
-  return DateTime.fromJSDate(instant).setZone(ISRAEL_ZONE).toISODate() as string
+  return getDateStringInZone(instant, ISRAEL_ZONE)
 }
 
 /** באיזה "יום בתוכנית" (1-based) הנרשם נמצא, בהינתן day1_date שלו והתאריך הנוכחי. */
@@ -21,8 +26,8 @@ export function calculateProgramDayNumber(day1Date: string, todayDate: string): 
  * יום 1 = יום ראשון הראשון שאחרי תאריך ההרשמה (לפי הזמן המקומי בישראל),
  * לעולם לא אותו יום ראשון עצמו — נרשם ביום ראשון מתחיל בראשון של השבוע הבא.
  */
-export function calculateDay1Date(signupAt: Date): string {
-  const israelSignup = DateTime.fromJSDate(signupAt).setZone(ISRAEL_ZONE)
+export function calculateDay1Date(signupAt: Date, zone: string = ISRAEL_ZONE): string {
+  const israelSignup = DateTime.fromJSDate(signupAt).setZone(zone)
   const dayOfWeek = israelSignup.weekday % 7 // luxon: 1=שני..7=ראשון → הופך ל-0=ראשון..6=שבת
   const daysUntilNextSunday = dayOfWeek === 0 ? 7 : 7 - dayOfWeek
   return israelSignup.plus({ days: daysUntilNextSunday }).toISODate() as string

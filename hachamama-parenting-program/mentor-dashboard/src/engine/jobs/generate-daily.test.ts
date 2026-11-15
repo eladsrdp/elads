@@ -44,7 +44,7 @@ describe('generateDailyDeliveries', () => {
       day1Date: '2023-01-08',
     })
 
-    const result = await generateDailyDeliveries(db, '2023-01-08', 60) // היום = day1_date שלו = יום 1
+    const result = await generateDailyDeliveries(db, new Date('2023-01-08T10:00:00Z'), 60) // היום = day1_date שלו = יום 1
 
     expect(result).toEqual({ triggersCreated: 1, participantsCompleted: 0, errors: [] })
     const trigger = await db.findDailyTrigger(participant.id, '2023-01-08')
@@ -65,8 +65,8 @@ describe('generateDailyDeliveries', () => {
       day1Date: '2023-01-08',
     })
 
-    await generateDailyDeliveries(db, '2023-01-08', 60)
-    const second = await generateDailyDeliveries(db, '2023-01-08', 60)
+    await generateDailyDeliveries(db, new Date('2023-01-08T10:00:00Z'), 60)
+    const second = await generateDailyDeliveries(db, new Date('2023-01-08T10:00:00Z'), 60)
 
     expect(second).toEqual({ triggersCreated: 0, participantsCompleted: 0, errors: [] })
   })
@@ -82,7 +82,7 @@ describe('generateDailyDeliveries', () => {
       day1Date: '2023-01-08',
     })
 
-    const result = await generateDailyDeliveries(db, '2023-01-07', 60) // יום לפני day1_date
+    const result = await generateDailyDeliveries(db, new Date('2023-01-07T10:00:00Z'), 60) // יום לפני day1_date
 
     expect(result).toEqual({ triggersCreated: 0, participantsCompleted: 0, errors: [] })
   })
@@ -111,7 +111,7 @@ describe('generateDailyDeliveries', () => {
       return originalCreateDailyTrigger(input)
     }
 
-    const result = await generateDailyDeliveries(db, '2023-01-08', 60)
+    const result = await generateDailyDeliveries(db, new Date('2023-01-08T10:00:00Z'), 60)
 
     expect(result.errors).toEqual([{ participantId: failing.id, error: 'כשל מדומה' }])
     expect(result.triggersCreated).toBe(1) // רק "יצליח" הצליח
@@ -130,7 +130,7 @@ describe('generateDailyDeliveries', () => {
       day1Date: '2023-01-08',
     })
 
-    const result = await generateDailyDeliveries(db, '2023-01-10', 2) // day1+2 = יום 3 > programLengthDays=2
+    const result = await generateDailyDeliveries(db, new Date('2023-01-10T10:00:00Z'), 2) // day1+2 = יום 3 > programLengthDays=2
 
     expect(result.participantsCompleted).toBe(1)
     const updated = await db.getParticipant(participant.id)
@@ -156,11 +156,57 @@ describe('generateDailyDeliveries', () => {
 
     // יום 5 בתוכנית (day1 + 4 ימים) — הרבה לפני programLengthDays=60, אבל אין
     // עדיין content_day מאושר עבורו.
-    const result = await generateDailyDeliveries(db, '2023-01-12', 60)
+    const result = await generateDailyDeliveries(db, new Date('2023-01-12T10:00:00Z'), 60)
 
     expect(result).toEqual({ triggersCreated: 0, participantsCompleted: 0, errors: [] })
     const updated = await db.getParticipant(participant.id)
     expect(updated?.status).toBe('active') // לא completed בטעות
     expect(await db.findDailyTrigger(participant.id, '2023-01-12')).toBeUndefined()
+  })
+})
+
+describe('generateDailyDeliveries — אזורי זמן', () => {
+  async function setup() {
+    const db = createLocalDb()
+    await seedTwoDayProgram(db)
+    const israeli = await db.createParticipant({
+      fullName: 'ישראל',
+      phone: '+972501234567',
+      signupSourceRef: null,
+      signupAt: '2023-01-05T10:00:00.000Z',
+      day1Date: '2023-01-08',
+    })
+    const american = await db.createParticipant({
+      fullName: 'שרה',
+      phone: '+13475550100',
+      signupSourceRef: null,
+      signupAt: '2023-01-05T10:00:00.000Z',
+      day1Date: '2023-01-08',
+      timezone: 'America/New_York',
+    })
+    return { db, israeli, american }
+  }
+
+  it('כשבישראל כבר יום 1 אבל בניו יורק עדיין ערב לפניו — רק הישראלית מקבלת trigger', async () => {
+    const { db, israeli, american } = await setup()
+    // 2023-01-07T23:00Z = 01:00 בישראל ב-08.1, אבל 18:00 בניו יורק ב-07.1
+    const result = await generateDailyDeliveries(db, new Date('2023-01-07T23:00:00Z'), 60)
+
+    expect(result.triggersCreated).toBe(1)
+    expect(await db.findDailyTrigger(israeli.id, '2023-01-08')).toBeDefined()
+    expect(await db.findDailyTrigger(american.id, '2023-01-07')).toBeUndefined()
+    expect(await db.findDailyTrigger(american.id, '2023-01-08')).toBeUndefined()
+  })
+
+  it('אחרי חצות בניו יורק — האמריקאית מקבלת trigger עם calendar_date מקומי ויום-תוכן 1', async () => {
+    const { db, israeli, american } = await setup()
+    await generateDailyDeliveries(db, new Date('2023-01-07T23:00:00Z'), 60) // הישראלית
+    // 2023-01-08T06:00Z = 01:00 בניו יורק ב-08.1
+    const result = await generateDailyDeliveries(db, new Date('2023-01-08T06:00:00Z'), 60)
+
+    expect(result.triggersCreated).toBe(1) // רק האמריקאית; הישראלית כבר קיבלה (אידמפוטנטי)
+    const trigger = await db.findDailyTrigger(american.id, '2023-01-08')
+    expect(trigger?.content_day_number).toBe(1)
+    expect(await db.findDailyTrigger(israeli.id, '2023-01-08')).toBeDefined()
   })
 })

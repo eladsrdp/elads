@@ -5,7 +5,7 @@
 // להיות מוכן עד 00:05" — אפשר לערוך/להוסיף הודעות בכל שעה במהלך היום, גם אחרי
 // שהטריגר כבר נשלח/נלחץ (ראו תקלת production 2026-09-14, vault, לסיבה שהניעה את זה).
 import type { AppDB } from '../repository/interface'
-import { calculateProgramDayNumber } from '../domain/scheduling'
+import { calculateProgramDayNumber, getDateStringInZone } from '../domain/scheduling'
 
 export interface GenerateDailyResult {
   triggersCreated: number
@@ -13,9 +13,11 @@ export interface GenerateDailyResult {
   errors: Array<{ participantId: string; error: string }>
 }
 
+// "היום" נקבע פר-נרשמת לפי participants.timezone — הריצה אידמפוטנטית (findDailyTrigger),
+// ולכן מופעלת כל שעה: כל נרשמת מקבלת trigger ברגע שעבר חצות לפי השעון המקומי שלה.
 export async function generateDailyDeliveries(
   db: AppDB,
-  todayDate: string,
+  now: Date,
   programLengthDays: number,
 ): Promise<GenerateDailyResult> {
   const participants = await db.getActiveParticipants()
@@ -28,6 +30,7 @@ export async function generateDailyDeliveries(
     // כל נרשם מבודד בלכידת שגיאות משלו — כשל בכתיבה עבור נרשם אחד (למשל שגיאת רשת
     // מול Supabase) לא אמור לעצור את הריצה כולה ולמנוע מכל הנרשמים האחרים לקבל תוכן.
     try {
+      const todayDate = getDateStringInZone(now, participant.timezone)
       const dayNumber = calculateProgramDayNumber(participant.day1_date, todayDate)
 
       // completion נגזר מ-programLengthDays (משך קבוע וידוע מראש, ראו design doc),

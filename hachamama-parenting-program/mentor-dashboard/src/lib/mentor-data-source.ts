@@ -10,6 +10,7 @@ export interface ParticipantRecord {
   status: string
   day1_date: string
   assigned_mentor_id: string | null
+  timezone: string
 }
 
 export interface MentorRecord {
@@ -62,10 +63,11 @@ export interface MentorDataSource {
     phone: string
     day1Date: string
     assignedMentorId: string | null
+    timezone: string
   }): Promise<ParticipantRecord>
   updateParticipant(
     id: string,
-    input: { fullName: string; phone: string; status: string; assignedMentorId: string | null },
+    input: { fullName: string; phone: string; status: string; assignedMentorId: string | null; timezone: string },
   ): Promise<void>
   deleteParticipant(id: string): Promise<void>
   getParticipantHistoryCounts(id: string): Promise<{ triggers: number; deliveries: number; videoSubmissions: number }>
@@ -86,7 +88,7 @@ export function createSupabaseMentorDataSource(supabase: SupabaseClient): Mentor
     async listParticipants() {
       const { data, error } = await supabase
         .from('participants')
-        .select('id, full_name, phone, status, day1_date, assigned_mentor_id')
+        .select('id, full_name, phone, status, day1_date, assigned_mentor_id, timezone')
         .order('full_name', { ascending: true })
       if (error) throw error
       return data as ParticipantRecord[]
@@ -116,7 +118,7 @@ export function createSupabaseMentorDataSource(supabase: SupabaseClient): Mentor
     async getParticipant(id) {
       const { data, error } = await supabase
         .from('participants')
-        .select('id, full_name, phone, status, day1_date, assigned_mentor_id')
+        .select('id, full_name, phone, status, day1_date, assigned_mentor_id, timezone')
         .eq('id', id)
         .maybeSingle()
       if (error) throw error
@@ -167,8 +169,9 @@ export function createSupabaseMentorDataSource(supabase: SupabaseClient): Mentor
           signup_at: new Date().toISOString(),
           day1_date: input.day1Date,
           assigned_mentor_id: input.assignedMentorId,
+          timezone: input.timezone,
         })
-        .select('id, full_name, phone, status, day1_date, assigned_mentor_id')
+        .select('id, full_name, phone, status, day1_date, assigned_mentor_id, timezone')
         .single()
       if (error) throw error
       return data as ParticipantRecord
@@ -182,6 +185,7 @@ export function createSupabaseMentorDataSource(supabase: SupabaseClient): Mentor
           phone: input.phone,
           status: input.status,
           assigned_mentor_id: input.assignedMentorId,
+          timezone: input.timezone,
         })
         .eq('id', id)
       if (error) throw error

@@ -9,7 +9,7 @@ vi.mock('@/engine/env', () => ({
 }))
 vi.mock('@/engine/domain/scheduling', () => ({
   calculateGoalMessageSendDate: vi.fn(() => '2023-01-08'),
-  combineDateAndTimeInIsrael: vi.fn(() => new Date('2023-01-08T12:00:00.000Z')), // 14:00 בישראל בחורף
+  combineDateAndTimeInZone: vi.fn(() => new Date('2023-01-08T12:00:00.000Z')), // 14:00 בישראל בחורף
 }))
 
 import { getDb } from '@/engine/app-context'

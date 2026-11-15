@@ -33,6 +33,7 @@ describe('buildParticipantList', () => {
           status: 'active',
           day1_date: '2026-08-02',
           assigned_mentor_id: null,
+          timezone: 'Asia/Jerusalem',
         },
         {
           id: 'p2',
@@ -41,6 +42,7 @@ describe('buildParticipantList', () => {
           status: 'active',
           day1_date: '2026-08-02',
           assigned_mentor_id: null,
+          timezone: 'Asia/Jerusalem',
         },
       ],
       getTriggersSince: async () => [{ participant_id: 'p1', calendar_date: '2026-08-16', clicked_at: '2026-08-16T06:00:00Z' }],
@@ -61,6 +63,7 @@ describe('buildParticipantList', () => {
         deliveriesSent: 0,
         deliveriesTotal: 0,
         assignedMentorId: null,
+        timezone: 'Asia/Jerusalem',
         assignedMentorName: null,
       },
       {
@@ -75,6 +78,7 @@ describe('buildParticipantList', () => {
         deliveriesSent: 0,
         deliveriesTotal: 0,
         assignedMentorId: null,
+        timezone: 'Asia/Jerusalem',
         assignedMentorName: null,
       },
     ])
@@ -90,6 +94,7 @@ describe('buildParticipantList', () => {
           status: 'active',
           day1_date: '2026-08-02',
           assigned_mentor_id: null,
+          timezone: 'Asia/Jerusalem',
         },
       ],
       getTriggersSince: async () => [],
@@ -110,6 +115,7 @@ describe('buildParticipantList', () => {
           status: 'active',
           day1_date: '2026-08-02',
           assigned_mentor_id: null,
+          timezone: 'Asia/Jerusalem',
         },
       ],
       getVideoSubmissionCountsByParticipant: async () => [{ participant_id: 'p1' }, { participant_id: 'p1' }],
@@ -137,6 +143,7 @@ describe('buildParticipantList', () => {
           status: 'active',
           day1_date: '2026-08-02',
           assigned_mentor_id: 'm1',
+          timezone: 'Asia/Jerusalem',
         },
       ],
       listMentors: async () => [{ user_id: 'm1', full_name: 'רוני מנחה' }],
@@ -157,6 +164,7 @@ describe('sortParticipantsByAttention', () => {
     deliveriesSent: 0,
     deliveriesTotal: 0,
     assignedMentorId: null,
+    timezone: 'Asia/Jerusalem',
     assignedMentorName: null,
   }
 
@@ -201,6 +209,7 @@ describe('buildParticipantDetail', () => {
         status: 'active',
         day1_date: '2026-08-02',
         assigned_mentor_id: 'm1',
+        timezone: 'Asia/Jerusalem',
       }),
       getDeliveriesForParticipant: async () => [
         {
@@ -249,5 +258,30 @@ describe('canDeleteParticipant', () => {
     expect(canDeleteParticipant({ triggers: 1, deliveries: 0, videoSubmissions: 0 })).toBe(false)
     expect(canDeleteParticipant({ triggers: 0, deliveries: 1, videoSubmissions: 0 })).toBe(false)
     expect(canDeleteParticipant({ triggers: 0, deliveries: 0, videoSubmissions: 1 })).toBe(false)
+  })
+})
+
+describe('buildParticipantList — אזורי זמן', () => {
+  it('"היום" ויום-התוכנית פר-משתתפת: ב-2026-08-16T23:30Z בישראל כבר 17.8, בניו יורק עדיין 16.8', async () => {
+    const dataSource = fakeDataSource({
+      listParticipants: async () => [
+        { id: 'il', full_name: 'ישראלית', phone: '+972500000001', status: 'active', day1_date: '2026-08-02', assigned_mentor_id: null, timezone: 'Asia/Jerusalem' },
+        { id: 'ny', full_name: 'אמריקאית', phone: '+13475550100', status: 'active', day1_date: '2026-08-02', assigned_mentor_id: null, timezone: 'America/New_York' },
+      ],
+      getTriggersSince: async () => [
+        { participant_id: 'il', calendar_date: '2026-08-16', clicked_at: '2026-08-16T05:00:00Z' },
+        { participant_id: 'ny', calendar_date: '2026-08-16', clicked_at: '2026-08-16T12:00:00Z' },
+      ],
+    })
+
+    const result = await buildParticipantList(dataSource, new Date('2026-08-16T23:30:00Z'))
+    const il = result.find((r) => r.id === 'il')!
+    const ny = result.find((r) => r.id === 'ny')!
+
+    expect(il.programDay).toBe(16) // 17.8 → יום 16
+    expect(ny.programDay).toBe(15) // 16.8 → יום 15
+    expect(il.clickedToday).toBe(false) // אין עדיין trigger של 17.8
+    expect(ny.clickedToday).toBe(true)
+    expect(ny.timezone).toBe('America/New_York')
   })
 })

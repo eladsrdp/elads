@@ -3,7 +3,6 @@
 // no extra config needed there). POST stays supported for external services
 // (cron-job.org) and manual curl testing.
 import { NextResponse } from 'next/server'
-import { getIsraelDateString } from '@/engine/domain/scheduling'
 import { sendMorningTriggers } from '@/engine/jobs/send-triggers'
 import { getDb, getMakeClient } from '@/engine/app-context'
 import { engineEnv } from '@/engine/env'
@@ -14,7 +13,7 @@ async function handle(request: Request) {
     return NextResponse.json({ error: 'לא מורשה' }, { status: 401 })
   }
   const db = await getDb()
-  const result = await sendMorningTriggers(db, getMakeClient(), getIsraelDateString(new Date()))
+  const result = await sendMorningTriggers(db, getMakeClient(), new Date())
   return NextResponse.json(result)
 }
 

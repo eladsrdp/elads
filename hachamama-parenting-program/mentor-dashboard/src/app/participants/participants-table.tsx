@@ -7,6 +7,7 @@ import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import { createSupabaseMentorDataSource, type MentorRecord } from '@/lib/mentor-data-source'
 import { calculateDay1Date } from '@/lib/program-day'
 import { canDeleteParticipant, type ParticipantListItem } from '@/lib/mentor-view'
+import { DEFAULT_TIMEZONE, timezoneLabel, timezoneOptionsFor } from '@/lib/timezones'
 import { BRAND, buttonPrimaryStyle, buttonSecondaryStyle, buttonDangerStyle } from '@/lib/brand'
 
 const textInputStyle = {
@@ -27,6 +28,7 @@ export function ParticipantsTable({
   const [editingId, setEditingId] = useState<string | null>(null)
   const [newName, setNewName] = useState('')
   const [newPhone, setNewPhone] = useState('')
+  const [newTimezone, setNewTimezone] = useState(DEFAULT_TIMEZONE)
   const [blockedMessage, setBlockedMessage] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
@@ -38,12 +40,14 @@ export function ParticipantsTable({
     setErrorMessage(null)
     setAdding(true)
     try {
-      const day1Date = calculateDay1Date(new Date())
+      // יום 1 = הראשון הקרוב לפי השעון המקומי של הנרשמת, לא של ישראל.
+      const day1Date = calculateDay1Date(new Date(), newTimezone)
       const created = await dataSource.createParticipant({
         fullName: newName,
         phone: newPhone,
         day1Date,
         assignedMentorId: null,
+        timezone: newTimezone,
       })
       setParticipants((prev) => [
         ...prev,
@@ -52,6 +56,7 @@ export function ParticipantsTable({
           fullName: created.full_name,
           phone: created.phone,
           status: created.status,
+          timezone: created.timezone,
           programDay: 1,
           clickedToday: false,
           missedStreak: 0,
@@ -64,6 +69,7 @@ export function ParticipantsTable({
       ])
       setNewName('')
       setNewPhone('')
+      setNewTimezone(DEFAULT_TIMEZONE)
       setSuccessMessage(`✓ ${created.full_name} נוסף/ה בהצלחה`)
       setTimeout(() => setSuccessMessage(null), 4000)
     } catch (error) {
@@ -75,7 +81,7 @@ export function ParticipantsTable({
 
   async function handleFieldSave(
     id: string,
-    fields: { fullName: string; phone: string; status: string; assignedMentorId: string | null },
+    fields: { fullName: string; phone: string; status: string; assignedMentorId: string | null; timezone: string },
   ) {
     setErrorMessage(null)
     try {
@@ -89,6 +95,7 @@ export function ParticipantsTable({
                 fullName: fields.fullName,
                 phone: fields.phone,
                 status: fields.status,
+                timezone: fields.timezone,
                 assignedMentorId: fields.assignedMentorId,
                 assignedMentorName: mentors.find((m) => m.user_id === fields.assignedMentorId)?.full_name ?? null,
               },
@@ -139,6 +146,13 @@ export function ParticipantsTable({
       <div style={{ display: 'flex', gap: 8, margin: '16px 0' }}>
         <input style={textInputStyle} placeholder="שם מלא" value={newName} onChange={(e) => setNewName(e.target.value)} />
         <input style={textInputStyle} placeholder="טלפון" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} />
+        <select style={textInputStyle} value={newTimezone} onChange={(e) => setNewTimezone(e.target.value)} aria-label="אזור זמן">
+          {timezoneOptionsFor(newTimezone).map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
         <button style={buttonPrimaryStyle} onClick={handleAdd} disabled={adding}>
           {adding ? 'מוסיף...' : '+ נרשם חדש'}
         </button>
@@ -149,6 +163,7 @@ export function ParticipantsTable({
           <tr style={{ background: BRAND.paper }}>
             <th style={{ textAlign: 'right', color: BRAND.greenDark, padding: '8px 6px' }}>שם</th>
             <th style={{ textAlign: 'right', color: BRAND.greenDark, padding: '8px 6px' }}>טלפון</th>
+            <th style={{ textAlign: 'right', color: BRAND.greenDark, padding: '8px 6px' }}>אזור זמן</th>
             <th style={{ textAlign: 'right', color: BRAND.greenDark, padding: '8px 6px' }}>יום בתוכנית</th>
             <th style={{ textAlign: 'right', color: BRAND.greenDark, padding: '8px 6px' }}>לחץ היום?</th>
             <th style={{ textAlign: 'right', color: BRAND.greenDark, padding: '8px 6px' }}>סטטוס</th>
@@ -168,6 +183,7 @@ export function ParticipantsTable({
                   </Link>
                 </td>
                 <td style={{ padding: '6px' }}>{p.phone}</td>
+                <td style={{ padding: '6px' }}>{timezoneLabel(p.timezone)}</td>
                 <td style={{ padding: '6px' }}>{p.programDay}</td>
                 <td style={{ padding: '6px' }}>{p.clickedToday ? '✅' : '❌'}</td>
                 <td style={{ padding: '6px' }}>{p.status}</td>
@@ -197,12 +213,16 @@ function EditRow({
 }: {
   participant: ParticipantListItem
   mentors: MentorRecord[]
-  onSave: (id: string, fields: { fullName: string; phone: string; status: string; assignedMentorId: string | null }) => void
+  onSave: (
+    id: string,
+    fields: { fullName: string; phone: string; status: string; assignedMentorId: string | null; timezone: string },
+  ) => void
   onCancel: () => void
 }) {
   const [fullName, setFullName] = useState(participant.fullName)
   const [phone, setPhone] = useState(participant.phone)
   const [status, setStatus] = useState(participant.status)
+  const [timezone, setTimezone] = useState(participant.timezone)
   const [assignedMentorId, setAssignedMentorId] = useState(participant.assignedMentorId ?? '')
 
   return (
@@ -212,6 +232,15 @@ function EditRow({
       </td>
       <td style={{ padding: '6px' }}>
         <input style={textInputStyle} value={phone} onChange={(e) => setPhone(e.target.value)} />
+      </td>
+      <td style={{ padding: '6px' }}>
+        <select style={textInputStyle} value={timezone} onChange={(e) => setTimezone(e.target.value)} aria-label="אזור זמן">
+          {timezoneOptionsFor(timezone).map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
       </td>
       <td style={{ padding: '6px' }}>{participant.programDay}</td>
       <td style={{ padding: '6px' }}>{participant.clickedToday ? '✅' : '❌'}</td>
@@ -235,7 +264,7 @@ function EditRow({
       <td style={{ padding: '6px' }}>
         <button
           style={{ ...buttonPrimaryStyle, marginLeft: 4 }}
-          onClick={() => onSave(participant.id, { fullName, phone, status, assignedMentorId: assignedMentorId || null })}
+          onClick={() => onSave(participant.id, { fullName, phone, status, timezone, assignedMentorId: assignedMentorId || null })}
         >
           שמור
         </button>

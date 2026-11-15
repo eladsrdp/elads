@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import { createSupabaseMentorDataSource, type MentorRecord } from '@/lib/mentor-data-source'
 import { canDeleteParticipant, type ParticipantDetailView } from '@/lib/mentor-view'
+import { timezoneOptionsFor } from '@/lib/timezones'
 import { BRAND, buttonPrimaryStyle, buttonSecondaryStyle, buttonDangerStyle } from '@/lib/brand'
 
 const fieldStyle = {
@@ -31,6 +32,7 @@ export function ParticipantDetailContent({
   const [fullName, setFullName] = useState(detail.fullName)
   const [phone, setPhone] = useState(detail.phone)
   const [status, setStatus] = useState(detail.status)
+  const [timezone, setTimezone] = useState(detail.timezone)
   const [assignedMentorId, setAssignedMentorId] = useState(detail.assignedMentorId ?? '')
   const [blockedMessage, setBlockedMessage] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -38,7 +40,7 @@ export function ParticipantDetailContent({
 
   async function handleSave() {
     setSaving(true)
-    await dataSource.updateParticipant(detail.id, { fullName, phone, status, assignedMentorId: assignedMentorId || null })
+    await dataSource.updateParticipant(detail.id, { fullName, phone, status, timezone, assignedMentorId: assignedMentorId || null })
     setSaving(false)
     setEditing(false)
     router.refresh()
@@ -75,6 +77,16 @@ export function ParticipantDetailContent({
               <option value="active">active</option>
               <option value="paused">paused</option>
               <option value="completed">completed</option>
+            </select>
+          </label>
+          <label style={{ fontSize: 13, color: BRAND.greenDark, display: 'block', marginTop: 10 }}>
+            אזור זמן
+            <select style={fieldStyle} value={timezone} onChange={(e) => setTimezone(e.target.value)}>
+              {timezoneOptionsFor(timezone).map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
             </select>
           </label>
           <label style={{ fontSize: 13, color: BRAND.greenDark, display: 'block', marginTop: 10 }}>
