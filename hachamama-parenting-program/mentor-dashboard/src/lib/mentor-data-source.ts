@@ -67,7 +67,14 @@ export interface MentorDataSource {
   }): Promise<ParticipantRecord>
   updateParticipant(
     id: string,
-    input: { fullName: string; phone: string; status: string; assignedMentorId: string | null; timezone: string },
+    input: {
+      fullName: string
+      phone: string
+      status: string
+      assignedMentorId: string | null
+      timezone: string
+      day1Date?: string
+    },
   ): Promise<void>
   deleteParticipant(id: string): Promise<void>
   getParticipantHistoryCounts(id: string): Promise<{ triggers: number; deliveries: number; videoSubmissions: number }>
@@ -186,6 +193,7 @@ export function createSupabaseMentorDataSource(supabase: SupabaseClient): Mentor
           status: input.status,
           assigned_mentor_id: input.assignedMentorId,
           timezone: input.timezone,
+          ...(input.day1Date ? { day1_date: input.day1Date } : {}),
         })
         .eq('id', id)
       if (error) throw error

@@ -5,7 +5,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import { createSupabaseMentorDataSource, type MentorRecord } from '@/lib/mentor-data-source'
-import { calculateDay1Date } from '@/lib/program-day'
+import { calculateDay1Date, calculateWeekdayName, day1DateForProgramDay, localWeekdayName } from '@/lib/program-day'
 import { canDeleteParticipant, type ParticipantListItem } from '@/lib/mentor-view'
 import { DEFAULT_TIMEZONE, timezoneLabel, timezoneOptionsFor } from '@/lib/timezones'
 import { BRAND, buttonPrimaryStyle, buttonSecondaryStyle, buttonDangerStyle } from '@/lib/brand'
@@ -81,11 +81,38 @@ export function ParticipantsTable({
 
   async function handleFieldSave(
     id: string,
-    fields: { fullName: string; phone: string; status: string; assignedMentorId: string | null; timezone: string },
+    fields: {
+      fullName: string
+      phone: string
+      status: string
+      assignedMentorId: string | null
+      timezone: string
+      programDay: number
+    },
   ) {
     setErrorMessage(null)
     try {
-      await dataSource.updateParticipant(id, fields)
+      const current = participants.find((p) => p.id === id)
+      // "היום בתוכנית" נגזר מ-day1_date — עריכה ידנית = הזזת day1_date כך שהיום המבוקש יהיה היום (לפי
+      // השעון המקומי שלה). מעדכנים רק אם הערך באמת שונה. טריגר של *היום* שכבר נוצר נשאר עם היום הישן;
+      // השינוי נכנס לתוקף מהטריגר הבא.
+      const programDayChanged = !current || fields.programDay !== current.programDay
+      if (programDayChanged) {
+        const now = new Date()
+        if (calculateWeekdayName(fields.programDay) !== localWeekdayName(now, fields.timezone)) {
+          const ok = window.confirm(
+            'יום ' + fields.programDay + ' בתוכנית מתוכנן ליום ' + calculateWeekdayName(fields.programDay) +
+              ', אבל היום אצלה יום ' + localWeekdayName(now, fields.timezone) +
+              '. התוכן ישלח ביום שבוע שלא תואם. להמשיך?',
+          )
+          if (!ok) return
+        }
+      }
+      const { programDay, ...rest } = fields
+      await dataSource.updateParticipant(id, {
+        ...rest,
+        ...(programDayChanged ? { day1Date: day1DateForProgramDay(programDay, new Date(), fields.timezone) } : {}),
+      })
       setParticipants((prev) =>
         prev.map((p) =>
           p.id !== id
@@ -96,6 +123,7 @@ export function ParticipantsTable({
                 phone: fields.phone,
                 status: fields.status,
                 timezone: fields.timezone,
+                programDay: fields.programDay,
                 assignedMentorId: fields.assignedMentorId,
                 assignedMentorName: mentors.find((m) => m.user_id === fields.assignedMentorId)?.full_name ?? null,
               },
@@ -215,7 +243,14 @@ function EditRow({
   mentors: MentorRecord[]
   onSave: (
     id: string,
-    fields: { fullName: string; phone: string; status: string; assignedMentorId: string | null; timezone: string },
+    fields: {
+      fullName: string
+      phone: string
+      status: string
+      assignedMentorId: string | null
+      timezone: string
+      programDay: number
+    },
   ) => void
   onCancel: () => void
 }) {
@@ -223,6 +258,9 @@ function EditRow({
   const [phone, setPhone] = useState(participant.phone)
   const [status, setStatus] = useState(participant.status)
   const [timezone, setTimezone] = useState(participant.timezone)
+  const [programDayText, setProgramDayText] = useState(String(participant.programDay))
+  const programDay = Number(programDayText)
+  const programDayValid = Number.isInteger(programDay) && programDay >= 1
   const [assignedMentorId, setAssignedMentorId] = useState(participant.assignedMentorId ?? '')
 
   return (
@@ -242,7 +280,16 @@ function EditRow({
           ))}
         </select>
       </td>
-      <td style={{ padding: '6px' }}>{participant.programDay}</td>
+      <td style={{ padding: '6px' }}>
+        <input
+          style={{ ...textInputStyle, width: 70 }}
+          type="number"
+          min={1}
+          value={programDayText}
+          onChange={(e) => setProgramDayText(e.target.value)}
+          aria-label="יום בתוכנית"
+        />
+      </td>
       <td style={{ padding: '6px' }}>{participant.clickedToday ? '✅' : '❌'}</td>
       <td style={{ padding: '6px' }}>
         <select style={textInputStyle} value={status} onChange={(e) => setStatus(e.target.value)}>
@@ -264,7 +311,10 @@ function EditRow({
       <td style={{ padding: '6px' }}>
         <button
           style={{ ...buttonPrimaryStyle, marginLeft: 4 }}
-          onClick={() => onSave(participant.id, { fullName, phone, status, timezone, assignedMentorId: assignedMentorId || null })}
+          disabled={!programDayValid}
+          onClick={() =>
+            onSave(participant.id, { fullName, phone, status, timezone, programDay, assignedMentorId: assignedMentorId || null })
+          }
         >
           שמור
         </button>

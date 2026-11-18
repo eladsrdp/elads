@@ -5,6 +5,8 @@ import {
   calculateProgramDayNumber,
   calculateWeekdayName,
   calculateWeekNumber,
+  day1DateForProgramDay,
+  localWeekdayName,
   getIsraelDateString,
 } from './program-day'
 
@@ -104,5 +106,32 @@ describe('calculateMissedStreak', () => {
   it('יום 1 בתוכנית, עדיין לא לחץ, אין היסטוריה קודמת → רצף 1, לא ממשיך לפני day1', () => {
     const history = [{ calendarDate: '2026-08-16', clickedAt: null }]
     expect(calculateMissedStreak(history, '2026-08-16', 'active')).toBe(1)
+  })
+})
+
+describe('day1DateForProgramDay / localWeekdayName', () => {
+  it('יום 1 = היום → day1_date הוא התאריך המקומי של היום', () => {
+    expect(day1DateForProgramDay(1, new Date('2026-08-16T09:00:00Z'))).toBe('2026-08-16')
+  })
+
+  it('יום 8 היום (ראשון 16.8) → day1_date הוא ראשון שבוע קודם (9.8)', () => {
+    expect(day1DateForProgramDay(8, new Date('2026-08-16T09:00:00Z'))).toBe('2026-08-09')
+  })
+
+  it('משתמש בתאריך המקומי של האזור: ב-23:30Z בישראל כבר 17.8, בניו יורק עדיין 16.8', () => {
+    const now = new Date('2026-08-16T23:30:00Z')
+    expect(day1DateForProgramDay(1, now)).toBe('2026-08-17')
+    expect(day1DateForProgramDay(1, now, 'America/New_York')).toBe('2026-08-16')
+  })
+
+  it('חזרה: calculateProgramDayNumber של התוצאה מחזיר את היום המבוקש', () => {
+    const now = new Date('2026-08-16T09:00:00Z')
+    expect(calculateProgramDayNumber(day1DateForProgramDay(116, now), '2026-08-16')).toBe(116)
+  })
+
+  it('localWeekdayName — 16.8.2026 הוא יום ראשון; ב-23:30Z בישראל כבר שני', () => {
+    expect(localWeekdayName(new Date('2026-08-16T09:00:00Z'))).toBe('ראשון')
+    expect(localWeekdayName(new Date('2026-08-16T23:30:00Z'))).toBe('שני')
+    expect(localWeekdayName(new Date('2026-08-16T23:30:00Z'), 'America/New_York')).toBe('ראשון')
   })
 })

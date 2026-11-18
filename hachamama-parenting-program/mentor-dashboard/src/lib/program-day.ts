@@ -4,6 +4,8 @@ import { DateTime } from 'luxon'
 
 const ISRAEL_ZONE = 'Asia/Jerusalem'
 
+const HEBREW_WEEKDAY_NAMES = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת']
+
 /** התאריך המקומי באזור נתון (ברירת מחדל ישראל) של רגע נתון, כ-YYYY-MM-DD. */
 export function getDateStringInZone(instant: Date, zone: string = ISRAEL_ZONE): string {
   return DateTime.fromJSDate(instant).setZone(zone).toISODate() as string
@@ -33,12 +35,26 @@ export function calculateDay1Date(signupAt: Date, zone: string = ISRAEL_ZONE): s
   return israelSignup.plus({ days: daysUntilNextSunday }).toISODate() as string
 }
 
+/**
+ * day1_date שגורם לנרשמת להיות ביום-תוכנית נתון *היום* (לפי השעון המקומי שלה).
+ * משמש לעריכה ידנית של "היום בתוכנית" — בפועל מזיזים את day1_date, כי היום נגזר ממנו.
+ */
+export function day1DateForProgramDay(dayNumber: number, now: Date, zone: string = ISRAEL_ZONE): string {
+  const today = DateTime.fromISO(getDateStringInZone(now, zone), { zone: 'utc' })
+  return today.minus({ days: dayNumber - 1 }).toISODate() as string
+}
+
+/** שם היום בשבוע (בעברית) של התאריך המקומי הנוכחי באזור — באותו מינוח כמו calculateWeekdayName. */
+export function localWeekdayName(now: Date, zone: string = ISRAEL_ZONE): string {
+  const weekday = DateTime.fromJSDate(now).setZone(zone).weekday % 7 // 0=ראשון..6=שבת
+  return HEBREW_WEEKDAY_NAMES[weekday]
+}
+
 /** באיזה שבוע בתוכנית (1-based) נמצא יום נתון — כל שבוע הוא 7 ימים, יום 1 הוא תמיד יום ראשון. */
 export function calculateWeekNumber(dayNumber: number): number {
   return Math.ceil(dayNumber / 7)
 }
 
-const HEBREW_WEEKDAY_NAMES = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת']
 
 /** שם היום בשבוע (בעברית) של יום נתון בתוכנית — יום 1 הוא תמיד יום ראשון, אז החזרה מחזורית כל 7. */
 export function calculateWeekdayName(dayNumber: number): string {
