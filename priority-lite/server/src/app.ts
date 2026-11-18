@@ -10,6 +10,8 @@ import { createEmployeeRoutes } from './routes/employees'
 import { createParseRoutes } from './routes/parse'
 import { createTaskRoutes } from './routes/tasks'
 import { createTimeEntryRoutes } from './routes/timeEntries'
+import { createUsageRoutes } from './routes/usage'
+import { flushUsage } from './priority/usage'
 
 export function createApp(ctx: AppContext) {
   const app = new Hono()
@@ -22,6 +24,13 @@ export function createApp(ctx: AppContext) {
       aiEnabled: !!ctx.env.GEMINI_API_KEY,
     }),
   )
+  // ספירת קריאות לפריוריטי (usage.ts): מרוקנים את הצבירה ל-DB בסוף כל בקשת API — לפני שליחת התשובה,
+  // כי ב-serverless פעולה שרצה אחרי התשובה עלולה להיחתך. כשל/timeout לא מפילים את הבקשה.
+  app.use('/api/*', async (_c, next) => {
+    await next()
+    await flushUsage((rows) => ctx.db.recordPriorityUsage(rows))
+  })
+
   app.route('/api/auth', createAuthRoutes(ctx))
   app.route('/api/tasks', createTaskRoutes(ctx))
   app.route('/api/time-entries', createTimeEntryRoutes(ctx))
@@ -31,6 +40,7 @@ export function createApp(ctx: AppContext) {
   app.route('/api/employees', createEmployeeRoutes(ctx))
   app.route('/api/checklist', createChecklistRoutes(ctx))
   app.route('/api/drafts', createDraftRoutes(ctx))
+  app.route('/api/usage', createUsageRoutes(ctx))
 
   app.onError((err, c) => {
     console.error('[server error]', err)

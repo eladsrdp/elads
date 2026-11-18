@@ -110,7 +110,7 @@ export function TaskDetail({ id, onBack }: Props) {
             {note.summary}
           </p>
         ) : (
-          <p className="rounded-xl bg-slate-800/30 p-3 text-sm text-slate-600">אין תקציר למשימה הזו בפריוריטי</p>
+          <p className="rounded-xl bg-slate-800/30 p-3 text-sm text-slate-500">אין תקציר למשימה הזו בפריוריטי</p>
         )}
       </div>
 
@@ -227,7 +227,7 @@ export function TaskDetail({ id, onBack }: Props) {
                 {h.handlerName ? ` · ${h.handlerName}` : ''}
               </div>
             ))}
-            {(note.history ?? []).length === 0 && <p className="text-xs text-slate-600">אין היסטוריה</p>}
+            {(note.history ?? []).length === 0 && <p className="text-xs text-slate-500">אין היסטוריה</p>}
           </div>
         )}
       </div>

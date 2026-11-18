@@ -192,5 +192,38 @@ export function createSupabaseDb(url: string, serviceKey: string): AppDB {
       if (error) throw new Error(`deleteDraft failed: ${error.message}`)
       return (data?.length ?? 0) > 0
     },
+
+    async recordPriorityUsage(rows) {
+      // פונקציית SQL אטומית (supabase-schema.sql) — מוסיפה למונים הקיימים במקום לדרוס
+      const { error } = await client.rpc('bump_priority_usage', {
+        p_rows: rows.map((r) => ({
+          day: r.day,
+          emp_id: r.empId,
+          entity: r.entity,
+          method: r.method,
+          calls: r.calls,
+          errors: r.errors,
+        })),
+      })
+      if (error) throw new Error(`recordPriorityUsage failed: ${error.message}`)
+    },
+
+    async listPriorityUsage(sinceDay) {
+      const { data, error } = await client
+        .from('priority_usage')
+        .select('day, emp_id, entity, method, calls, errors')
+        .gte('day', sinceDay)
+        .order('day', { ascending: false })
+        .limit(5000)
+      if (error) throw new Error(`listPriorityUsage failed: ${error.message}`)
+      return (data ?? []).map((r) => ({
+        day: String(r.day),
+        empId: String(r.emp_id),
+        entity: String(r.entity),
+        method: String(r.method),
+        calls: Number(r.calls),
+        errors: Number(r.errors),
+      }))
+    },
   }
 }

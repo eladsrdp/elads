@@ -1,6 +1,7 @@
 // מסך כניסה — טלפון → QR (פעם ראשונה) / קוד (כניסות חוזרות).
 import { useState } from 'react'
 import { Field, PrimaryButton, TextInput } from '../components/forms'
+import { BrandMark } from '../components/RdpLogo'
 import { ApiError, api } from '../lib/api'
 import { useAuth } from '../state/useAuth'
 import type { Me } from '../types'
@@ -53,10 +54,10 @@ export function Login() {
 
   return (
     <div className="mx-auto flex h-full max-w-md flex-col justify-center px-6">
-      <div className="mb-8 text-center">
-        <p className="text-5xl">⏱️</p>
-        <h1 className="mt-3 text-2xl font-bold text-slate-100">Priority Lite</h1>
-        <p className="mt-1 text-sm text-slate-500">דיווחי שעות ופרויקטים — בקלות</p>
+      <div className="mb-8 flex flex-col items-center text-center">
+        <BrandMark size={72} />
+        <h1 className="mt-4 text-3xl text-slate-100">Priority Lite</h1>
+        <p className="mt-1 text-sm text-slate-400">דיווחי שעות ופרויקטים — בקלות</p>
       </div>
 
       {step === 'phone' && (

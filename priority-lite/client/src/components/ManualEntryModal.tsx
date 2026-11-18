@@ -249,7 +249,7 @@ export function ManualEntryModal({ open, onClose, editing, initialValues }: Prop
               <select
                 value={dcode}
                 onChange={(e) => setDcode(e.target.value)}
-                className="w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-slate-100 outline-none focus:border-emerald-500"
+                className="w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-slate-100 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/25"
               >
                 <option value="">בחר אתר…</option>
                 {sites.map((s) => (
@@ -273,7 +273,7 @@ export function ManualEntryModal({ open, onClose, editing, initialValues }: Prop
                   <select
                     value={custnoteId ?? ''}
                     onChange={(e) => setCustnoteId(e.target.value ? Number(e.target.value) : null)}
-                    className="flex-1 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-slate-100 outline-none focus:border-emerald-500"
+                    className="flex-1 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-slate-100 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/25"
                   >
                     <option value="">ללא משימה</option>
                     {visibleNotes.map((n) => (

@@ -158,7 +158,7 @@ export function AiEntryModal({ open, onClose, onConfirm }: Props) {
               onChange={(e) => setText(e.target.value)}
               placeholder="שעתיים על פרויקט א' ושעה על פרויקט ב'…"
               rows={4}
-              className="w-full resize-none rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-slate-100 outline-none focus:border-emerald-500"
+              className="w-full resize-none rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-slate-100 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/25"
             />
             <button
               type="button"

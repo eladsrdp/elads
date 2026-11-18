@@ -1,4 +1,6 @@
 // ממשק אחיד לשכבת ה-DB — מימושים: Supabase (ענן) ו-Local (in-memory לפיתוח).
+import type { PriorityUsageRow } from '@priority-lite/shared'
+
 export interface OtpRow {
   phone: string
   code_hash: string
@@ -75,4 +77,9 @@ export interface AppDB {
   createDraft(phone: string, taskId: number | null, text: string): Promise<DraftRow>
   updateDraft(phone: string, id: number, text: string): Promise<DraftRow | undefined>
   deleteDraft(phone: string, id: number): Promise<boolean>
+
+  /** ספירת קריאות API לפריוריטי — מצטבר: מוסיף למונים הקיימים של אותו יום/עובד/ישות/שיטה. */
+  recordPriorityUsage(rows: PriorityUsageRow[]): Promise<void>
+  /** שורות שימוש מהיום הנתון (YYYY-MM-DD) ואילך. */
+  listPriorityUsage(sinceDay: string): Promise<PriorityUsageRow[]>
 }

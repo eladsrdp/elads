@@ -43,7 +43,7 @@ export function AssigneePicker({ open, onClose, onSelect }: Props) {
           </button>
         ))}
         {!loading && employees.length === 0 && (
-          <p className="py-4 text-center text-slate-600">אין עובדים ברשימה</p>
+          <p className="py-4 text-center text-slate-500">אין עובדים ברשימה</p>
         )}
       </div>
     </Modal>

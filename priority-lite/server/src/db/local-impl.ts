@@ -1,6 +1,7 @@
 // מימוש Local של AppDB — in-memory לפיתוח מקומי.
 // קורא עובדים מ-whitelist.json בהפעלה. OTP נשמר בזיכרון (נמחק ב-restart).
 import { existsSync, readFileSync } from 'node:fs'
+import type { PriorityUsageRow } from '@priority-lite/shared'
 import type { AppDB, ChecklistItemRow, DraftRow, EmployeeRow, OtpRow } from './interface'
 
 export function createLocalDb(whitelistPath = './whitelist.json'): AppDB {
@@ -8,6 +9,7 @@ export function createLocalDb(whitelistPath = './whitelist.json'): AppDB {
   const otps = new Map<string, OtpRow>()
   const checklistItems = new Map<number, ChecklistItemRow>()
   const drafts = new Map<number, DraftRow>()
+  const usage = new Map<string, PriorityUsageRow>()
   let checklistCounter = 0
   let draftCounter = 0
 
@@ -172,6 +174,23 @@ export function createLocalDb(whitelistPath = './whitelist.json'): AppDB {
       if (!row || row.phone !== phone) return false
       drafts.delete(id)
       return true
+    },
+
+    async recordPriorityUsage(rows) {
+      for (const r of rows) {
+        const key = `${r.day}|${r.empId}|${r.entity}|${r.method}`
+        const existing = usage.get(key)
+        if (existing) {
+          existing.calls += r.calls
+          existing.errors += r.errors
+        } else {
+          usage.set(key, { ...r })
+        }
+      }
+    },
+
+    async listPriorityUsage(sinceDay) {
+      return [...usage.values()].filter((r) => r.day >= sinceDay).map((r) => ({ ...r }))
     },
   }
 }

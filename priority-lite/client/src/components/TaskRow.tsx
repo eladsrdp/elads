@@ -29,7 +29,7 @@ export function TaskRow({ note: n, onOpen, handlerLabel }: Props) {
         {n.custDes}
         {n.statDes ? ` · ${n.statDes}` : ''}
       </span>
-      {meta.length > 0 && <span className="block text-xs text-slate-600">{meta.join(' · ')}</span>}
+      {meta.length > 0 && <span className="block text-xs text-slate-500">{meta.join(' · ')}</span>}
     </button>
   )
 }
