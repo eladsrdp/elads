@@ -5,8 +5,16 @@ import type { AppDB } from '../repository/interface'
 import type { MakeClient } from '../make/client'
 import { calculateWeekNumber, getCandidateLocalDates, getDateStringInZone, hasReachedLocalTime } from '../domain/scheduling'
 
-// שעת שליחת הודעת הבוקר, בזמן המקומי של כל נרשמת.
+// שעת שליחת הודעת הבוקר, בזמן המקומי של כל נרשמת. בשבת ("מוצ״ש" בתוכן) הטריגר נשלח רק במוצאי
+// שבת — במקום job נפרד ב-cron-job.org ביום שבת (שהיה מבוסס על שעון ישראל ולא מתאים לאזורי זמן אחרים).
 const MORNING_SEND_TIME = '06:45'
+const SATURDAY_SEND_TIME = '21:00'
+const SATURDAY_INDEX = 6
+
+function sendTimeFor(calendarDate: string): string {
+  const weekday = new Date(`${calendarDate}T00:00:00Z`).getUTCDay()
+  return weekday === SATURDAY_INDEX ? SATURDAY_SEND_TIME : MORNING_SEND_TIME
+}
 
 export interface SendTriggersResult {
   sent: number
@@ -30,7 +38,7 @@ export async function sendMorningTriggers(
     const owner = await db.getParticipant(trigger.participant_id)
     if (!owner) continue
     if (getDateStringInZone(now, owner.timezone) !== trigger.calendar_date) continue
-    if (!hasReachedLocalTime(now, MORNING_SEND_TIME, owner.timezone)) continue
+    if (!hasReachedLocalTime(now, sendTimeFor(trigger.calendar_date), owner.timezone)) continue
     triggers.push(trigger)
   }
   let sent = 0

@@ -47,7 +47,7 @@ describe('sendMorningTriggers', () => {
     })
     const makeClient = createFakeMakeClient()
 
-    await sendMorningTriggers(db, makeClient, new Date('2023-01-07T10:00:00Z'))
+    await sendMorningTriggers(db, makeClient, new Date('2023-01-07T19:30:00Z'))
 
     expect(makeClient.morningTriggersSent).toEqual([
       { phone: '+972501234567', fullName: 'ישראל', dayOfWeekName: 'מוצ"ש', weekNumber: 1, buttonPayload: trigger.id },
@@ -189,5 +189,36 @@ describe('sendMorningTriggers — שליחה ב-06:45 מקומי לכל נרשמ
     const again = await sendMorningTriggers(db, makeClient, new Date('2023-01-08T12:15:00Z'))
     expect(again.sent).toBe(0)
     expect(makeClient.morningTriggersSent).toHaveLength(1)
+  })
+})
+
+describe('sendMorningTriggers — שבת נשלחת במוצאי שבת (21:00 מקומי)', () => {
+  async function setupSaturday(timezone?: string) {
+    const db = createLocalDb()
+    const participant = await db.createParticipant({
+      fullName: 'שרה',
+      phone: '+13475550100',
+      signupSourceRef: null,
+      signupAt: '2023-01-02T10:00:00.000Z',
+      day1Date: '2023-01-01',
+      timezone,
+    })
+    await db.createDailyTrigger({ participantId: participant.id, calendarDate: '2023-01-07', contentDayNumber: 7 }) // שבת
+    return { db, makeClient: createFakeMakeClient() }
+  }
+
+  it('ישראל: בשבת בבוקר (06:45) לא נשלח; ב-21:00 נשלח', async () => {
+    const { db, makeClient } = await setupSaturday()
+    expect((await sendMorningTriggers(db, makeClient, new Date('2023-01-07T04:45:00Z'))).sent).toBe(0)
+    expect((await sendMorningTriggers(db, makeClient, new Date('2023-01-07T18:59:00Z'))).sent).toBe(0) // 20:59
+    expect((await sendMorningTriggers(db, makeClient, new Date('2023-01-07T19:00:00Z'))).sent).toBe(1) // 21:00
+  })
+
+  it('ניו יורק: שבת נשלחת ב-21:00 *מקומי* (02:00Z ביום ראשון) ולא לפי שעון ישראל', async () => {
+    const { db, makeClient } = await setupSaturday('America/New_York')
+    // 2023-01-07T19:00Z = 14:00 בניו יורק — עדיין לא.
+    expect((await sendMorningTriggers(db, makeClient, new Date('2023-01-07T19:00:00Z'))).sent).toBe(0)
+    // 2023-01-08T02:00Z = 21:00 בשבת בניו יורק.
+    expect((await sendMorningTriggers(db, makeClient, new Date('2023-01-08T02:00:00Z'))).sent).toBe(1)
   })
 })
