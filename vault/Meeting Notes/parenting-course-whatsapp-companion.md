@@ -346,3 +346,9 @@
 ### 2026-10-13 — מיגרציה 0009 הורצה [shipped]
 - **What was done:** המשתמש דיווח שהריץ את `0009_deliveries_cascade_on_message_delete.sql` ב-Supabase. לא אומת בפועל שמחיקת הודעה עם deliveries עובדת (אין לי גישת DB/דפדפן מחובר) — ממתין לדיווח שלו מ-`/content`.
 - **Related:** [[project-overview]]
+
+### 2026-11-18 — אזור זמן פר-משתתפת (משפחה בארה"ב) + שליחת מוצ"ש מקומית; תכנית גרסאות תוכן והעברה ללקוחה [shipped]
+- **What was done:** מיגרציה `0010_participant_timezone.sql` (`participants.timezone`, ברירת מחדל `Asia/Jerusalem`). `calendar_date`/`day1_date` הם תאריכים מקומיים; `generate-daily`, `send-triggers` (06:45 מקומי; שבת — 21:00 מקומי, במקום job נפרד), `delivery-sync` (`scheduled_for`), `goal-answer` (14:00) ו-`drip` (חלון triggers ±1 יום) לפי האזור. UI: בחירת אזור בהוספה/עריכה, שדה בייצוא. 157 טסטים, typecheck+build נקיים. ב-cron-job.org: `send-triggers` ו-`generate-daily` שונו ל-`*/15`; job "טריגר מוצש" (שבת 21:01) כובה (הקוד מטפל בזה). תכנית ל-3 שלבים נשמרה ב-`~/.claude/plans/serene-juggling-acorn.md` (גרסאות תוכן: `content_version_id` על `messages`/`participants`, בלי לגעת ב-PK של `content_days`; העברת נכסים ללקוחה).
+- **Decisions:** גרסאות תוכן ברמת `messages` (לא `content_days`) כדי לא לשנות PK/FK על מערכת חיה. ריפו ללקוחה — snapshot נקי בלי היסטוריה (סודות/לקוחות אחרים ב-history). Vercel Hobby לא מתאים לשימוש מסחרי.
+- **Notes / Caveats:** **טעות תהליך:** פרסתי לפרודקשן לפני שהמיגרציה 0010 הורצה (הבנתי "יאללה" כאישור שהורצה) — הדשבורד נפל דקות עם `42703 column participants.timezone does not exist`; תוקן אחרי שהמשתמש הריץ את ה-SQL; הדשבורד אומת (עמודת אזור זמן מוצגת). לקח: לאמת מיגרציה לפני פריסה. ה-GitHub Action `deploy-hachamama.yml` נכשל מאז אוקטובר (`VERCEL_TOKEN` לא תקף) — הפריסה ידנית (`vercel deploy --prod` מ-root של המונוריפו, לא מתוך mentor-dashboard). עדיין לא נבדק שליחה לטסט באזור אמריקאי; `vercel.json` עדיין עם cron יומי של generate-daily (לא מזיק).
+- **Related:** [[project-overview]]
