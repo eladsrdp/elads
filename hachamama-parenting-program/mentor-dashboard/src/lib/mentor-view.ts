@@ -12,6 +12,7 @@ export interface ParticipantListItem {
   phone: string
   status: string
   timezone: string
+  contentVersionId: string
   programDay: number
   clickedToday: boolean
   missedStreak: number | null
@@ -73,6 +74,7 @@ export async function buildParticipantList(
       phone: p.phone,
       status: p.status,
       timezone: p.timezone,
+      contentVersionId: p.content_version_id,
       programDay: calculateProgramDayNumber(p.day1_date, todayDate),
       clickedToday,
       missedStreak: calculateMissedStreak(triggerHistory, todayDate, p.status),

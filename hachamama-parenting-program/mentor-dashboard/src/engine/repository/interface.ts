@@ -14,6 +14,8 @@ export interface ParticipantRow {
   assigned_mentor_id: string | null
   /** אזור-זמן IANA של הנרשמת (למשל America/New_York). calendar_date ו-day1_date הם תאריכים מקומיים באזור הזה. */
   timezone: string
+  /** גרסת התוכן שהמשתתפת מקבלת (content_versions). הודעות נשלפות רק מהגרסה הזו. */
+  content_version_id: string
 }
 
 export interface ContentDayRow {
@@ -31,6 +33,7 @@ export interface MessageRow {
   body_text: string
   media_url: string | null
   media_type: MediaType | null
+  content_version_id: string
 }
 
 export interface DailyTriggerRow {
@@ -87,6 +90,7 @@ export interface AppDB {
     signupAt: string
     day1Date: string
     timezone?: string
+    contentVersionId?: string
   }): Promise<ParticipantRow>
   getParticipant(id: string): Promise<ParticipantRow | undefined>
   findParticipantByPhone(phone: string): Promise<ParticipantRow | undefined>
@@ -118,9 +122,11 @@ export interface AppDB {
     bodyText: string
     mediaUrl: string | null
     mediaType: MediaType | null
+    contentVersionId?: string
   }): Promise<MessageRow>
   getMessage(id: string): Promise<MessageRow | undefined>
-  getMessagesForContentDay(dayNumber: number): Promise<MessageRow[]>
+  /** בלי contentVersionId — כל הגרסאות (תאימות לאחור); delivery-sync תמיד מעביר את הגרסה של המשתתפת. */
+  getMessagesForContentDay(dayNumber: number, contentVersionId?: string): Promise<MessageRow[]>
 
   // daily triggers
   createDailyTrigger(input: {

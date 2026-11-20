@@ -10,6 +10,12 @@ export interface ContentDayRecord {
   title: string | null
 }
 
+export interface ContentVersionRecord {
+  id: string
+  name: string
+  is_default: boolean
+}
+
 export interface MessageRecord {
   id: string
   content_day_number: number
@@ -22,11 +28,20 @@ export interface MessageRecord {
 
 export interface ContentDataSource {
   listAllContentDays(): Promise<ContentDayRecord[]>
-  listAllMessages(): Promise<MessageRecord[]>
+  listVersions(): Promise<ContentVersionRecord[]>
+  /** משכפל את כל ההודעות של גרסת מקור לגרסה חדשה (פעולה אחת בצד ה-DB). מחזיר את ה-id של הגרסה החדשה. */
+  cloneVersion(sourceVersionId: string, newName: string): Promise<string>
+  setDefaultVersion(versionId: string): Promise<void>
+  listMessagesForVersion(versionId: string): Promise<MessageRecord[]>
   ensureContentDay(dayNumber: number): Promise<void>
   createContentDay(dayNumber: number, title: string | null): Promise<ContentDayRecord>
   createContentDays(dayNumbers: number[]): Promise<ContentDayRecord[]>
-  createMessage(input: { contentDayNumber: number; sendOffsetTime: string; orderInDay: number }): Promise<MessageRecord>
+  createMessage(input: {
+    contentDayNumber: number
+    sendOffsetTime: string
+    orderInDay: number
+    contentVersionId: string
+  }): Promise<MessageRecord>
   updateMessageBody(id: string, bodyText: string): Promise<void>
   updateMessageTime(id: string, sendOffsetTime: string): Promise<void>
   updateMessageOrder(id: string, orderInDay: number): Promise<void>
@@ -44,10 +59,31 @@ export function createSupabaseContentDataSource(supabase: SupabaseClient): Conte
       return data as ContentDayRecord[]
     },
 
-    async listAllMessages() {
+    async listVersions() {
+      const { data, error } = await supabase
+        .from('content_versions')
+        .select('id, name, is_default')
+        .order('created_at', { ascending: true })
+      if (error) throw error
+      return data as ContentVersionRecord[]
+    },
+
+    async cloneVersion(sourceVersionId, newName) {
+      const { data, error } = await supabase.rpc('clone_content_version', { source_id: sourceVersionId, new_name: newName })
+      if (error) throw error
+      return data as string
+    },
+
+    async setDefaultVersion(versionId) {
+      const { error } = await supabase.rpc('set_default_content_version', { version_id: versionId })
+      if (error) throw error
+    },
+
+    async listMessagesForVersion(versionId) {
       const { data, error } = await supabase
         .from('messages')
         .select('id, content_day_number, send_offset_time, order_in_day, body_text, media_url, media_type')
+        .eq('content_version_id', versionId)
         .order('content_day_number', { ascending: true })
         .order('order_in_day', { ascending: true })
       if (error) throw error
@@ -93,6 +129,7 @@ export function createSupabaseContentDataSource(supabase: SupabaseClient): Conte
           body_text: '',
           media_url: null,
           media_type: null,
+          content_version_id: input.contentVersionId,
         })
         .select('id, content_day_number, send_offset_time, order_in_day, body_text, media_url, media_type')
         .single()

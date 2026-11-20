@@ -13,6 +13,7 @@ function participant(overrides: Partial<ParticipantRow> = {}): ParticipantRow {
     status: 'active',
     assigned_mentor_id: null,
     timezone: 'Asia/Jerusalem',
+    content_version_id: 'v1',
     ...overrides,
   }
 }

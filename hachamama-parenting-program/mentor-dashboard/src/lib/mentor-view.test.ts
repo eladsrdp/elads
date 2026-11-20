@@ -34,6 +34,7 @@ describe('buildParticipantList', () => {
           day1_date: '2026-08-02',
           assigned_mentor_id: null,
           timezone: 'Asia/Jerusalem',
+          content_version_id: 'v1',
         },
         {
           id: 'p2',
@@ -43,6 +44,7 @@ describe('buildParticipantList', () => {
           day1_date: '2026-08-02',
           assigned_mentor_id: null,
           timezone: 'Asia/Jerusalem',
+          content_version_id: 'v1',
         },
       ],
       getTriggersSince: async () => [{ participant_id: 'p1', calendar_date: '2026-08-16', clicked_at: '2026-08-16T06:00:00Z' }],
@@ -64,6 +66,7 @@ describe('buildParticipantList', () => {
         deliveriesTotal: 0,
         assignedMentorId: null,
         timezone: 'Asia/Jerusalem',
+        contentVersionId: 'v1',
         assignedMentorName: null,
       },
       {
@@ -79,6 +82,7 @@ describe('buildParticipantList', () => {
         deliveriesTotal: 0,
         assignedMentorId: null,
         timezone: 'Asia/Jerusalem',
+        contentVersionId: 'v1',
         assignedMentorName: null,
       },
     ])
@@ -95,6 +99,7 @@ describe('buildParticipantList', () => {
           day1_date: '2026-08-02',
           assigned_mentor_id: null,
           timezone: 'Asia/Jerusalem',
+          content_version_id: 'v1',
         },
       ],
       getTriggersSince: async () => [],
@@ -116,6 +121,7 @@ describe('buildParticipantList', () => {
           day1_date: '2026-08-02',
           assigned_mentor_id: null,
           timezone: 'Asia/Jerusalem',
+          content_version_id: 'v1',
         },
       ],
       getVideoSubmissionCountsByParticipant: async () => [{ participant_id: 'p1' }, { participant_id: 'p1' }],
@@ -144,6 +150,7 @@ describe('buildParticipantList', () => {
           day1_date: '2026-08-02',
           assigned_mentor_id: 'm1',
           timezone: 'Asia/Jerusalem',
+          content_version_id: 'v1',
         },
       ],
       listMentors: async () => [{ user_id: 'm1', full_name: 'רוני מנחה' }],
@@ -165,6 +172,7 @@ describe('sortParticipantsByAttention', () => {
     deliveriesTotal: 0,
     assignedMentorId: null,
     timezone: 'Asia/Jerusalem',
+    contentVersionId: 'v1',
     assignedMentorName: null,
   }
 
@@ -210,6 +218,7 @@ describe('buildParticipantDetail', () => {
         day1_date: '2026-08-02',
         assigned_mentor_id: 'm1',
         timezone: 'Asia/Jerusalem',
+        content_version_id: 'v1',
       }),
       getDeliveriesForParticipant: async () => [
         {
@@ -265,8 +274,8 @@ describe('buildParticipantList — אזורי זמן', () => {
   it('"היום" ויום-התוכנית פר-משתתפת: ב-2026-08-16T23:30Z בישראל כבר 17.8, בניו יורק עדיין 16.8', async () => {
     const dataSource = fakeDataSource({
       listParticipants: async () => [
-        { id: 'il', full_name: 'ישראלית', phone: '+972500000001', status: 'active', day1_date: '2026-08-02', assigned_mentor_id: null, timezone: 'Asia/Jerusalem' },
-        { id: 'ny', full_name: 'אמריקאית', phone: '+13475550100', status: 'active', day1_date: '2026-08-02', assigned_mentor_id: null, timezone: 'America/New_York' },
+        { id: 'il', full_name: 'ישראלית', phone: '+972500000001', status: 'active', day1_date: '2026-08-02', assigned_mentor_id: null, timezone: 'Asia/Jerusalem', content_version_id: 'v1' },
+        { id: 'ny', full_name: 'אמריקאית', phone: '+13475550100', status: 'active', day1_date: '2026-08-02', assigned_mentor_id: null, timezone: 'America/New_York', content_version_id: 'v1' },
       ],
       getTriggersSince: async () => [
         { participant_id: 'il', calendar_date: '2026-08-16', clicked_at: '2026-08-16T05:00:00Z' },

@@ -12,6 +12,9 @@ import type {
   VideoSubmissionRow,
 } from './interface'
 
+// גרסת התוכן הראשונה — מקבילה ל"גרסה 1" שנוצרת במיגרציה 0011.
+export const DEFAULT_CONTENT_VERSION_ID = 'default-content-version'
+
 export function createLocalDb(): AppDB {
   const participants = new Map<string, ParticipantRow>()
   const contentDays = new Map<number, ContentDayRow>()
@@ -36,6 +39,7 @@ export function createLocalDb(): AppDB {
         status: 'active',
         assigned_mentor_id: null,
         timezone: input.timezone ?? 'Asia/Jerusalem',
+        content_version_id: input.contentVersionId ?? DEFAULT_CONTENT_VERSION_ID,
       }
       participants.set(row.id, row)
       return row
@@ -121,6 +125,7 @@ export function createLocalDb(): AppDB {
         body_text: input.bodyText,
         media_url: input.mediaUrl,
         media_type: input.mediaType,
+        content_version_id: input.contentVersionId ?? DEFAULT_CONTENT_VERSION_ID,
       }
       messages.set(row.id, row)
       return row
@@ -130,9 +135,10 @@ export function createLocalDb(): AppDB {
       return messages.get(id)
     },
 
-    async getMessagesForContentDay(dayNumber) {
+    async getMessagesForContentDay(dayNumber, contentVersionId) {
       return [...messages.values()]
         .filter((m) => m.content_day_number === dayNumber)
+        .filter((m) => !contentVersionId || m.content_version_id === contentVersionId)
         .sort((a, b) => a.order_in_day - b.order_in_day)
     },
 

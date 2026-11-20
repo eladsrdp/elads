@@ -198,3 +198,50 @@ describe('syncDeliveriesForTrigger — אזור זמן של הנרשמת', () =>
     expect(await run('2023-01-08T19:30:00.000Z')).toBe(0)
   })
 })
+
+describe('syncDeliveriesForTrigger — גרסאות תוכן', () => {
+  async function setup() {
+    const db = createLocalDb()
+    await db.createContentDay({ dayNumber: 1, title: null })
+    // אותו יום-תוכן, שתי גרסאות עם הודעות שונות
+    await db.createMessage({ contentDayNumber: 1, sendOffsetTime: '07:00', orderInDay: 1, bodyText: 'גרסה 1', mediaUrl: null, mediaType: null })
+    await db.createMessage({
+      contentDayNumber: 1,
+      sendOffsetTime: '07:00',
+      orderInDay: 1,
+      bodyText: 'גרסה 2',
+      mediaUrl: null,
+      mediaType: null,
+      contentVersionId: 'version-2',
+    })
+    const makeParticipant = (phone: string, contentVersionId?: string) =>
+      db.createParticipant({
+        fullName: 'ישראל',
+        phone,
+        signupSourceRef: null,
+        signupAt: '2023-01-05T10:00:00.000Z',
+        day1Date: '2023-01-08',
+        contentVersionId,
+      })
+    return { db, makeParticipant }
+  }
+
+  async function bodiesFor(db: ReturnType<typeof createLocalDb>, participantId: string) {
+    const trigger = await db.createDailyTrigger({ participantId, calendarDate: '2023-01-08', contentDayNumber: 1 })
+    await syncDeliveriesForTrigger(db, trigger)
+    const deliveries = await db.getDeliveriesForTrigger(trigger.id)
+    return Promise.all(deliveries.map(async (d) => (await db.getMessage(d.message_id))?.body_text))
+  }
+
+  it('משתתפת על גרסת ברירת המחדל מקבלת רק הודעות גרסה 1', async () => {
+    const { db, makeParticipant } = await setup()
+    const participant = await makeParticipant('+972501234567')
+    expect(await bodiesFor(db, participant.id)).toEqual(['גרסה 1'])
+  })
+
+  it('משתתפת על גרסה 2 מקבלת רק הודעות גרסה 2 — לאותו יום-תוכן', async () => {
+    const { db, makeParticipant } = await setup()
+    const participant = await makeParticipant('+972501234568', 'version-2')
+    expect(await bodiesFor(db, participant.id)).toEqual(['גרסה 2'])
+  })
+})

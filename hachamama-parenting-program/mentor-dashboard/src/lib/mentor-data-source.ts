@@ -11,6 +11,7 @@ export interface ParticipantRecord {
   day1_date: string
   assigned_mentor_id: string | null
   timezone: string
+  content_version_id: string
 }
 
 export interface MentorRecord {
@@ -74,6 +75,7 @@ export interface MentorDataSource {
       assignedMentorId: string | null
       timezone: string
       day1Date?: string
+      contentVersionId?: string
     },
   ): Promise<void>
   deleteParticipant(id: string): Promise<void>
@@ -95,7 +97,7 @@ export function createSupabaseMentorDataSource(supabase: SupabaseClient): Mentor
     async listParticipants() {
       const { data, error } = await supabase
         .from('participants')
-        .select('id, full_name, phone, status, day1_date, assigned_mentor_id, timezone')
+        .select('id, full_name, phone, status, day1_date, assigned_mentor_id, timezone, content_version_id')
         .order('full_name', { ascending: true })
       if (error) throw error
       return data as ParticipantRecord[]
@@ -125,7 +127,7 @@ export function createSupabaseMentorDataSource(supabase: SupabaseClient): Mentor
     async getParticipant(id) {
       const { data, error } = await supabase
         .from('participants')
-        .select('id, full_name, phone, status, day1_date, assigned_mentor_id, timezone')
+        .select('id, full_name, phone, status, day1_date, assigned_mentor_id, timezone, content_version_id')
         .eq('id', id)
         .maybeSingle()
       if (error) throw error
@@ -178,7 +180,7 @@ export function createSupabaseMentorDataSource(supabase: SupabaseClient): Mentor
           assigned_mentor_id: input.assignedMentorId,
           timezone: input.timezone,
         })
-        .select('id, full_name, phone, status, day1_date, assigned_mentor_id, timezone')
+        .select('id, full_name, phone, status, day1_date, assigned_mentor_id, timezone, content_version_id')
         .single()
       if (error) throw error
       return data as ParticipantRecord
@@ -194,6 +196,7 @@ export function createSupabaseMentorDataSource(supabase: SupabaseClient): Mentor
           assigned_mentor_id: input.assignedMentorId,
           timezone: input.timezone,
           ...(input.day1Date ? { day1_date: input.day1Date } : {}),
+          ...(input.contentVersionId ? { content_version_id: input.contentVersionId } : {}),
         })
         .eq('id', id)
       if (error) throw error

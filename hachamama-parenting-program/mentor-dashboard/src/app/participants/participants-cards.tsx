@@ -49,6 +49,7 @@ export function ParticipantsCards({
         phone: created.phone,
         status: created.status,
         timezone: created.timezone,
+        contentVersionId: created.content_version_id,
         programDay: 1,
         clickedToday: false,
         missedStreak: 0,

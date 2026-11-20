@@ -46,7 +46,7 @@ function ResizeHandle({ onMouseDown }: { onMouseDown: (e: React.MouseEvent) => v
   )
 }
 
-export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
+export function ContentGrid({ initialGroups, versionId }: { initialGroups: DayGroup[]; versionId: string }) {
   const [groups, setGroups] = useState(initialGroups)
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
   const [editingTimeMessageId, setEditingTimeMessageId] = useState<string | null>(null)
@@ -220,7 +220,12 @@ export function ContentGrid({ initialGroups }: { initialGroups: DayGroup[] }) {
     await dataSource.ensureContentDay(dayNumber)
     const existing = groups.find((g) => g.dayNumber === dayNumber)?.messages ?? []
     const insertIndex = afterMessageId ? existing.findIndex((m) => m.id === afterMessageId) + 1 : existing.length
-    const created = await dataSource.createMessage({ contentDayNumber: dayNumber, sendOffsetTime: '06:45', orderInDay: insertIndex })
+    const created = await dataSource.createMessage({
+      contentDayNumber: dayNumber,
+      sendOffsetTime: '06:45',
+      orderInDay: insertIndex,
+      contentVersionId: versionId,
+    })
     const combined = [...existing.slice(0, insertIndex), created, ...existing.slice(insertIndex)]
     const reindexed = combined.map((m, i) => ({ ...m, order_in_day: i }))
     await Promise.all(

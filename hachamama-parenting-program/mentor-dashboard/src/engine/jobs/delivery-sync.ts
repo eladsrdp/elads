@@ -16,14 +16,15 @@ export function isSkippedForLateClick(sendOffsetTime: string, scheduledFor: stri
 }
 
 export async function syncDeliveriesForTrigger(db: AppDB, trigger: DailyTriggerRow): Promise<number> {
+  // שעות השליחה מוגדרות בזמן המקומי של הנרשמת (אזור-זמן), והתוכן נשלף מגרסת התוכן *שלה*
+  // (content_version_id) — משפחות על גרסאות שונות מקבלות הודעות שונות לאותו יום-תוכן.
+  const participant = await db.getParticipant(trigger.participant_id)
+  const zone = participant?.timezone ?? 'Asia/Jerusalem'
   const [messages, existingDeliveries] = await Promise.all([
-    db.getMessagesForContentDay(trigger.content_day_number),
+    db.getMessagesForContentDay(trigger.content_day_number, participant?.content_version_id),
     db.getDeliveriesForTrigger(trigger.id),
   ])
   const existingMessageIds = new Set(existingDeliveries.map((d) => d.message_id))
-  // שעות השליחה מוגדרות בזמן המקומי של הנרשמת — צריך את אזור-הזמן שלה כדי לחשב scheduled_for.
-  const participant = await db.getParticipant(trigger.participant_id)
-  const zone = participant?.timezone ?? 'Asia/Jerusalem'
 
   let created = 0
   for (const message of messages) {

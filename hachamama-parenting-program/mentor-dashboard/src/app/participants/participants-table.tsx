@@ -5,6 +5,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import { createSupabaseMentorDataSource, type MentorRecord } from '@/lib/mentor-data-source'
+import type { ContentVersionRecord } from '@/lib/content-data-source'
 import { calculateDay1Date, calculateWeekdayName, day1DateForProgramDay, localWeekdayName } from '@/lib/program-day'
 import { canDeleteParticipant, type ParticipantListItem } from '@/lib/mentor-view'
 import { DEFAULT_TIMEZONE, timezoneLabel, timezoneOptionsFor } from '@/lib/timezones'
@@ -20,10 +21,13 @@ const textInputStyle = {
 export function ParticipantsTable({
   initialParticipants,
   mentors,
+  versions,
 }: {
   initialParticipants: ParticipantListItem[]
   mentors: MentorRecord[]
+  versions: ContentVersionRecord[]
 }) {
+  const versionName = (id: string) => versions.find((v) => v.id === id)?.name ?? '—'
   const [participants, setParticipants] = useState(initialParticipants)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [newName, setNewName] = useState('')
@@ -57,6 +61,7 @@ export function ParticipantsTable({
           phone: created.phone,
           status: created.status,
           timezone: created.timezone,
+          contentVersionId: created.content_version_id,
           programDay: 1,
           clickedToday: false,
           missedStreak: 0,
@@ -88,6 +93,7 @@ export function ParticipantsTable({
       assignedMentorId: string | null
       timezone: string
       programDay: number
+      contentVersionId: string
     },
   ) {
     setErrorMessage(null)
@@ -123,6 +129,7 @@ export function ParticipantsTable({
                 phone: fields.phone,
                 status: fields.status,
                 timezone: fields.timezone,
+                contentVersionId: fields.contentVersionId,
                 programDay: fields.programDay,
                 assignedMentorId: fields.assignedMentorId,
                 assignedMentorName: mentors.find((m) => m.user_id === fields.assignedMentorId)?.full_name ?? null,
@@ -192,6 +199,7 @@ export function ParticipantsTable({
             <th style={{ textAlign: 'right', color: BRAND.greenDark, padding: '8px 6px' }}>שם</th>
             <th style={{ textAlign: 'right', color: BRAND.greenDark, padding: '8px 6px' }}>טלפון</th>
             <th style={{ textAlign: 'right', color: BRAND.greenDark, padding: '8px 6px' }}>אזור זמן</th>
+            <th style={{ textAlign: 'right', color: BRAND.greenDark, padding: '8px 6px' }}>גרסת תוכן</th>
             <th style={{ textAlign: 'right', color: BRAND.greenDark, padding: '8px 6px' }}>יום בתוכנית</th>
             <th style={{ textAlign: 'right', color: BRAND.greenDark, padding: '8px 6px' }}>לחץ היום?</th>
             <th style={{ textAlign: 'right', color: BRAND.greenDark, padding: '8px 6px' }}>סטטוס</th>
@@ -202,7 +210,7 @@ export function ParticipantsTable({
         <tbody>
           {participants.map((p) =>
             editingId === p.id ? (
-              <EditRow key={p.id} participant={p} mentors={mentors} onSave={handleFieldSave} onCancel={() => setEditingId(null)} />
+              <EditRow key={p.id} participant={p} mentors={mentors} versions={versions} onSave={handleFieldSave} onCancel={() => setEditingId(null)} />
             ) : (
               <tr key={p.id} style={{ borderTop: `1px solid ${BRAND.border}` }}>
                 <td style={{ padding: '6px' }}>
@@ -212,6 +220,7 @@ export function ParticipantsTable({
                 </td>
                 <td style={{ padding: '6px' }}>{p.phone}</td>
                 <td style={{ padding: '6px' }}>{timezoneLabel(p.timezone)}</td>
+                <td style={{ padding: '6px' }}>{versionName(p.contentVersionId)}</td>
                 <td style={{ padding: '6px' }}>{p.programDay}</td>
                 <td style={{ padding: '6px' }}>{p.clickedToday ? '✅' : '❌'}</td>
                 <td style={{ padding: '6px' }}>{p.status}</td>
@@ -236,11 +245,13 @@ export function ParticipantsTable({
 function EditRow({
   participant,
   mentors,
+  versions,
   onSave,
   onCancel,
 }: {
   participant: ParticipantListItem
   mentors: MentorRecord[]
+  versions: ContentVersionRecord[]
   onSave: (
     id: string,
     fields: {
@@ -250,6 +261,7 @@ function EditRow({
       assignedMentorId: string | null
       timezone: string
       programDay: number
+      contentVersionId: string
     },
   ) => void
   onCancel: () => void
@@ -258,6 +270,7 @@ function EditRow({
   const [phone, setPhone] = useState(participant.phone)
   const [status, setStatus] = useState(participant.status)
   const [timezone, setTimezone] = useState(participant.timezone)
+  const [contentVersionId, setContentVersionId] = useState(participant.contentVersionId)
   const [programDayText, setProgramDayText] = useState(String(participant.programDay))
   const programDay = Number(programDayText)
   const programDayValid = Number.isInteger(programDay) && programDay >= 1
@@ -276,6 +289,20 @@ function EditRow({
           {timezoneOptionsFor(timezone).map((o) => (
             <option key={o.value} value={o.value}>
               {o.label}
+            </option>
+          ))}
+        </select>
+      </td>
+      <td style={{ padding: '6px' }}>
+        <select
+          style={textInputStyle}
+          value={contentVersionId}
+          onChange={(e) => setContentVersionId(e.target.value)}
+          aria-label="גרסת תוכן"
+        >
+          {versions.map((v) => (
+            <option key={v.id} value={v.id}>
+              {v.name}
             </option>
           ))}
         </select>
@@ -313,7 +340,15 @@ function EditRow({
           style={{ ...buttonPrimaryStyle, marginLeft: 4 }}
           disabled={!programDayValid}
           onClick={() =>
-            onSave(participant.id, { fullName, phone, status, timezone, programDay, assignedMentorId: assignedMentorId || null })
+            onSave(participant.id, {
+              fullName,
+              phone,
+              status,
+              timezone,
+              programDay,
+              contentVersionId,
+              assignedMentorId: assignedMentorId || null,
+            })
           }
         >
           שמור

@@ -56,6 +56,8 @@ export function createSupabaseDb(url: string, key: string): AppDB {
         signup_at: input.signupAt,
         day1_date: input.day1Date,
         ...(input.timezone ? { timezone: input.timezone } : {}),
+        // בלי גרסה מפורשת — ברירת המחדל של ה-DB (default_content_version_id()) קובעת.
+        ...(input.contentVersionId ? { content_version_id: input.contentVersionId } : {}),
       })
     },
 
@@ -144,6 +146,7 @@ export function createSupabaseDb(url: string, key: string): AppDB {
         body_text: input.bodyText,
         media_url: input.mediaUrl,
         media_type: input.mediaType,
+        ...(input.contentVersionId ? { content_version_id: input.contentVersionId } : {}),
       })
     },
 
@@ -151,12 +154,10 @@ export function createSupabaseDb(url: string, key: string): AppDB {
       return maybeSingleOrThrow('messages', supabase.from('messages').select().eq('id', id).maybeSingle())
     },
 
-    async getMessagesForContentDay(dayNumber) {
-      const { data, error } = await supabase
-        .from('messages')
-        .select()
-        .eq('content_day_number', dayNumber)
-        .order('order_in_day', { ascending: true })
+    async getMessagesForContentDay(dayNumber, contentVersionId) {
+      let query = supabase.from('messages').select().eq('content_day_number', dayNumber)
+      if (contentVersionId) query = query.eq('content_version_id', contentVersionId)
+      const { data, error } = await query.order('order_in_day', { ascending: true })
       if (error) throw new Error(`[supabase] messages: ${error.message}`)
       return data ?? []
     },
