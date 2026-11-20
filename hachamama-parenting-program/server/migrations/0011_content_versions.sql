@@ -55,7 +55,8 @@ create index if not exists messages_version_day_idx on messages (content_version
 
 -- שכפול גרסה: מעתיק את כל ההודעות של גרסת מקור לגרסה חדשה, בפעולה אחת (טרנזקציה אחת).
 -- security invoker (ברירת מחדל) — פועל עם הרשאות המנחה, כלומר RLS של מנחות חל גם כאן.
--- קישורי מדיה (media_url) משותפים בין הגרסאות — לא מועתקים קבצים ב-Storage.
+-- הפונקציה מעתיקה רק שורות (media_url זהה בהתחלה). העתקת קבצי המדיה עצמם ב-Storage נעשית אחריה
+-- בדשבורד (src/lib/content-clone.ts), כך שלכל גרסה יש קבצים משלה.
 create or replace function clone_content_version(source_id uuid, new_name text) returns uuid
 language plpgsql as $$
 declare

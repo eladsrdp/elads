@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import { createSupabaseContentDataSource, type ContentVersionRecord } from '@/lib/content-data-source'
+import { copyVersionMedia } from '@/lib/content-clone'
 import { BRAND, buttonPrimaryStyle, buttonSecondaryStyle } from '@/lib/brand'
 
 const selectStyle = {
@@ -23,6 +24,7 @@ export function VersionBar({ versions, selectedId }: { versions: ContentVersionR
   const [error, setError] = useState<string | null>(null)
   const [cloneName, setCloneName] = useState('')
   const [cloning, setCloning] = useState(false)
+  const [progress, setProgress] = useState<string | null>(null)
   const dataSource = createSupabaseContentDataSource(createSupabaseBrowserClient())
   const selected = versions.find((v) => v.id === selectedId)
 
@@ -33,14 +35,28 @@ export function VersionBar({ versions, selectedId }: { versions: ContentVersionR
     setError(null)
     try {
       const newId = await dataSource.cloneVersion(selectedId, name)
+      // מעתיקים גם את קבצי המדיה עצמם — לכל גרסה עותק משלה, כדי שמחיקת/החלפת קובץ בגרסה אחת לא תשבור אחרת.
+      setProgress('מעתיק קבצי מדיה...')
+      const result = await copyVersionMedia(
+        dataSource,
+        newId,
+        (url) => fetch(url),
+        (done, total) => setProgress(total > 0 ? `מעתיק קבצי מדיה: ${done}/${total}` : null),
+      )
       setCloneName('')
       setCloning(false)
+      if (result.failed > 0) {
+        setMessage(
+          `הגרסה שוכפלה, אבל ${result.failed} קבצי מדיה לא הועתקו (ההודעות שלהם עדיין מצביעות על הקובץ המקורי).`,
+        )
+      }
       router.push(`/content?version=${newId}`)
       router.refresh()
     } catch (e) {
       setError(`שכפול הגרסה נכשל: ${e instanceof Error ? e.message : String(e)}`)
     } finally {
       setBusy(false)
+      setProgress(null)
     }
   }
 
@@ -106,6 +122,7 @@ export function VersionBar({ versions, selectedId }: { versions: ContentVersionR
         </button>
       )}
 
+      {progress && <span style={{ color: BRAND.greenMuted }}>{progress}</span>}
       {message && <span style={{ color: BRAND.greenDark, fontWeight: 600 }}>{message}</span>}
       {error && <span style={{ color: BRAND.copper }}>{error}</span>}
     </div>
