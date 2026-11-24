@@ -364,3 +364,9 @@
 - **Decisions:** הריפו הנקי הופך למקור האמת אחרי ההעברה (העותק במונוריפו יתיישן). הפריסה דרך אינטגרציית Git של Vercel (ה-GitHub Action הישן שבור). אם Vercel Pro — אפשר להעביר את שלושת ה-jobs ל-`vercel.json` crons ולוותר על cron-job.org (בלי חשבון משותף).
 - **Notes / Caveats:** **ממצא אבטחה:** `src/app/mentors/actions.ts:24` יוצר מנחה חדשה עם סיסמה = מספר הטלפון שלה (ומי שמכיר את הטלפון יכול להתחבר). לא תוקן עדיין — הוצע למשתמש להחליף בסיסמה אקראית/קישור איפוס. הבנייה דורשת את שלושת ה-`*_SECRET` מוגדרים (שמירה מפני ברירות מחדל בפרודקשן). לא נוצר repo ב-GitHub; ממתין לחשבון של הלקוחה.
 - **Related:** [[project-overview]]
+
+### 2026-11-24 — בדיקת היתכנות Cloudflare (במקום Vercel Pro) — הושלמה חלקית, ממתינה לערכים מהמשתמש [planned]
+- **What was done:** ניסוי על עותק של הריפו הנקי (`@opennextjs/cloudflare` + `wrangler`): build עובר, Worker 6.97MB / **1.4MB gzip** (מגבלת Free: 3MB), ב-`wrangler dev` מקומי: `/login` 200, `/participants` 307, cron ללא סוד 401, signup עם גוף שגוי 400. `wrangler login` הושלם לחשבון Cloudflare של המשתמש. תיקיית הניסוי: `C:\Users\EladShuali\Desktop\projects claude\hachamama-cf-trial` (wrangler.jsonc, שם Worker `hachamama-trial`).
+- **Decisions:** הניסוי לא יוגדר עם `MAKE_WEBHOOK_URL` (אין שליחת WhatsApp אפשרית) ועם סודות אקראיים נפרדים — לא נוגע בפרודקשן/Make/cron-job.org. ההמלצה המקורית נשארת: ההעברה ללקוחה על Vercel Pro; Cloudflare רק אם הניסוי מוכיח זמן-עיבוד תקין.
+- **Notes / Caveats:** `.env.local` בניסוי ריק — ממתין שהמשתמש ימלא `NEXT_PUBLIC_SUPABASE_URL` ו-`NEXT_PUBLIC_SUPABASE_ANON_KEY`; ואז build+deploy, והמשתמש מזין `SUPABASE_SERVICE_KEY` ב-`wrangler secret put`. עדיין לא נמדד: זמן CPU (Free = ~10ms/בקשה), התחברות מנחות מול Supabase אמיתי, cron triggers. **לא תוקן:** סיסמת מנחה חדשה = הטלפון שלה (`src/app/mentors/actions.ts:24`, גם בריפו הנקי). לא נוצרו חשבונות אצל הלקוחה עדיין.
+- **Related:** [[project-overview]]
